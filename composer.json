@@ -1,0 +1,41 @@
+{
+    "name": "ictech/gift-card",
+    "description": "Gift card plugin: purchase, send via email, and redeem voucher codes at checkout.",
+    "type": "shopware-platform-plugin",
+    "version": "1.0.0",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "iCreative Technologies"
+        }
+    ],
+    "require": {
+        "shopware/core": "~6.6 || ~6.7",
+        "shopware/storefront": "~6.6 || ~6.7"
+    },
+    "extra": {
+        "shopware-plugin-class": "ICTECHGiftCard\\ICTECHGiftCard",
+        "label": {
+            "de-DE": "Geschenkkarte",
+            "en-GB": "Gift Card"
+        },
+        "description": {
+            "de-DE": "Ermöglicht den Kauf von Geschenkkarten, den Versand per E-Mail und die Einlösung von Gutscheincodes an der Kasse.",
+            "en-GB": "Enables purchasing gift cards, sending them via email, and redeeming voucher codes at checkout."
+        },
+        "copyright": "(c) iCreative Technologies. All Rights Reserved.",
+        "manufacturerLink": {
+            "de-DE": "https://www.icreativetechnologies.com/",
+            "en-GB": "https://www.icreativetechnologies.com/"
+        },
+        "supportLink": {
+            "de-DE": "https://support.icreativetechnologies.com/",
+            "en-GB": "https://support.icreativetechnologies.com/"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "ICTECHGiftCard\\": "src/"
+        }
+    }
+}
