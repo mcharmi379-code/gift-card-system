@@ -5,6 +5,4 @@
 
     <import resource="../../Storefront/Controller/" type="attribute"/>
 
-    <import resource="../../Administration/Controller/" type="attribute"/>
-
 </routes>
