@@ -1,0 +1,27 @@
+@import "~scss/variables";
+
+.ictech-gift-card-template-list {
+    &__media-image {
+        display: block;
+        width: 64px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    &__media-placeholder {
+        width: 32px;
+        height: 32px;
+        color: $color-darkgray-300;
+    }
+
+    &__icon-active {
+        &.is--active {
+            color: $color-emerald-500;
+        }
+
+        &.is--inactive {
+            color: $color-crimson-500;
+        }
+    }
+}

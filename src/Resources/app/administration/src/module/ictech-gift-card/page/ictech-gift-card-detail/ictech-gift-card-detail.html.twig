@@ -1,0 +1,182 @@
+{% block ictech_gift_card_detail %}
+<sw-page class="ictech-gift-card-detail">
+
+    {% block ictech_gift_card_detail_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>
+            {% block ictech_gift_card_detail_smart_bar_header_title %}
+            <span v-if="isCreateMode">{{ $tc('ictech-gift-card.detail.titleCreate') }}</span>
+            <span v-else>{{ placeholder(giftCard, 'name', $tc('ictech-gift-card.detail.titleEdit')) }}</span>
+            {% endblock %}
+        </h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_detail_smart_bar_actions %}
+    <template #smart-bar-actions>
+
+        {% block ictech_gift_card_detail_action_cancel %}
+        <sw-button
+            v-tooltip.bottom="tooltipCancel"
+            :disabled="isLoading || undefined"
+            @click="onCancel"
+        >
+            {{ $tc('global.default.cancel') }}
+        </sw-button>
+        {% endblock %}
+
+        {% block ictech_gift_card_detail_action_save %}
+        <sw-button-process
+            v-model:process-success="isSaveSuccessful"
+            v-tooltip.bottom="tooltipSave"
+            class="ictech-gift-card-detail__save-action"
+            variant="primary"
+            :is-loading="isLoading"
+            :disabled="isLoading || !acl.can('ictech_gift_card.editor') || undefined"
+            @update:process-success="saveFinish"
+            @click.prevent="onSave"
+        >
+            {{ $tc('global.default.save') }}
+        </sw-button-process>
+        {% endblock %}
+
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_detail_content %}
+    <template #content>
+        <sw-card-view>
+
+            {% block ictech_gift_card_detail_card_general %}
+            <sw-card
+                position-identifier="ictech-gift-card-detail-general"
+                :title="$tc('ictech-gift-card.detail.cardTitleGeneral')"
+                :is-loading="isLoading"
+            >
+                <template #default>
+                    {% block ictech_gift_card_detail_field_name %}
+                    <sw-text-field
+                        v-model:value="giftCard.name"
+                        :label="$tc('ictech-gift-card.detail.labelName')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderName')"
+                        name="name"
+                        required
+                        validation="required"
+                    />
+                    {% endblock %}
+
+                    {% block ictech_gift_card_detail_field_amount %}
+                    <sw-number-field
+                        v-model:value="giftCard.amount"
+                        :label="$tc('ictech-gift-card.detail.labelAmount')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderAmount')"
+                        name="amount"
+                        :min="0.01"
+                        :digits="2"
+                        required
+                    />
+                    {% endblock %}
+
+                    {% block ictech_gift_card_detail_field_code_prefix %}
+                    <sw-text-field
+                        v-model:value="giftCard.codePrefix"
+                        :label="$tc('ictech-gift-card.detail.labelCodePrefix')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderCodePrefix')"
+                        name="codePrefix"
+                    />
+                    {% endblock %}
+
+                    {% block ictech_gift_card_detail_field_validity_days %}
+                    <sw-number-field
+                        v-model:value="giftCard.validityDays"
+                        :label="$tc('ictech-gift-card.detail.labelValidityDays')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderValidityDays')"
+                        name="validityDays"
+                        :min="1"
+                        :digits="0"
+                        required
+                    />
+                    {% endblock %}
+
+                    {% block ictech_gift_card_detail_field_quantity %}
+                    <sw-number-field
+                        v-model:value="giftCard.quantity"
+                        :label="$tc('ictech-gift-card.detail.labelQuantity')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderQuantity')"
+                        name="quantity"
+                        :min="0"
+                        :digits="0"
+                    />
+                    {% endblock %}
+
+                    {% block ictech_gift_card_detail_field_active %}
+                    <sw-switch-field
+                        v-model:value="giftCard.active"
+                        :label="$tc('ictech-gift-card.detail.labelActive')"
+                        name="active"
+                        bordered
+                    />
+                    {% endblock %}
+
+                </template>
+            </sw-card>
+            {% endblock %}
+
+            {% block ictech_gift_card_detail_card_template %}
+            <sw-card
+                position-identifier="ictech-gift-card-detail-template"
+                :title="$tc('ictech-gift-card.detail.cardTitleTemplate')"
+                :is-loading="isLoading"
+            >
+                <template #default>
+                    {% block ictech_gift_card_detail_field_template %}
+                    <sw-entity-single-select
+                        :value="giftCard.templateId"
+                        :label="$tc('ictech-gift-card.detail.labelTemplate')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderTemplate')"
+                        entity="ictech_gift_card_template"
+                        :criteria="templateCriteria"
+                        name="templateId"
+                        @update:value="onTemplateChange"
+                    />
+                    {% endblock %}
+
+                    {% block ictech_gift_card_detail_template_preview %}
+                    <div v-if="templateMediaUrl" class="ictech-gift-card-detail__template-preview" style="margin-top: 16px;">
+                        <img
+                            :src="templateMediaUrl"
+                            alt="Template preview"
+                            style="max-width: 100%; max-height: 300px; border-radius: 4px; border: 1px solid #d1d9e0;"
+                        />
+                    </div>
+                    {% endblock %}
+                </template>
+            </sw-card>
+            {% endblock %}
+
+            {% block ictech_gift_card_detail_card_sales_channel %}
+            <sw-card
+                position-identifier="ictech-gift-card-detail-sales-channel"
+                :title="$tc('ictech-gift-card.detail.cardTitleSalesChannel')"
+                :is-loading="isLoading"
+            >
+                <template #default>
+                    {% block ictech_gift_card_detail_field_sales_channel %}
+                    <sw-entity-single-select
+                        v-model:value="giftCard.salesChannelId"
+                        :label="$tc('ictech-gift-card.detail.labelSalesChannel')"
+                        :placeholder="$tc('ictech-gift-card.detail.placeholderSalesChannel')"
+                        entity="sales_channel"
+                        name="salesChannelId"
+                    />
+                    {% endblock %}
+                </template>
+            </sw-card>
+            {% endblock %}
+
+        </sw-card-view>
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}

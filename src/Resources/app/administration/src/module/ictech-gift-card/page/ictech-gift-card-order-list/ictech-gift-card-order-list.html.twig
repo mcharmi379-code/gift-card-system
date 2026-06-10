@@ -1,0 +1,207 @@
+{% block ictech_gift_card_order_list %}
+<sw-page class="ictech-gift-card-order-list">
+
+    {% block ictech_gift_card_order_list_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>{{ $tc('ictech-gift-card.order.list.title') }}</h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_order_list_smart_bar_actions %}
+    <template #smart-bar-actions>
+        <sw-button variant="ghost" @click="getList">
+            <sw-icon name="regular-redo" small />
+        </sw-button>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_order_list_search_bar %}
+    <template #search-bar>
+        <sw-search-bar
+            :placeholder="$tc('ictech-gift-card.order.list.placeholderSearch')"
+            @search="onSearch"
+        />
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_order_list_content %}
+    <template #content>
+        <sw-card-view>
+
+            {% block ictech_gift_card_order_list_filter_card %}
+            <sw-card
+                v-if="isLoading || total > 0"
+                position-identifier="ictech-gift-card-order-filter"
+                :title="$tc('ictech-gift-card.order.list.title')"
+                :is-loading="isLoading"
+            >
+                <template #toolbar>
+                    <sw-single-select
+                        :value="filterStatus"
+                        :options="statusOptions"
+                        :label="$tc('ictech-gift-card.order.list.filterStatus')"
+                        value-property="value"
+                        label-property="label"
+                        size="small"
+                        style="min-width: 200px;"
+                        @update:value="onFilterStatus"
+                    />
+                </template>
+
+                {% block ictech_gift_card_order_list_grid %}
+                <sw-data-grid
+                    :data-source="vouchers || []"
+                    :columns="columns"
+                    :total="total"
+                    :is-loading="isLoading"
+                    :show-selection="false"
+                    :show-actions="true"
+                    :sort-by="sortBy"
+                    :sort-direction="sortDirection"
+                    :page="page"
+                    :items-per-page="limit"
+                    identifier="ictech-gift-card-order-list"
+                    @column-sort="onSortColumn"
+                    @page-change="onPageChange"
+                >
+                    {% block ictech_gift_card_order_list_column_order %}
+                    <template #column-order.orderNumber="{ item }">
+                        <sw-button
+                            v-if="item.orderId"
+                            variant="ghost"
+                            size="small"
+                            @click="openOrder(item)"
+                        >
+                            #{{ item.order ? item.order.orderNumber : '—' }}
+                        </sw-button>
+                        <span v-else>—</span>
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_template %}
+                    <template #column-giftCard.template="{ item }">
+                        <sw-media-preview-v2
+                            v-if="item.giftCard && item.giftCard.template && item.giftCard.template.media"
+                            :media-id="item.giftCard.template.media.id"
+                            :source="item.giftCard.template.media.url"
+                            style="width:60px;height:40px;object-fit:cover;"
+                        />
+                        <sw-icon
+                            v-else
+                            name="regular-gift"
+                            size="40px"
+                            color="#aaa"
+                        />
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_price %}
+                    <template #column-originalAmount="{ item }">
+                        {{ formatAmount(item.originalAmount, item) }}
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_recipient %}
+                    <template #column-recipientEmail="{ item }">
+                        <div>{{ item.recipientName }}</div>
+                        <small class="ictech-gift-card-order-list__sub">{{ item.recipientEmail }}</small>
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_customer %}
+                    <template #column-customer="{ item }">
+                        {{ getCustomerName(item) }}
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_status %}
+                    <template #column-status="{ item }">
+                        <sw-label :variant="getStatusVariant(item.status)" appearance="pill">
+                            {{ getUsedLabel(item) }}
+                        </sw-label>
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_balance %}
+                    <template #column-remainingBalance="{ item }">
+                        {{ formatAmount(item.remainingBalance, item) }}
+                        <span
+                            v-if="item.remainingBalance < item.originalAmount && item.remainingBalance > 0"
+                            class="ictech-gift-card-order-list__partial"
+                        >
+                            ({{ $tc('ictech-gift-card.order.list.partial') }})
+                        </span>
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_date %}
+                    <template #column-createdAt="{ item }">
+                        {{ formatDate(item.createdAt) }}
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_actions %}
+                    <template #actions="{ item }">
+                        <sw-context-menu-item
+                            icon="regular-eye"
+                            :disabled="!item.orderId"
+                            @click="openOrder(item)"
+                        >
+                            {{ $tc('global.default.view') }}
+                        </sw-context-menu-item>
+                        <sw-context-menu-item
+                            variant="danger"
+                            icon="regular-trash"
+                            @click="onDelete(item)"
+                        >
+                            {{ $tc('global.default.delete') }}
+                        </sw-context-menu-item>
+                    </template>
+                    {% endblock %}
+
+                </sw-data-grid>
+                {% endblock %}
+
+            </sw-card>
+            {% endblock %}
+
+            {% block ictech_gift_card_order_list_empty_state %}
+            <sw-empty-state
+                v-if="!isLoading && total === 0"
+                icon="regular-gift"
+                :title="$tc('ictech-gift-card.order.list.emptyTitle')"
+                :subline="$tc('ictech-gift-card.order.list.emptySubline')"
+            />
+            {% endblock %}
+
+        </sw-card-view>
+
+        {% block ictech_gift_card_order_list_delete_modal %}
+        <sw-modal
+            v-if="deleteItem"
+            variant="small"
+            :title="$tc('global.default.warning')"
+            @modal-close="onCloseDeleteModal"
+        >
+            <p>
+                {{ $tc('ictech-gift-card.order.list.confirmDelete', 0, {
+                    code: deleteItem.code
+                }) }}
+            </p>
+
+            <template #modal-footer>
+                <sw-button size="small" @click="onCloseDeleteModal">
+                    {{ $tc('global.default.cancel') }}
+                </sw-button>
+                <sw-button size="small" variant="danger" @click="onConfirmDelete">
+                    {{ $tc('global.default.delete') }}
+                </sw-button>
+            </template>
+        </sw-modal>
+        {% endblock %}
+
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}

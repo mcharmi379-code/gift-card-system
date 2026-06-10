@@ -1,0 +1,20 @@
+{% block ictech_gift_card_placeholder %}
+<sw-page class="ictech-gift-card-placeholder">
+
+    {% block ictech_gift_card_placeholder_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>{{ title }}</h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_placeholder_content %}
+    <template #content>
+        <sw-empty-state
+            :title="title"
+            :subline="subline"
+        />
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}
