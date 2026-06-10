@@ -1,0 +1,158 @@
+{% block ictech_gift_card_list %}
+<sw-page class="ictech-gift-card-list">
+
+    {% block ictech_gift_card_list_search_bar %}
+    <template #search-bar>
+        <sw-search-bar
+            :placeholder="$tc('ictech-gift-card.list.placeholderSearchBar')"
+            :initial-search="term"
+            @search="onSearch"
+        />
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_list_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>
+            {% block ictech_gift_card_list_smart_bar_title %}
+            {{ $tc('ictech-gift-card.list.textTitle') }}
+            {% endblock %}
+
+            {% block ictech_gift_card_list_smart_bar_amount %}
+            <span
+                v-if="!isLoading"
+                class="sw-page__smart-bar-amount"
+            >
+                ({{ total }})
+            </span>
+            {% endblock %}
+        </h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_list_smart_bar_actions %}
+    <template #smart-bar-actions>
+        {% block ictech_gift_card_list_smart_bar_button_add %}
+        <sw-button
+            v-tooltip="addButtonTooltip"
+            class="ictech-gift-card-list__button-add"
+            variant="primary"
+            :router-link="{ name: 'ictech.gift.card.create' }"
+            :disabled="!acl.can('ictech_gift_card.creator') || undefined"
+        >
+            {{ $tc('ictech-gift-card.list.buttonAdd') }}
+        </sw-button>
+        {% endblock %}
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_list_content %}
+    <template #content>
+        <div class="ictech-gift-card-list__content">
+
+            {% block ictech_gift_card_list_grid %}
+            <sw-entity-listing
+                v-if="entitySearchable"
+                ref="listing"
+                class="ictech-gift-card-list__grid"
+                :repository="giftCardRepository"
+                :columns="columns"
+                :items="giftCards"
+                detail-route="ictech.gift.card.detail"
+                :is-loading="isLoading"
+                :allow-inline-edit="acl.can('ictech_gift_card.editor') || undefined"
+                :show-selection="acl.can('ictech_gift_card.deleter') || undefined"
+                :allow-edit="acl.can('ictech_gift_card.editor') || undefined"
+                :allow-view="acl.can('ictech_gift_card.viewer') || undefined"
+                :allow-delete="acl.can('ictech_gift_card.deleter') || undefined"
+                :show-actions="true"
+                full-page
+                @update-records="updateTotal"
+                @selection-change="updateSelection"
+            >
+                {% block ictech_gift_card_list_column_media %}
+                <template #column-media="{ item }">
+                    <img
+                        v-if="item.media && item.media.url"
+                        class="ictech-gift-card-list__media-image"
+                        :src="item.media.url"
+                        :alt="item.media.alt || item.media.fileName || item.name"
+                    >
+                    <sw-media-preview-v2
+                        v-else-if="item.mediaId"
+                        class="ictech-gift-card-list__media-preview"
+                        :media-id="item.mediaId"
+                        :media-is-private="false"
+                    />
+                    <sw-icon
+                        v-else
+                        name="regular-image"
+                        class="ictech-gift-card-list__media-placeholder"
+                    />
+                </template>
+                {% endblock %}
+
+                {% block ictech_gift_card_list_column_amount %}
+                <template #column-formattedAmount="{ item }">
+                    {{ formatAmount(item.amount) }}
+                </template>
+                {% endblock %}
+
+                {% block ictech_gift_card_list_column_active %}
+                <template #column-active="{ item }">
+                    <sw-icon
+                        v-if="item.active"
+                        name="regular-checkmark-xs"
+                        class="ictech-gift-card-list__icon-active is--active"
+                    />
+                    <sw-icon
+                        v-else
+                        name="regular-times-s"
+                        class="ictech-gift-card-list__icon-active is--inactive"
+                    />
+                </template>
+                {% endblock %}
+
+                {% block ictech_gift_card_list_actions %}
+                <template #delete-action="{ item, showDelete }">
+                    <sw-context-menu-item
+                        variant="danger"
+                        :disabled="!acl.can('ictech_gift_card.deleter') || undefined"
+                        @click="showDelete(item.id)"
+                    >
+                        {{ $tc('global.default.delete') }}
+                    </sw-context-menu-item>
+                </template>
+                {% endblock %}
+
+            </sw-entity-listing>
+            {% endblock %}
+
+            {% block ictech_gift_card_list_empty_state %}
+            <sw-empty-state
+                v-if="!isLoading && !total"
+                :title="$tc('ictech-gift-card.list.emptyTitle')"
+                :subline="$tc('ictech-gift-card.list.emptySubline')"
+            />
+            {% endblock %}
+
+        </div>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_list_sidebar %}
+    <template #sidebar>
+        <sw-sidebar>
+            {% block ictech_gift_card_list_sidebar_refresh %}
+            <sw-sidebar-item
+                icon="regular-undo"
+                :title="$tc('ictech-gift-card.list.titleSidebarRefresh')"
+                @click="onRefresh"
+            />
+            {% endblock %}
+        </sw-sidebar>
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}

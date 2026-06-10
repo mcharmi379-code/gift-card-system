@@ -37,5 +37,15 @@
         "psr-4": {
             "ICTECHGiftCard\\": "src/"
         }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.2",
+        "nunomaduro/phpinsights": "^2.13"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/runtime": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }

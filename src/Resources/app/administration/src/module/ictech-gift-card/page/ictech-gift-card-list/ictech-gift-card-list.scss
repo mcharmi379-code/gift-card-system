@@ -1,0 +1,42 @@
+@import "~scss/variables";
+
+$ictech-gift-card-color-active: $color-emerald-500;
+$ictech-gift-card-color-inactive: $color-crimson-500;
+
+.ictech-gift-card-list {
+    &__content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    &__media-image,
+    &__media-preview {
+        width: 48px;
+        height: 48px;
+    }
+
+    &__media-image {
+        display: block;
+        object-fit: contain;
+        border-radius: 4px;
+    }
+
+    &__media-placeholder {
+        width: 32px;
+        height: 32px;
+        color: $color-darkgray-300;
+    }
+
+    .sw-data-grid__cell:not(.sw-data-grid__cell--header) {
+        .ictech-gift-card-list__icon-active {
+            &.is--active {
+                color: $ictech-gift-card-color-active;
+            }
+
+            &.is--inactive {
+                color: $ictech-gift-card-color-inactive;
+            }
+        }
+    }
+}

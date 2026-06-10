@@ -1,0 +1,24 @@
+.ictech-gift-card-order-list {
+    &__legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+    }
+
+    &__legend-desc {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    &__sub {
+        display: block;
+        color: #6b7280;
+        font-size: 11px;
+    }
+
+    &__partial {
+        font-size: 11px;
+        color: #f59e0b;
+    }
+}

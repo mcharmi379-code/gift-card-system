@@ -1,0 +1,156 @@
+{
+    "ictech-gift-card": {
+        "general": {
+            "mainMenuItemGeneral": "Geschenkkarten",
+            "description": "Geschenkkarten-Nennwerte verwalten"
+        },
+        "navigation": {
+            "order": "Bestellung",
+            "product": "Produkt",
+            "template": "Vorlage",
+            "settings": "Einstellungen"
+        },
+        "list": {
+            "textTitle": "Geschenkkarten",
+            "placeholderSearchBar": "Geschenkkarten suchen...",
+            "buttonAdd": "Geschenkkarte hinzufügen",
+            "columnMedia": "Bild",
+            "columnName": "Name",
+            "columnAmount": "Betrag",
+            "columnCodePrefix": "Code-Präfix",
+            "columnValidityDays": "Gültigkeit (Tage)",
+            "columnQuantityIssued": "Ausgegeben",
+            "columnActive": "Aktiv",
+            "emptyTitle": "Noch keine Geschenkkarten",
+            "emptySubline": "Erstellen Sie Ihren ersten Geschenkkarten-Nennwert.",
+            "titleSidebarRefresh": "Liste aktualisieren"
+        },
+        "detail": {
+            "titleCreate": "Neue Geschenkkarte",
+            "titleEdit": "Geschenkkarte bearbeiten",
+            "cardTitleGeneral": "Allgemein",
+            "cardTitleSalesChannel": "Verfügbarkeit",
+            "labelName": "Name",
+            "placeholderName": "z.B. 25 € Geschenkkarte",
+            "labelAmount": "Betrag (€)",
+            "placeholderAmount": "0,00",
+            "labelCodePrefix": "Gutscheincode-Präfix",
+            "placeholderCodePrefix": "z.B. GC-",
+            "labelValidityDays": "Gültigkeitsdauer (Tage)",
+            "placeholderValidityDays": "365",
+            "labelQuantity": "Verfügbare Menge (leer lassen für unbegrenzt)",
+            "placeholderQuantity": "Unbegrenzt",
+            "labelActive": "Aktiv",
+            "labelSalesChannel": "Auf Verkaufskanal beschränken",
+            "placeholderSalesChannel": "Alle Verkaufskanäle",
+            "cardTitleTemplate": "Vorlage",
+            "labelTemplate": "Geschenkkarten-Vorlage",
+            "placeholderTemplate": "Vorlage auswählen",
+            "messageSaveSuccess": "Geschenkkarte erfolgreich gespeichert.",
+            "messageSaveError": "Beim Speichern der Geschenkkarte ist ein Fehler aufgetreten."
+        },
+        "template": {
+            "list": {
+                "textTitle": "Geschenkkarten-Vorlagen",
+                "placeholderSearchBar": "Geschenkkarten-Vorlagen suchen...",
+                "buttonAdd": "Vorlage hinzufügen",
+                "columnImage": "Bild",
+                "columnName": "Name",
+                "columnTag": "Tag",
+                "columnActive": "Status",
+                "emptyTitle": "Noch keine Vorlagen",
+                "emptySubline": "Erstellen Sie Ihre erste Geschenkkarten-Vorlage."
+            },
+            "detail": {
+                "titleCreate": "Neue Geschenkkarten-Vorlage",
+                "titleEdit": "Geschenkkarten-Vorlage bearbeiten",
+                "cardTitle": "Geschenkkarten-Vorlage",
+                "tabInformation": "Information",
+                "tabCustomize": "Anpassen",
+                "labelName": "Name",
+                "placeholderName": "z.B. Happy Birthday",
+                "labelTag": "Tag",
+                "placeholderTag": "z.B. Geburtstag",
+                "labelActive": "Aktiv",
+                "labelImage": "Vorlagenbild",
+                "labelUseImage": "Als Vorlagenbild verwenden",
+                "cardDataVariables": "Datenvariablen",
+                "cardCustomText": "Anpassbarer Text",
+                "cardCustomColor": "Anpassbare Farbe",
+                "labelPrice": "Preis",
+                "labelDiscountCode": "Rabattcode",
+                "labelPdfOnly": "Nur PDF-Bild",
+                "messageSaveSuccess": "Geschenkkarten-Vorlage erfolgreich gespeichert.",
+                "messageSaveError": "Beim Speichern der Geschenkkarten-Vorlage ist ein Fehler aufgetreten."
+            }
+        },
+        "order": {
+            "list": {
+                "title": "Geschenkkarten-Bestellungen",
+                "placeholderSearch": "Nach Code, Empf\u00e4nger, Kunde suchen...",
+                "statusLegendTitle": "Bedeutung der Status",
+                "filterStatus": "Nach Status filtern",
+                "filterAll": "Alle Status",
+                "columnOrder": "Bestellung",
+                "columnTemplate": "Vorlage",
+                "columnPrice": "Preis",
+                "columnRecipient": "Empf\u00e4nger",
+                "columnCustomer": "Kunde",
+                "columnCode": "Code",
+                "columnStatus": "Status",
+                "columnBalance": "Restbetrag",
+                "columnDate": "Datum",
+                "partial": "teilweise",
+                "actionViewOrder": "Bestellung anzeigen",
+                "messageDeleted": "Geschenkkarten-Bestellung erfolgreich gelöscht.",
+                "confirmDelete": "Möchten Sie die Geschenkkarte mit dem Code \"{code}\" wirklich löschen?",
+                "noOrderLinked": "Dieser Geschenkkarte ist noch keine Bestellung zugeordnet.",
+                "emptyTitle": "Noch keine Geschenkkarten-Bestellungen",
+                "emptySubline": "Geschenkkarten-Bestellungen erscheinen hier, sobald Kunden Geschenkkarten kaufen."
+            },
+            "status": {
+                "waitingValidOrder": "Warte auf g\u00fcltige Bestellung",
+                "waitingValidOrderDesc": "Die Bestellung wartet auf Zahlung, die Karte wird nicht gesendet und der Rabattcode wird nicht generiert.",
+                "unused": "Nicht verwendet",
+                "unusedDesc": "Die Geschenkkarte wurde gekauft, wurde aber noch nicht verwendet.",
+                "used": "Verwendet",
+                "usedDesc": "Die Geschenkkarte wurde verwendet, Sie k\u00f6nnen die zugeh\u00f6rige Bestellung einsehen.",
+                "usedInOrder": "Verwendet in Bestellung #{number}",
+                "canceled": "Storniert",
+                "canceledDesc": "Die Geschenkkarte wurde storniert, z.B. aufgrund einer Bestellstornierung oder R\u00fcckerstattung."
+            }
+        },
+        "settings": {
+            "title": "Geschenkkarten-Einstellungen",
+            "messageSaveSuccess": "Einstellungen erfolgreich gespeichert.",
+            "messageSaveError": "Beim Speichern der Einstellungen ist ein Fehler aufgetreten.",
+            "variablesTitle": "Verf\u00fcgbare PDF- & E-Mail-Variablen",
+            "variablesDescription": "Verwenden Sie diese Variablen in Ihren PDF-Inhalten und E-Mail-Vorlagen. Sie werden beim Generieren der Geschenkkarte durch echte Daten ersetzt.",
+            "variables": {
+                "cardLastname": "Nachname des Empf\u00e4ngers",
+                "cardFirstname": "Vorname des Empf\u00e4ngers",
+                "cardPrice": "Geschenkkartenwert / Preis",
+                "cardFrom": "Name des Absenders",
+                "cardCode": "Gutscheincode",
+                "cardMessage": "Pers\u00f6nliche Nachricht",
+                "cardImage": "Kartenbild (HTML img-Tag)",
+                "shopName": "Shop-Name",
+                "validityDate": "G\u00fcltigkeits- / Ablaufdatum"
+            }
+        },
+        "placeholder": {
+            "order": {
+                "title": "Geschenkkarten-Bestellungen",
+                "subline": "Die Bestellverwaltung wird ergänzt, sobald das Datenmodell für Gutscheinbestellungen final ist."
+            },
+            "template": {
+                "title": "Geschenkkarten-Vorlagen",
+                "subline": "Die Vorlagenverwaltung wird ergänzt, sobald Entität und Medienregeln bereit sind."
+            },
+            "settings": {
+                "title": "Geschenkkarten-Einstellungen",
+                "subline": "Globale Geschenkkarten-Einstellungen werden ergänzt, sobald der Konfigurationsumfang definiert ist."
+            }
+        }
+    }
+}
