@@ -1,0 +1,231 @@
+{% block ictech_gift_card_dashboard %}
+<sw-page class="ictech-gift-card-dashboard">
+
+    {% block ictech_gift_card_dashboard_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>{{ $tc('ictech-gift-card.dashboard.title') }}</h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_dashboard_smart_bar_actions %}
+    <template #smart-bar-actions>
+        <sw-button variant="ghost" @click="loadAll">
+            <sw-icon name="regular-redo" small />
+        </sw-button>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_dashboard_content %}
+    <template #content>
+        <sw-card-view>
+
+            {% block ictech_gift_card_dashboard_stats %}
+            <sw-card
+                position-identifier="ictech-gift-card-dashboard-stats"
+                :title="$tc('ictech-gift-card.dashboard.statsTitle')"
+                :is-loading="isLoadingStats"
+            >
+                <div class="ictech-gift-card-dashboard__stats">
+                    {% block ictech_gift_card_dashboard_stat_sold %}
+                    <div class="ictech-gift-card-dashboard__stat-item">
+                        <div class="ictech-gift-card-dashboard__stat-value">
+                            {{ stats ? formatAmount(stats.totalSold) : '—' }}
+                        </div>
+                        <div class="ictech-gift-card-dashboard__stat-label">
+                            {{ $tc('ictech-gift-card.dashboard.statTotalSold') }}
+                        </div>
+                    </div>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_dashboard_stat_redeemed %}
+                    <div class="ictech-gift-card-dashboard__stat-item">
+                        <div class="ictech-gift-card-dashboard__stat-value ictech-gift-card-dashboard__stat-value--info">
+                            {{ stats ? formatAmount(stats.totalRedeemed) : '—' }}
+                        </div>
+                        <div class="ictech-gift-card-dashboard__stat-label">
+                            {{ $tc('ictech-gift-card.dashboard.statTotalRedeemed') }}
+                        </div>
+                    </div>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_dashboard_stat_pending %}
+                    <div class="ictech-gift-card-dashboard__stat-item">
+                        <div class="ictech-gift-card-dashboard__stat-value ictech-gift-card-dashboard__stat-value--warning">
+                            {{ stats ? stats.pending : '—' }}
+                        </div>
+                        <div class="ictech-gift-card-dashboard__stat-label">
+                            {{ $tc('ictech-gift-card.dashboard.statPending') }}
+                        </div>
+                    </div>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_dashboard_stat_expired %}
+                    <div class="ictech-gift-card-dashboard__stat-item">
+                        <div class="ictech-gift-card-dashboard__stat-value ictech-gift-card-dashboard__stat-value--danger">
+                            {{ stats ? stats.expired : '—' }}
+                        </div>
+                        <div class="ictech-gift-card-dashboard__stat-label">
+                            {{ $tc('ictech-gift-card.dashboard.statExpired') }}
+                        </div>
+                    </div>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_dashboard_stat_total %}
+                    <div class="ictech-gift-card-dashboard__stat-item">
+                        <div class="ictech-gift-card-dashboard__stat-value">
+                            {{ stats ? stats.total : '—' }}
+                        </div>
+                        <div class="ictech-gift-card-dashboard__stat-label">
+                            {{ $tc('ictech-gift-card.dashboard.statTotal') }}
+                        </div>
+                    </div>
+                    {% endblock %}
+                </div>
+            </sw-card>
+            {% endblock %}
+
+            {% block ictech_gift_card_dashboard_purchased %}
+            <sw-card
+                position-identifier="ictech-gift-card-dashboard-purchased"
+                :title="$tc('ictech-gift-card.dashboard.purchasedTitle')"
+                :is-loading="isLoadingPurchased"
+            >
+                <template #toolbar>
+                    <div class="ictech-gift-card-dashboard__filters">
+                        <sw-single-select
+                            :value="purchasedStatus"
+                            :options="statusOptions"
+                            :label="$tc('ictech-gift-card.order.list.filterStatus')"
+                            value-property="value"
+                            label-property="label"
+                            size="small"
+                            style="min-width: 180px;"
+                            @update:value="purchasedStatus = $event; onPurchasedFilterChange()"
+                        />
+                        <sw-datepicker
+                            :value="purchasedDateFrom"
+                            :label="$tc('ictech-gift-card.dashboard.filterFrom')"
+                            size="small"
+                            date-type="date"
+                            @update:value="purchasedDateFrom = $event; onPurchasedFilterChange()"
+                        />
+                        <sw-datepicker
+                            :value="purchasedDateTo"
+                            :label="$tc('ictech-gift-card.dashboard.filterTo')"
+                            size="small"
+                            date-type="date"
+                            @update:value="purchasedDateTo = $event; onPurchasedFilterChange()"
+                        />
+                        <sw-button size="small" @click="exportPurchased">
+                            <sw-icon name="regular-download" small />
+                            {{ $tc('ictech-gift-card.dashboard.exportCsv') }}
+                        </sw-button>
+                    </div>
+                </template>
+
+                {% block ictech_gift_card_dashboard_purchased_grid %}
+                <sw-data-grid
+                    :data-source="purchased || []"
+                    :columns="purchasedColumns"
+                    :total="purchasedTotal"
+                    :is-loading="isLoadingPurchased"
+                    :show-selection="false"
+                    :show-actions="false"
+                    :page="purchasedPage"
+                    :items-per-page="purchasedLimit"
+                    identifier="ictech-gift-card-dashboard-purchased"
+                    @page-change="onPurchasedPageChange"
+                >
+                    <template #column-status="{ item }">
+                        <sw-label :variant="getStatusVariant(item.status)" appearance="pill">
+                            {{ getStatusLabel(item.status) }}
+                        </sw-label>
+                    </template>
+                    <template #column-originalAmount="{ item }">
+                        {{ formatAmount(item.originalAmount) }}
+                    </template>
+                    <template #column-remainingBalance="{ item }">
+                        {{ formatAmount(item.remainingBalance) }}
+                    </template>
+                    <template #column-order.orderNumber="{ item }">
+                        {{ item.order ? ('#' + item.order.orderNumber) : '—' }}
+                    </template>
+                    <template #column-createdAt="{ item }">
+                        {{ formatDate(item.createdAt) }}
+                    </template>
+                </sw-data-grid>
+                {% endblock %}
+            </sw-card>
+            {% endblock %}
+
+            {% block ictech_gift_card_dashboard_used %}
+            <sw-card
+                position-identifier="ictech-gift-card-dashboard-used"
+                :title="$tc('ictech-gift-card.dashboard.usedTitle')"
+                :is-loading="isLoadingUsed"
+            >
+                <template #toolbar>
+                    <div class="ictech-gift-card-dashboard__filters">
+                        <sw-datepicker
+                            :value="usedDateFrom"
+                            :label="$tc('ictech-gift-card.dashboard.filterFrom')"
+                            size="small"
+                            date-type="date"
+                            @update:value="usedDateFrom = $event; onUsedFilterChange()"
+                        />
+                        <sw-datepicker
+                            :value="usedDateTo"
+                            :label="$tc('ictech-gift-card.dashboard.filterTo')"
+                            size="small"
+                            date-type="date"
+                            @update:value="usedDateTo = $event; onUsedFilterChange()"
+                        />
+                        <sw-button size="small" @click="exportUsed">
+                            <sw-icon name="regular-download" small />
+                            {{ $tc('ictech-gift-card.dashboard.exportCsv') }}
+                        </sw-button>
+                    </div>
+                </template>
+
+                {% block ictech_gift_card_dashboard_used_grid %}
+                <sw-data-grid
+                    :data-source="used || []"
+                    :columns="usedColumns"
+                    :total="usedTotal"
+                    :is-loading="isLoadingUsed"
+                    :show-selection="false"
+                    :show-actions="false"
+                    :page="usedPage"
+                    :items-per-page="usedLimit"
+                    identifier="ictech-gift-card-dashboard-used"
+                    @page-change="onUsedPageChange"
+                >
+                    <template #column-voucher.code="{ item }">
+                        {{ item.voucher ? item.voucher.code : '—' }}
+                    </template>
+                    <template #column-amountUsed="{ item }">
+                        {{ formatAmount(item.amountUsed) }}
+                    </template>
+                    <template #column-balanceBefore="{ item }">
+                        {{ formatAmount(item.balanceBefore) }}
+                    </template>
+                    <template #column-balanceAfter="{ item }">
+                        {{ formatAmount(item.balanceAfter) }}
+                    </template>
+                    <template #column-order.orderNumber="{ item }">
+                        {{ item.order ? ('#' + item.order.orderNumber) : '—' }}
+                    </template>
+                    <template #column-createdAt="{ item }">
+                        {{ formatDate(item.createdAt) }}
+                    </template>
+                </sw-data-grid>
+                {% endblock %}
+            </sw-card>
+            {% endblock %}
+
+        </sw-card-view>
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}

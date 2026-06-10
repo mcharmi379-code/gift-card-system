@@ -61,6 +61,12 @@
             <tag name="shopware.entity.extension"/>
         </service>
 
+        <!-- ===== Controllers ===== -->
+        <service id="ICTECHGiftCard\Administration\Controller\DashboardController">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <tag name="controller.service_arguments"/>
+        </service>
+
         <!-- ===== Subscribers ===== -->
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardProductSyncSubscriber">
             <argument type="service" id="ictech_gift_card.repository"/>

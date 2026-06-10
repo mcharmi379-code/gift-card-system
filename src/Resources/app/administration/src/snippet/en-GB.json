@@ -5,10 +5,35 @@
             "description": "Manage gift card denominations"
         },
         "navigation": {
+            "dashboard": "Dashboard",
             "order": "Order",
             "product": "Product",
             "template": "Template",
             "settings": "Settings"
+        },
+        "dashboard": {
+            "title": "Dashboard",
+            "statsTitle": "Overview",
+            "statTotalSold": "Total Sold",
+            "statTotalRedeemed": "Total Redeemed",
+            "statPending": "Pending",
+            "statExpired": "Expired",
+            "statTotal": "Total Vouchers",
+            "purchasedTitle": "Gift Cards Purchased",
+            "usedTitle": "Gift Cards Used",
+            "filterFrom": "From",
+            "filterTo": "To",
+            "exportCsv": "Export CSV",
+            "columnCode": "Code",
+            "columnAmount": "Amount",
+            "columnBalance": "Balance",
+            "columnStatus": "Status",
+            "columnRecipient": "Recipient",
+            "columnOrder": "Order",
+            "columnDate": "Date",
+            "columnAmountUsed": "Amount Used",
+            "columnBalanceBefore": "Balance Before",
+            "columnBalanceAfter": "Balance After"
         },
         "list": {
             "textTitle": "Gift Cards",

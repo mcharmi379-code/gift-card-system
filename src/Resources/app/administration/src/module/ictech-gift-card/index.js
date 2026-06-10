@@ -15,6 +15,11 @@ Module.register('ictech-gift-card', {
 
     defaultSearchConfiguration,
     routes: {
+        dashboard: {
+            component: 'ictech-gift-card-dashboard',
+            path: 'dashboard',
+            meta: { privilege: 'ictech_gift_card.viewer' },
+        },
         index: {
             component: 'ictech-gift-card-list',
             path: 'index',
@@ -73,12 +78,20 @@ Module.register('ictech-gift-card', {
     navigation: [
         {
             id: 'ictech-gift-card',
-            path: 'ictech.gift.card.index',
+            path: 'ictech.gift.card.dashboard',
             label: 'ictech-gift-card.general.mainMenuItemGeneral',
             color: '#57D9A3',
             icon: 'regular-gift',
             position: 105,
             parent: 'sw-catalogue',
+            privilege: 'ictech_gift_card.viewer',
+        },
+        {
+            id: 'ictech-gift-card-dashboard',
+            path: 'ictech.gift.card.dashboard',
+            label: 'ictech-gift-card.navigation.dashboard',
+            parent: 'ictech-gift-card',
+            position: 5,
             privilege: 'ictech_gift_card.viewer',
         },
         {
@@ -116,6 +129,7 @@ Module.register('ictech-gift-card', {
     ],
 });
 
+Shopware.Component.register('ictech-gift-card-dashboard', () => import('./page/ictech-gift-card-dashboard'));
 Shopware.Component.register('ictech-gift-card-order-list', () => import('./page/ictech-gift-card-order-list'));
 Shopware.Component.register('ictech-gift-card-list', () => import('./page/ictech-gift-card-list'));
 Shopware.Component.register('ictech-gift-card-detail', () => import('./page/ictech-gift-card-detail'));
