@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ICTECHGiftCard;
 
 use Doctrine\DBAL\Connection;
+use ICTECHGiftCard\Service\GiftCardNavigationInstaller;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Plugin;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
@@ -43,6 +45,13 @@ final class ICTECHGiftCard extends Plugin
         parent::install($installContext);
 
         $this->createMailTemplateType($installContext);
+        $categoryRepository = $this->container?->get('category.repository');
+        $salesChannelRepository = $this->container?->get('sales_channel.repository');
+
+        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository) {
+            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository);
+            $installer->install($installContext->getContext());
+        }
     }
 
     public function uninstall(UninstallContext $uninstallContext): void

@@ -18,6 +18,29 @@
             "used": "Used",
             "expired": "Expired",
             "revoked": "Revoked"
+        },
+        "page": {
+            "title": "Gift Cards",
+            "intro": "Delight your loved ones in just a few clicks. Send a personalized gift card by email to the address of your choice.",
+            "deliveryMethod": "Select delivery method",
+            "deliveryMethodLabel": "Delivery method",
+            "deliveryPrint": "Print at home",
+            "deliveryEmail": "Send by email",
+            "selectTemplate": "Select a template",
+            "templateCategories": "Gift card template categories",
+            "noTemplates": "No gift card templates are available yet.",
+            "giftCardInfo": "Gift Card Information",
+            "amountLabel": "Amount",
+            "templateLabel": "Template",
+            "pictureLabel": "Picture",
+            "senderNameLabel": "From: Your name",
+            "recipientNameLabel": "To: Recipient Name",
+            "mailRecipientLabel": "To: Email",
+            "messageLabel": "Enter your message",
+            "dateSendLabel": "Send date",
+            "emailHelp": "The gift card will be sent by email as soon as your payment is confirmed. You can also choose a later sending date.",
+            "previewButton": "Preview",
+            "addToCart": "Add to cart"
         }
     }
 }

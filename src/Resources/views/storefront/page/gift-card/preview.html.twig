@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ 'ictech-gift-card.page.previewButton'|trans }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f0f0f0; }
+        .preview-wrap { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.12); }
+        .preview-template-img { width: 100%; display: block; }
+        .preview-template-img img { width: 100%; height: auto; display: block; }
+        .preview-pdf { padding: 0; }
+        .preview-pdf table { width: 100% !important; }
+    </style>
+</head>
+<body>
+<div class="preview-wrap">
+    {% if template and template.media %}
+        <div class="preview-template-img">
+            <img
+                src="{{ template.media.url }}"
+                alt="{{ template.name }}"
+            >
+        </div>
+    {% endif %}
+
+    {% if pdfContent %}
+        <div class="preview-pdf">
+            {{ pdfContent|raw }}
+        </div>
+    {% endif %}
+</div>
+</body>
+</html>

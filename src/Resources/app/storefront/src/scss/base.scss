@@ -14,3 +14,267 @@
     &--expired        { background-color: #dc3545; color: #fff; }
     &--revoked        { background-color: #343a40; color: #fff; }
 }
+
+.ictech-gift-card-page {
+    max-width: 1120px;
+    margin: 24px auto;
+    padding: 24px;
+    background: #fff;
+}
+
+.ictech-gift-card-page__title {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.ictech-gift-card-page__intro {
+    max-width: 760px;
+    margin-bottom: 32px;
+    color: #606a76;
+}
+
+.ictech-gift-card-section {
+    margin-top: 32px;
+
+    h2 {
+        margin-bottom: 18px;
+        font-size: 22px;
+        font-weight: 700;
+    }
+}
+
+.ictech-gift-card-delivery,
+.ictech-gift-card-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.ictech-gift-card-delivery label,
+.ictech-gift-card-tabs__item {
+    border: 1px solid #111827;
+    background: #fff;
+    color: #111827;
+    cursor: pointer;
+}
+
+.ictech-gift-card-delivery label {
+    position: relative;
+    padding: 8px 14px;
+
+    input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    &:has(input:checked) {
+        background: #111827;
+        color: #fff;
+    }
+}
+
+.ictech-gift-card-tabs__item {
+    padding: 8px 16px;
+
+    &.is-active {
+        background: #111827;
+        color: #fff;
+    }
+
+    span {
+        color: inherit;
+        opacity: .7;
+        font-style: italic;
+    }
+}
+
+.ictech-gift-card-field {
+    margin-bottom: 14px;
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        border: 1px solid #b8c0cc;
+        padding: 9px 12px;
+        background: #f8f8f8;
+    }
+}
+
+.ictech-gift-card-field--amount {
+    max-width: 130px;
+}
+
+.ictech-gift-card-help {
+    color: #606a76;
+    font-size: 14px;
+}
+
+.ictech-gift-card-date {
+    max-width: 260px;
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    input {
+        width: 100%;
+        border: 1px solid #b8c0cc;
+        padding: 9px 12px;
+        background: #f8f8f8;
+    }
+}
+
+.ictech-gift-card-template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+}
+
+.ictech-gift-card-template {
+    position: relative;
+    min-height: 132px;
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: #eef2f6;
+    cursor: pointer;
+
+    img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1.66;
+        object-fit: cover;
+    }
+
+    &.is-selected {
+        border-color: #10b981;
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 42px;
+            height: 42px;
+            border: 3px solid #10b981;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, .9);
+        }
+    }
+}
+
+.ictech-gift-card-template__overlay {
+    position: absolute;
+    inset: 10px;
+    pointer-events: none;
+
+    b,
+    em,
+    small {
+        position: absolute;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+    }
+
+    b {
+        top: 0;
+        right: 0;
+        font-size: 24px;
+    }
+
+    em {
+        right: 0;
+        bottom: 18px;
+        font-style: normal;
+    }
+
+    small {
+        right: 0;
+        bottom: 0;
+    }
+}
+
+.ictech-gift-card-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 28px;
+}
+
+// Preview modal
+.ictech-gift-card-preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &[hidden] { display: none; }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, .6);
+        cursor: pointer;
+    }
+
+    &__content {
+        position: relative;
+        z-index: 1;
+        width: 90%;
+        max-width: 680px;
+        max-height: 90vh;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__close {
+        position: absolute;
+        top: 10px;
+        right: 14px;
+        background: none;
+        border: none;
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 2;
+        color: #333;
+    }
+
+    &__frame {
+        width: 100%;
+        height: 80vh;
+        border: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .ictech-gift-card-page {
+        padding: 16px;
+    }
+
+    .ictech-gift-card-template-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ictech-gift-card-actions {
+        flex-direction: column;
+    }
+}

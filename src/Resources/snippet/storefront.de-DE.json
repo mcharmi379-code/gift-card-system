@@ -18,6 +18,29 @@
             "used": "Verwendet",
             "expired": "Abgelaufen",
             "revoked": "Widerrufen"
+        },
+        "page": {
+            "title": "Geschenkkarten",
+            "intro": "Überraschen Sie Ihre Lieben mit wenigen Klicks. Senden Sie eine personalisierte Geschenkkarte per E-Mail an die Adresse Ihrer Wahl.",
+            "deliveryMethod": "Versandmethode wählen",
+            "deliveryMethodLabel": "Versandmethode",
+            "deliveryPrint": "Zuhause ausdrucken",
+            "deliveryEmail": "Per E-Mail senden",
+            "selectTemplate": "Vorlage auswählen",
+            "templateCategories": "Geschenkkarten-Vorlagenkategorien",
+            "noTemplates": "Derzeit sind keine Geschenkkartenvorlagen verfügbar.",
+            "giftCardInfo": "Geschenkkarten-Informationen",
+            "amountLabel": "Betrag",
+            "templateLabel": "Vorlage",
+            "pictureLabel": "Bild",
+            "senderNameLabel": "Von: Ihr Name",
+            "recipientNameLabel": "An: Empfängername",
+            "mailRecipientLabel": "An: E-Mail",
+            "messageLabel": "Ihre Nachricht eingeben",
+            "dateSendLabel": "Sendedatum",
+            "emailHelp": "Die Geschenkkarte wird per E-Mail gesendet, sobald Ihre Zahlung bestätigt wurde. Sie können auch ein späteres Sendedatum wählen.",
+            "previewButton": "Vorschau",
+            "addToCart": "In den Warenkorb"
         }
     }
 }
