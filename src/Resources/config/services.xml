@@ -1,7 +1,6 @@
 <?xml version="1.0" ?>
 <container xmlns="http://symfony.com/schema/dic/services"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
 
         <!-- ===== Entity Definitions ===== -->
@@ -16,6 +15,22 @@
             <call method="setContainer">
                 <argument type="service" id="service_container"/>
             </call>
+        </service>
+
+        <service id="ICTECHGiftCard\Storefront\Controller\GiftCardPageController" public="true">
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+            <argument type="service" id="ictech_gift_card.repository"/>
+            <argument type="service" id="ictech_gift_card_template.repository"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+
+        <service id="ICTECHGiftCard\Service\GiftCardNavigationInstaller" public="true">
+            <argument type="service" id="category.repository"/>
+            <argument type="service" id="sales_channel.repository"/>
+        </service>
         <service id="ICTECHGiftCard\Core\Content\GiftCard\GiftCardDefinition">
             <tag name="shopware.entity.definition" entity="ictech_gift_card"/>
         </service>
