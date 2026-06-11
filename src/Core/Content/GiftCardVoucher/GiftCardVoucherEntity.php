@@ -46,11 +46,11 @@ class GiftCardVoucherEntity extends Entity
 
     protected ?CurrencyEntity $currency = null;
 
-    protected string $senderName = '';
+    protected ?string $senderName = null;
 
-    protected string $recipientName = '';
+    protected ?string $recipientName = null;
 
-    protected string $recipientEmail = '';
+    protected ?string $recipientEmail = null;
 
     protected ?string $personalMessage = null;
 
@@ -188,32 +188,32 @@ class GiftCardVoucherEntity extends Entity
         $this->currency = $currency;
     }
 
-    public function getSenderName(): string
+    public function getSenderName(): ?string
     {
         return $this->senderName;
     }
 
-    public function setSenderName(string $senderName): void
+    public function setSenderName(?string $senderName): void
     {
         $this->senderName = $senderName;
     }
 
-    public function getRecipientName(): string
+    public function getRecipientName(): ?string
     {
         return $this->recipientName;
     }
 
-    public function setRecipientName(string $recipientName): void
+    public function setRecipientName(?string $recipientName): void
     {
         $this->recipientName = $recipientName;
     }
 
-    public function getRecipientEmail(): string
+    public function getRecipientEmail(): ?string
     {
         return $this->recipientEmail;
     }
 
-    public function setRecipientEmail(string $recipientEmail): void
+    public function setRecipientEmail(?string $recipientEmail): void
     {
         $this->recipientEmail = $recipientEmail;
     }

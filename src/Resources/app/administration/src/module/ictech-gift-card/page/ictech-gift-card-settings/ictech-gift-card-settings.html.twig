@@ -9,6 +9,12 @@
 
     {% block ictech_gift_card_settings_smart_bar_actions %}
     <template #smart-bar-actions>
+        <sw-button
+            :isLoading="isPreviewing"
+            @click="onPreviewPdf"
+        >
+            {{ $tc('ictech-gift-card.settings.previewPdf') }}
+        </sw-button>
         <sw-button-process
             :isLoading="isLoading"
             :processSuccess="isSaveSuccessful"

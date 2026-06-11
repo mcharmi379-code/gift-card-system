@@ -149,6 +149,8 @@
             "title": "Gift Card Settings",
             "messageSaveSuccess": "Settings saved successfully.",
             "messageSaveError": "An error occurred while saving the settings.",
+            "previewPdf": "Preview PDF",
+            "messagePdfError": "An error occurred while generating the PDF preview.",
             "variablesTitle": "Available PDF & Email Variables",
             "variablesDescription": "Use these variables in your PDF content and email templates. They will be replaced with real data when the gift card is generated.",
             "variables": {

@@ -17,6 +17,7 @@ export default {
         return {
             isLoading: false,
             isSaveSuccessful: false,
+            isPreviewing: false,
             pdfVariables: [
                 { key: '{{card_lastname}}', label: this.$tc('ictech-gift-card.settings.variables.cardLastname') },
                 { key: '{{card_firstname}}', label: this.$tc('ictech-gift-card.settings.variables.cardFirstname') },
@@ -57,6 +58,31 @@ export default {
 
         onSaveFinish() {
             this.isSaveSuccessful = false;
+        },
+
+        onPreviewPdf() {
+            this.isPreviewing = true;
+            const salesChannelId = this.$refs.systemConfig?.currentSalesChannelId || null;
+            const query = salesChannelId ? `?salesChannelId=${salesChannelId}` : '';
+            const { apiPath, authToken } = Shopware.Context.api;
+            const url = `${apiPath}/ictech-gift-card/preview-pdf${query}`;
+
+            fetch(url, { headers: { Authorization: `Bearer ${authToken?.access}` } })
+                .then((res) => {
+                    if (!res.ok) throw new Error('Failed to generate PDF');
+                    return res.blob();
+                })
+                .then((blob) => {
+                    window.open(URL.createObjectURL(blob), '_blank');
+                })
+                .catch(() => {
+                    this.createNotificationError({
+                        message: this.$tc('ictech-gift-card.settings.messagePdfError'),
+                    });
+                })
+                .finally(() => {
+                    this.isPreviewing = false;
+                });
         },
     },
 };

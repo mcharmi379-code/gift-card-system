@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Administration\Controller;
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,8 +18,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route(defaults: ['_routeScope' => ['api']])]
 final class DashboardController
 {
-    public function __construct(private readonly Connection $connection)
-    {
+    public function __construct(
+        private readonly Connection $connection,
+        private readonly SystemConfigService $systemConfigService,
+    ) {
     }
 
     #[Route(
@@ -30,22 +35,29 @@ final class DashboardController
             "SELECT status, COUNT(*) FROM ictech_gift_card_voucher GROUP BY status"
         );
 
-        $total = (int) $this->connection->fetchOne("SELECT COUNT(*) FROM ictech_gift_card_voucher");
+        $rawTotal = $this->connection->fetchOne("SELECT COUNT(*) FROM ictech_gift_card_voucher");
+        $total = is_numeric($rawTotal) ? (int) $rawTotal : 0;
 
-        $totalSold = (float) $this->connection->fetchOne(
+        $rawTotalSold = $this->connection->fetchOne(
             "SELECT COALESCE(SUM(original_amount), 0) FROM ictech_gift_card_voucher WHERE status != 'waiting_valid_order'"
         );
+        $totalSold = is_numeric($rawTotalSold) ? (float) $rawTotalSold : 0.0;
 
-        $totalRedeemed = (float) $this->connection->fetchOne(
+        $rawTotalRedeemed = $this->connection->fetchOne(
             "SELECT COALESCE(SUM(amount_used), 0) FROM ictech_gift_card_transaction"
         );
+        $totalRedeemed = is_numeric($rawTotalRedeemed) ? (float) $rawTotalRedeemed : 0.0;
 
         $now = (new \DateTimeImmutable())->format('Y-m-d');
 
-        $expired = (int) $this->connection->fetchOne(
+        $rawExpired = $this->connection->fetchOne(
             "SELECT COUNT(*) FROM ictech_gift_card_voucher WHERE expires_at < :now AND status NOT IN ('used','canceled')",
             ['now' => $now]
         );
+        $expired = is_numeric($rawExpired) ? (int) $rawExpired : 0;
+
+        $rawPending = $rows['waiting_valid_order'] ?? 0;
+        $pending = is_numeric($rawPending) ? (int) $rawPending : 0;
 
         return new JsonResponse([
             'total'          => $total,
@@ -53,7 +65,7 @@ final class DashboardController
             'totalRedeemed'  => $totalRedeemed,
             'byStatus'       => $rows,
             'expired'        => $expired,
-            'pending'        => (int) ($rows['waiting_valid_order'] ?? 0),
+            'pending'        => $pending,
         ]);
     }
 
@@ -165,6 +177,52 @@ final class DashboardController
         );
     }
 
+    #[Route(
+        path: '/api/ictech-gift-card/preview-pdf',
+        name: 'api.ictech_gift_card.preview_pdf',
+        methods: ['GET']
+    )]
+    public function previewPdf(Request $request, Context $context): Response
+    {
+        $salesChannelId = $request->query->get('salesChannelId') ?: null;
+
+        $html = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
+
+        if (empty($html)) {
+            return new Response('No PDF content configured.', Response::HTTP_BAD_REQUEST);
+        }
+
+        $sampleImageHtml = '<img src="https://placehold.co/300x192/cccccc/333333?text=Gift+Card" style="max-width:300px;height:auto;" />';
+
+        $replacements = [
+            '{{card_lastname}}'  => 'Doe',
+            '{{card_firstname}}' => 'John',
+            '{{card_price}}'     => '50.00 €',
+            '{{card_from}}'      => 'Jane Doe',
+            '{{card_code}}'      => 'PREVIEW-1234-5678',
+            '{{card_message}}'   => 'Happy Birthday! Enjoy your gift.',
+            '{{card_image}}'     => $sampleImageHtml,
+            '{{shop_name}}'      => 'My Shop',
+            '{{validity_date}}'  => date('d.m.Y', strtotime('+1 year')),
+        ];
+
+        $html = str_replace(array_keys($replacements), array_values($replacements), $html);
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml('<html><body>' . $html . '</body></html>');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return new Response($dompdf->output(), Response::HTTP_OK, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
+        ]);
+    }
+
     /**
      * @param list<string> $headers
      * @param list<array<string, mixed>> $rows
@@ -179,9 +237,11 @@ final class DashboardController
             }
             fputcsv($handle, $headers);
             foreach ($rows as $row) {
+                /** @var list<bool|float|int|string|null> $line */
                 $line = [];
                 foreach ($keys as $key) {
-                    $line[] = $row[$key] ?? '';
+                    $value = $row[$key] ?? null;
+                    $line[] = is_scalar($value) || $value === null ? $value : null;
                 }
                 fputcsv($handle, $line);
             }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Storefront\Controller;
 
-use ICTECHGiftCard\Core\Content\GiftCard\GiftCardVoucherDefinition;
+use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
 use Shopware\Core\Checkout\Customer\CustomerEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -20,6 +20,12 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 final class GiftCardAccountController extends StorefrontController
 {
+    /**
+     * @param EntityRepository<GiftCardVoucherCollection> $giftCardVoucherRepository
+     */
+    /**
+     * @param EntityRepository<GiftCardVoucherCollection> $giftCardVoucherRepository
+     */
     public function __construct(
         private readonly GenericPageLoader $genericPageLoader,
         private readonly EntityRepository $giftCardVoucherRepository,

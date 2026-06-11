@@ -5,17 +5,6 @@
     <services>
 
         <!-- ===== Entity Definitions ===== -->
-        <service id="ICTECHGiftCard\Core\Content\GiftCard\GiftCardVoucherDefinition">
-            <tag name="shopware.entity.definition" entity="ictech_gift_card_voucher"/>
-        </service>
-
-        <!-- ===== Storefront Controllers ===== -->
-        <service id="ICTECHGiftCard\Storefront\Controller\GiftCardAccountController" public="true">
-            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
-            <argument type="service" id="ictech_gift_card_voucher.repository"/>
-            <call method="setContainer">
-                <argument type="service" id="service_container"/>
-            </call>
         <service id="ICTECHGiftCard\Core\Content\GiftCard\GiftCardDefinition">
             <tag name="shopware.entity.definition" entity="ictech_gift_card"/>
         </service>
@@ -61,10 +50,50 @@
             <tag name="shopware.entity.extension"/>
         </service>
 
-        <!-- ===== Controllers ===== -->
+        <!-- ===== Storefront Controllers ===== -->
+        <service id="ICTECHGiftCard\Storefront\Controller\GiftCardAccountController" public="true">
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+            <argument type="service" id="ictech_gift_card_voucher.repository"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+
+        <!-- ===== Administration Controllers ===== -->
         <service id="ICTECHGiftCard\Administration\Controller\DashboardController">
             <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <tag name="controller.service_arguments"/>
+        </service>
+
+        <!-- ===== Cart Processor ===== -->
+        <service id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor">
+            <argument type="service" id="ictech_gift_card_voucher.repository"/>
+            <argument type="service" id="ictech_gift_card_transaction.repository"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator"/>
+            <tag name="shopware.cart.processor" priority="3000"/>
+        </service>
+
+        <!-- ===== Email Service ===== -->
+        <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService">
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="mail_template.repository"/>
+            <argument type="service" id="ictech_gift_card_voucher.repository"/>
+            <argument type="service" id="sales_channel.repository"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+
+        <!-- ===== Scheduled Task ===== -->
+        <service id="ICTECHGiftCard\Core\ScheduledTask\GiftCardEmailTask">
+            <tag name="shopware.scheduled.task"/>
+        </service>
+
+        <service id="ICTECHGiftCard\Core\ScheduledTask\GiftCardEmailTaskHandler">
+            <argument type="service" id="scheduled_task.repository"/>
+            <argument type="service" id="monolog.logger"/>
+            <argument type="service" id="ictech_gift_card_voucher.repository"/>
+            <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService"/>
+            <tag name="messenger.message_handler"/>
         </service>
 
         <!-- ===== Subscribers ===== -->
@@ -72,8 +101,16 @@
             <argument type="service" id="ictech_gift_card.repository"/>
             <argument type="service" id="product.repository"/>
             <argument type="service" id="tax.repository"/>
-            <argument type="service" id="delivery_time.repository"/>
             <argument type="service" id="sales_channel.repository"/>
+            <argument type="service" id="ictech_gift_card_voucher.repository"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="ICTECHGiftCard\Core\Subscriber\GiftCardOrderSubscriber">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="ictech_gift_card_voucher.repository"/>
+            <argument type="service" id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor"/>
+            <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 

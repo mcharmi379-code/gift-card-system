@@ -153,6 +153,15 @@
                     <template #column-createdAt="{ item }">
                         {{ formatDate(item.createdAt) }}
                     </template>
+                    <template #pagination>
+                        <sw-pagination
+                            :page="purchasedPage"
+                            :limit="purchasedLimit"
+                            :total="purchasedTotal"
+                            :total-visible="7"
+                            @page-change="onPurchasedPageChange"
+                        />
+                    </template>
                 </sw-data-grid>
                 {% endblock %}
             </sw-card>
@@ -217,6 +226,15 @@
                     </template>
                     <template #column-createdAt="{ item }">
                         {{ formatDate(item.createdAt) }}
+                    </template>
+                    <template #pagination>
+                        <sw-pagination
+                            :page="usedPage"
+                            :limit="usedLimit"
+                            :total="usedTotal"
+                            :total-visible="7"
+                            @page-change="onUsedPageChange"
+                        />
                     </template>
                 </sw-data-grid>
                 {% endblock %}

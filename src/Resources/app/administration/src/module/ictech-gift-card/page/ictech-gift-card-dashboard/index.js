@@ -70,7 +70,7 @@ export default {
 
         usedCriteria() {
             const criteria = new Criteria(this.usedPage, this.usedLimit);
-            criteria.addSorting(Criteria.sort('createdAt', 'DESC'));
+            criteria.addSorting(Criteria.sort('createdAt', 'DESC', true));
             criteria.addAssociation('voucher');
             criteria.addAssociation('order');
             criteria.addAssociation('customer');

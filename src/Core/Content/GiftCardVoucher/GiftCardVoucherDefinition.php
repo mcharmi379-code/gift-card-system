@@ -74,13 +74,13 @@ class GiftCardVoucherDefinition extends EntityDefinition
             (new ManyToOneAssociationField('currency', 'currency_id', CurrencyDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new StringField('sender_name', 'senderName'))->addFlags(new ApiAware()),
-            (new StringField('recipient_name', 'recipientName'))->addFlags(new Required(), new ApiAware()),
-            (new EmailField('recipient_email', 'recipientEmail'))->addFlags(new Required(), new ApiAware()),
+            (new StringField('recipient_name', 'recipientName'))->addFlags(new ApiAware()),
+            (new EmailField('recipient_email', 'recipientEmail'))->addFlags(new ApiAware()),
             (new LongTextField('personal_message', 'personalMessage'))->addFlags(new ApiAware()),
 
-            (new DateField('scheduled_send_date', 'scheduledSendDate'))->addFlags(new Required(), new ApiAware()),
+            (new DateField('scheduled_send_date', 'scheduledSendDate'))->addFlags(new ApiAware()),
             (new DateTimeField('sent_at', 'sentAt'))->addFlags(new ApiAware()),
-            (new DateField('expires_at', 'expiresAt'))->addFlags(new Required(), new ApiAware()),
+            (new DateField('expires_at', 'expiresAt'))->addFlags(new ApiAware()),
 
             (new StringField('used_in_order_number', 'usedInOrderNumber'))->addFlags(new ApiAware()),
 

@@ -149,6 +149,8 @@
             "title": "Geschenkkarten-Einstellungen",
             "messageSaveSuccess": "Einstellungen erfolgreich gespeichert.",
             "messageSaveError": "Beim Speichern der Einstellungen ist ein Fehler aufgetreten.",
+            "previewPdf": "PDF-Vorschau",
+            "messagePdfError": "Beim Erstellen der PDF-Vorschau ist ein Fehler aufgetreten.",
             "variablesTitle": "Verf\u00fcgbare PDF- & E-Mail-Variablen",
             "variablesDescription": "Verwenden Sie diese Variablen in Ihren PDF-Inhalten und E-Mail-Vorlagen. Sie werden beim Generieren der Geschenkkarte durch echte Daten ersetzt.",
             "variables": {

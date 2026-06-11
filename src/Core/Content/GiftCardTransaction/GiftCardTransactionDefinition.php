@@ -8,6 +8,7 @@ use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherDefinition;
 use Shopware\Core\Checkout\Customer\CustomerDefinition;
 use Shopware\Core\Checkout\Order\OrderDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\DateTimeField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\ApiAware;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
@@ -55,6 +56,9 @@ class GiftCardTransactionDefinition extends EntityDefinition
             (new FloatField('amount_used', 'amountUsed'))->addFlags(new Required(), new ApiAware()),
             (new FloatField('balance_before', 'balanceBefore'))->addFlags(new Required(), new ApiAware()),
             (new FloatField('balance_after', 'balanceAfter'))->addFlags(new Required(), new ApiAware()),
+
+            (new DateTimeField('created_at', 'createdAt'))->addFlags(new ApiAware()),
+            (new DateTimeField('updated_at', 'updatedAt'))->addFlags(new ApiAware()),
         ]);
     }
 }
