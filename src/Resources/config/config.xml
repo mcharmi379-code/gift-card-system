@@ -50,69 +50,6 @@
             <helpText lang="de-DE">Höhe des großen Kartenbildes im Frontend.</helpText>
             <defaultValue>518</defaultValue>
         </input-field>
-
-        <input-field type="text">
-            <name>storefrontTemplateLabel</name>
-            <label>Template label</label>
-            <label lang="de-DE">Vorlagen-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary, as well as on the invoice.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht und auf der Rechnung angezeigt.</helpText>
-            <defaultValue>Template</defaultValue>
-        </input-field>
-
-        <input-field type="text">
-            <name>storefrontPictureLabel</name>
-            <label>Picture label</label>
-            <label lang="de-DE">Bild-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht angezeigt.</helpText>
-            <defaultValue>Picture</defaultValue>
-        </input-field>
-
-        <input-field type="text">
-            <name>storefrontSenderNameLabel</name>
-            <label>Sender name label</label>
-            <label lang="de-DE">Absendername-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary, as well as on the invoice.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht und auf der Rechnung angezeigt.</helpText>
-            <defaultValue>Sender name</defaultValue>
-        </input-field>
-
-        <input-field type="text">
-            <name>storefrontRecipientNameLabel</name>
-            <label>Recipient name label</label>
-            <label lang="de-DE">Empfängername-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary, as well as on the invoice.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht und auf der Rechnung angezeigt.</helpText>
-            <defaultValue>Recipient name</defaultValue>
-        </input-field>
-
-        <input-field type="text">
-            <name>storefrontMailRecipientLabel</name>
-            <label>Mail recipient label</label>
-            <label lang="de-DE">E-Mail-Empfänger-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary, as well as on the invoice.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht und auf der Rechnung angezeigt.</helpText>
-            <defaultValue>Email recipient</defaultValue>
-        </input-field>
-
-        <input-field type="text">
-            <name>storefrontMessageLabel</name>
-            <label>Message label</label>
-            <label lang="de-DE">Nachricht-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary, as well as on the invoice.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht und auf der Rechnung angezeigt.</helpText>
-            <defaultValue>Message</defaultValue>
-        </input-field>
-
-        <input-field type="text">
-            <name>storefrontDateSendLabel</name>
-            <label>Date send label</label>
-            <label lang="de-DE">Versanddatum-Bezeichnung</label>
-            <helpText>This will be displayed in the cart summary, as well as on the invoice.</helpText>
-            <helpText lang="de-DE">Wird in der Warenkorbübersicht und auf der Rechnung angezeigt.</helpText>
-            <defaultValue>Date send</defaultValue>
-        </input-field>
     </card>
 
     <!-- Email Configuration -->
