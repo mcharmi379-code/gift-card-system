@@ -1,0 +1,183 @@
+{
+    "ictech-gift-card": {
+        "general": {
+            "mainMenuItemGeneral": "Gift Cards",
+            "description": "Manage gift card denominations"
+        },
+        "navigation": {
+            "dashboard": "Dashboard",
+            "order": "Order",
+            "product": "Product",
+            "template": "Template",
+            "settings": "Settings"
+        },
+        "dashboard": {
+            "title": "Dashboard",
+            "statsTitle": "Overview",
+            "statTotalSold": "Total Sold",
+            "statTotalRedeemed": "Total Redeemed",
+            "statPending": "Pending",
+            "statExpired": "Expired",
+            "statTotal": "Total Vouchers",
+            "purchasedTitle": "Gift Cards Purchased",
+            "usedTitle": "Gift Cards Used",
+            "filterFrom": "From",
+            "filterTo": "To",
+            "exportCsv": "Export CSV",
+            "columnCode": "Code",
+            "columnAmount": "Amount",
+            "columnBalance": "Balance",
+            "columnStatus": "Status",
+            "columnRecipient": "Recipient",
+            "columnOrder": "Order",
+            "columnDate": "Date",
+            "columnAmountUsed": "Amount Used",
+            "columnBalanceBefore": "Balance Before",
+            "columnBalanceAfter": "Balance After"
+        },
+        "list": {
+            "textTitle": "Gift Cards",
+            "placeholderSearchBar": "Search gift cards...",
+            "buttonAdd": "Add gift card",
+            "columnMedia": "Image",
+            "columnName": "Name",
+            "columnAmount": "Amount",
+            "columnCodePrefix": "Code prefix",
+            "columnValidityDays": "Validity (days)",
+            "columnQuantityIssued": "Issued",
+            "columnActive": "Active",
+            "emptyTitle": "No gift cards yet",
+            "emptySubline": "Create your first gift card denomination to get started.",
+            "titleSidebarRefresh": "Refresh list"
+        },
+        "detail": {
+            "titleCreate": "New gift card",
+            "titleEdit": "Edit gift card",
+            "cardTitleGeneral": "General",
+            "cardTitleSalesChannel": "Availability",
+            "labelName": "Name",
+            "placeholderName": "e.g. €25 Gift Card",
+            "labelAmount": "Amount (€)",
+            "placeholderAmount": "0.00",
+            "labelCodePrefix": "Voucher code prefix",
+            "placeholderCodePrefix": "e.g. GC-",
+            "labelValidityDays": "Validity period (days)",
+            "placeholderValidityDays": "365",
+            "labelQuantity": "Available quantity (leave empty for unlimited)",
+            "placeholderQuantity": "Unlimited",
+            "labelActive": "Active",
+            "labelSalesChannel": "Restrict to sales channel",
+            "placeholderSalesChannel": "All sales channels",
+            "cardTitleTemplate": "Template",
+            "labelTemplate": "Gift Card Template",
+            "placeholderTemplate": "Select a template",
+            "messageSaveSuccess": "Gift card saved successfully.",
+            "messageSaveError": "An error occurred while saving the gift card."
+        },
+        "template": {
+            "list": {
+                "textTitle": "Gift Card Templates",
+                "placeholderSearchBar": "Search gift card templates...",
+                "buttonAdd": "Add template",
+                "columnImage": "Image",
+                "columnName": "Name",
+                "columnTag": "Tag",
+                "columnActive": "Status",
+                "emptyTitle": "No templates yet",
+                "emptySubline": "Create your first gift card template to get started."
+            },
+            "detail": {
+                "titleCreate": "New gift card template",
+                "titleEdit": "Edit gift card template",
+                "cardTitle": "Gift Card Template",
+                "tabInformation": "Information",
+                "tabCustomize": "Customize",
+                "labelName": "Name",
+                "placeholderName": "e.g. Happy Birthday",
+                "labelTag": "Tag",
+                "placeholderTag": "e.g. Birthday",
+                "labelActive": "Active",
+                "labelImage": "Template image",
+                "labelUseImage": "Use as template image",
+                "cardDataVariables": "Data variables",
+                "cardCustomText": "Customizable text",
+                "cardCustomColor": "Customizable color",
+                "labelPrice": "Price",
+                "labelDiscountCode": "Discount code",
+                "labelPdfOnly": "PDF only image",
+                "messageSaveSuccess": "Gift card template saved successfully.",
+                "messageSaveError": "An error occurred while saving the gift card template."
+            }
+        },
+        "order": {
+            "list": {
+                "title": "Gift Card Orders",
+                "placeholderSearch": "Search by code, recipient, customer...",
+                "statusLegendTitle": "Meaning of status",
+                "filterStatus": "Filter by status",
+                "filterAll": "All statuses",
+                "columnOrder": "Order",
+                "columnTemplate": "Template",
+                "columnPrice": "Price",
+                "columnRecipient": "Recipient",
+                "columnCustomer": "Customer",
+                "columnCode": "Code",
+                "columnStatus": "Status",
+                "columnBalance": "Remaining",
+                "columnDate": "Date",
+                "partial": "partial",
+                "actionViewOrder": "View order",
+                "messageDeleted": "Gift card order deleted successfully.",
+                "confirmDelete": "Do you really want to delete the gift card with code \"{code}\"?",
+                "noOrderLinked": "No order is linked to this gift card yet.",
+                "emptyTitle": "No gift card orders yet",
+                "emptySubline": "Gift card orders will appear here once customers purchase gift cards."
+            },
+            "status": {
+                "waitingValidOrder": "Waiting valid order",
+                "waitingValidOrderDesc": "The order is awaiting payment, so the card is not sent and the corresponding discount code is not generated.",
+                "unused": "Unused",
+                "unusedDesc": "The gift card has been purchased, however it has not been used yet.",
+                "used": "Used",
+                "usedDesc": "The gift card has been used, you can view the associated order.",
+                "usedInOrder": "Used in order #{number}",
+                "canceled": "Canceled",
+                "canceledDesc": "The gift card has been canceled, for example related to an order cancellation or refund."
+            }
+        },
+        "settings": {
+            "title": "Gift Card Settings",
+            "messageSaveSuccess": "Settings saved successfully.",
+            "messageSaveError": "An error occurred while saving the settings.",
+            "previewPdf": "Preview PDF",
+            "messagePdfError": "An error occurred while generating the PDF preview.",
+            "variablesTitle": "Available PDF & Email Variables",
+            "variablesDescription": "Use these variables in your PDF content and email templates. They will be replaced with real data when the gift card is generated.",
+            "variables": {
+                "cardLastname": "Recipient last name",
+                "cardFirstname": "Recipient first name",
+                "cardPrice": "Gift card value / price",
+                "cardFrom": "Sender name",
+                "cardCode": "Voucher code",
+                "cardMessage": "Personal message",
+                "cardImage": "Card image (HTML img tag)",
+                "shopName": "Shop name",
+                "validityDate": "Validity / expiry date"
+            }
+        },
+        "placeholder": {
+            "order": {
+                "title": "Gift Card Orders",
+                "subline": "Order management will be added after the voucher order data model is finalized."
+            },
+            "template": {
+                "title": "Gift Card Templates",
+                "subline": "Template management will be added when the template entity and media rules are ready."
+            },
+            "settings": {
+                "title": "Gift Card Settings",
+                "subline": "Global gift card settings will be added once the configuration scope is defined."
+            }
+        }
+    }
+}

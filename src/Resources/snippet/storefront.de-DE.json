@@ -1,0 +1,23 @@
+{
+    "ictech-gift-card": {
+        "account": {
+            "menuLabel": "Geschenkkarten",
+            "pageTitle": "Meine Geschenkkarten",
+            "columnCode": "Code",
+            "columnRecipient": "Empfänger",
+            "columnOriginalAmount": "Ursprünglicher Betrag",
+            "columnRemainingBalance": "Restguthaben",
+            "columnStatus": "Status",
+            "columnExpiresAt": "Läuft ab",
+            "noGiftCards": "Sie haben noch keine Geschenkkarten."
+        },
+        "status": {
+            "pending": "Ausstehend",
+            "sent": "Gesendet",
+            "partially_used": "Teilweise verwendet",
+            "used": "Verwendet",
+            "expired": "Abgelaufen",
+            "revoked": "Widerrufen"
+        }
+    }
+}

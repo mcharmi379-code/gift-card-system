@@ -1,0 +1,67 @@
+{% block ictech_gift_card_settings %}
+<sw-page class="ictech-gift-card-settings">
+
+    {% block ictech_gift_card_settings_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>{{ $tc('ictech-gift-card.settings.title') }}</h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_settings_smart_bar_actions %}
+    <template #smart-bar-actions>
+        <sw-button
+            :isLoading="isPreviewing"
+            @click="onPreviewPdf"
+        >
+            {{ $tc('ictech-gift-card.settings.previewPdf') }}
+        </sw-button>
+        <sw-button-process
+            :isLoading="isLoading"
+            :processSuccess="isSaveSuccessful"
+            variant="primary"
+            @process-finish="onSaveFinish"
+            @click="onSave"
+        >
+            {{ $tc('global.default.save') }}
+        </sw-button-process>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_settings_content %}
+    <template #content>
+        <sw-card-view>
+
+            {% block ictech_gift_card_settings_variables_card %}
+            <sw-card
+                position-identifier="ictech-gift-card-settings-variables"
+                :title="$tc('ictech-gift-card.settings.variablesTitle')"
+            >
+                <p>{{ $tc('ictech-gift-card.settings.variablesDescription') }}</p>
+                <sw-container columns="repeat(auto-fill, minmax(300px, 1fr))" gap="8px">
+                    <sw-label
+                        v-for="variable in pdfVariables"
+                        :key="variable.key"
+                        appearance="pill"
+                        size="small"
+                    >
+                        <strong>{{ variable.key }}</strong>&nbsp;— {{ variable.label }}
+                    </sw-label>
+                </sw-container>
+            </sw-card>
+            {% endblock %}
+
+            {% block ictech_gift_card_settings_system_config %}
+            <sw-system-config
+                ref="systemConfig"
+                sales-channel-switchable
+                domain="ICTECHGiftCard.config"
+                @loading-changed="isLoading = $event"
+            />
+            {% endblock %}
+
+        </sw-card-view>
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}

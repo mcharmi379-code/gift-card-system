@@ -1,0 +1,23 @@
+{
+    "ictech-gift-card": {
+        "account": {
+            "menuLabel": "Gift Cards",
+            "pageTitle": "My Gift Cards",
+            "columnCode": "Code",
+            "columnRecipient": "Recipient",
+            "columnOriginalAmount": "Original Amount",
+            "columnRemainingBalance": "Remaining Balance",
+            "columnStatus": "Status",
+            "columnExpiresAt": "Expires",
+            "noGiftCards": "You have no gift cards yet."
+        },
+        "status": {
+            "pending": "Pending",
+            "sent": "Sent",
+            "partially_used": "Partially Used",
+            "used": "Used",
+            "expired": "Expired",
+            "revoked": "Revoked"
+        }
+    }
+}

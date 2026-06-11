@@ -1,0 +1,16 @@
+// ICTECHGiftCard - Storefront Styles
+
+.gift-card-code {
+    font-family: monospace;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.gift-card-status {
+    &--pending        { background-color: #6c757d; color: #fff; }
+    &--sent           { background-color: #0d6efd; color: #fff; }
+    &--partially_used { background-color: #fd7e14; color: #fff; }
+    &--used           { background-color: #198754; color: #fff; }
+    &--expired        { background-color: #dc3545; color: #fff; }
+    &--revoked        { background-color: #343a40; color: #fff; }
+}
