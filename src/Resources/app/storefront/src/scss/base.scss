@@ -278,3 +278,73 @@
         flex-direction: column;
     }
 }
+
+// Gift Card Redeem Option below promo code
+.js-offcanvas-cart-gift-card,
+.card-gift-card-redeem {
+    background: linear-gradient(135deg, #f8f9fa 0%, #eef2f5 100%);
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+
+    &:hover {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #f3fbf7 0%, #e6f6ef 100%);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+    }
+
+    label {
+        font-weight: 600;
+        color: #3b434b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+
+        .icon {
+            color: #10b981;
+            animation: pulse-gift 2s infinite ease-in-out;
+        }
+    }
+
+    .input-group {
+        margin-top: 6px;
+
+        .form-control {
+            border-color: #cbd5e1;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+
+            &:focus {
+                border-color: #10b981;
+                box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+            }
+        }
+
+        .btn {
+            border-color: #cbd5e1;
+            background-color: #fff;
+            color: #475569;
+            transition: all 0.2s ease;
+
+            &:hover {
+                background-color: #10b981;
+                border-color: #10b981;
+                color: #fff;
+            }
+        }
+    }
+}
+
+@keyframes pulse-gift {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+

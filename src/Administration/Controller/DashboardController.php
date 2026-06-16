@@ -184,7 +184,8 @@ final class DashboardController
     )]
     public function previewPdf(Request $request, Context $context): Response
     {
-        $salesChannelId = $request->query->get('salesChannelId') ?: null;
+        $salesChannelId = $request->query->get('salesChannelId');
+        $salesChannelId = \is_string($salesChannelId) && $salesChannelId !== '' ? $salesChannelId : null;
 
         $html = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
 

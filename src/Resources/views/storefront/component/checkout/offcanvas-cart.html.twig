@@ -1,0 +1,49 @@
+{% sw_extends '@Storefront/storefront/component/checkout/offcanvas-cart.html.twig' %}
+
+{% block component_offcanvas_cart_actions_promotion_form %}
+    {{ parent() }}
+
+    <div class="js-offcanvas-cart-gift-card mt-3">
+        <form action="{{ path('frontend.checkout.gift-card.add') }}"
+              class="offcanvas-cart-gift-card-form js-offcanvas-cart-add-promotion"
+              method="post">
+            {% block component_offcanvas_cart_actions_gift_card_redirect %}
+                <input type="hidden"
+                       name="redirectTo"
+                       value="frontend.cart.offcanvas">
+            {% endblock %}
+
+            {% block component_offcanvas_cart_actions_gift_card_label %}
+                <label class="mb-1" for="addGiftCardOffcanvasCartInput">
+                    {% sw_icon 'package-gift' style { size: 'sm', pack: 'default' } %}
+                    {{ 'ictech-gift-card.checkout.addGiftCardLabel'|trans|sw_sanitize }}
+                </label>
+            {% endblock %}
+
+            {% block component_offcanvas_cart_actions_gift_card_input_group %}
+                <div class="input-group">
+                    {% block component_offcanvas_cart_actions_gift_card_input %}
+                        <input type="text"
+                               name="code"
+                               class="form-control"
+                               placeholder="{{ 'ictech-gift-card.checkout.addGiftCardPlaceholder'|trans|striptags }}"
+                               id="addGiftCardOffcanvasCartInput"
+                               aria-label="{{ 'ictech-gift-card.checkout.addGiftCardLabel'|trans|striptags }}"
+                               aria-describedby="addGiftCardOffcanvasCart"
+                               required="required"
+                               aria-invalid="false">
+                    {% endblock %}
+
+                    {% block component_offcanvas_cart_actions_gift_card_submit %}
+                        <button class="btn btn-outline-secondary offcanvas-cart-gift-card-button"
+                                type="submit"
+                                id="addGiftCardOffcanvasCart"
+                                aria-labelledby="addGiftCardOffcanvasCartInput">
+                            {% sw_icon 'checkmark' %}
+                        </button>
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </form>
+    </div>
+{% endblock %}

@@ -4,9 +4,6 @@
     <services>
 
         <!-- ===== Entity Definitions ===== -->
-        <service id="ICTECHGiftCard\Core\Content\GiftCard\GiftCardVoucherDefinition">
-            <tag name="shopware.entity.definition" entity="ictech_gift_card_voucher"/>
-        </service>
 
         <!-- ===== Storefront Controllers ===== -->
         <service id="ICTECHGiftCard\Storefront\Controller\GiftCardAccountController" public="true">
@@ -76,9 +73,8 @@
             <tag name="shopware.entity.extension"/>
         </service>
 
-        <!-- ===== Storefront Controllers ===== -->
-        <service id="ICTECHGiftCard\Storefront\Controller\GiftCardAccountController" public="true">
-            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+        <service id="ICTECHGiftCard\Storefront\Controller\GiftCardCartController" public="true">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
             <argument type="service" id="ictech_gift_card_voucher.repository"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>

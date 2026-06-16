@@ -34,8 +34,8 @@
                                     <td>{{ voucher.originalAmount|currency }}</td>
                                     <td>{{ voucher.remainingBalance|currency }}</td>
                                     <td>
-                                        <span class="badge gift-card-status gift-card-status--{{ voucher.status }}">
-                                            {{ ('ictech-gift-card.status.' ~ voucher.status)|trans|sw_sanitize }}
+                                        <span class="badge gift-card-status gift-card-status--{{ voucher.status.value }}">
+                                            {{ ('ictech-gift-card.status.' ~ voucher.status.value)|trans|sw_sanitize }}
                                         </span>
                                     </td>
                                     <td>{{ voucher.expiresAt|format_date('short') }}</td>

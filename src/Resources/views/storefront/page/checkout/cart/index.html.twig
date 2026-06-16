@@ -1,0 +1,49 @@
+{% sw_extends '@Storefront/storefront/page/checkout/cart/index.html.twig' %}
+
+{% block page_checkout_cart_add_promotion %}
+    {{ parent() }}
+
+    <div class="card-gift-card-redeem mt-3">
+        <form action="{{ path('frontend.checkout.gift-card.add') }}"
+              class="cart-add-gift-card"
+              method="post">
+            {% block page_checkout_cart_add_gift_card_forward %}
+                <input type="hidden"
+                       name="redirectTo"
+                       value="frontend.checkout.cart.page">
+            {% endblock %}
+
+            {% block page_checkout_cart_add_gift_card_label %}
+                <label class="mb-1" for="addGiftCardInput">
+                    {% sw_icon 'package-gift' style { size: 'sm', pack: 'default' } %}
+                    {{ 'ictech-gift-card.checkout.addGiftCardLabel'|trans|sw_sanitize }}
+                </label>
+            {% endblock %}
+
+            {% block page_checkout_cart_add_gift_card_input_group %}
+                <div class="input-group checkout-aside-add-code">
+                    {% block page_checkout_cart_add_gift_card_input %}
+                        <input type="text"
+                               name="code"
+                               class="form-control"
+                               placeholder="{{ 'ictech-gift-card.checkout.addGiftCardPlaceholder'|trans|striptags }}"
+                               id="addGiftCardInput"
+                               aria-label="{{ 'ictech-gift-card.checkout.addGiftCardLabel'|trans|striptags }}"
+                               aria-describedby="addGiftCard"
+                               required="required"
+                               aria-invalid="false">
+                    {% endblock %}
+
+                    {% block page_checkout_cart_add_gift_card_submit %}
+                        <button class="btn btn-outline-secondary cart-add-gift-card-button"
+                                type="submit"
+                                aria-labelledby="addGiftCardInput"
+                                id="addGiftCard">
+                            {% sw_icon 'checkmark' %}
+                        </button>
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </form>
+    </div>
+{% endblock %}

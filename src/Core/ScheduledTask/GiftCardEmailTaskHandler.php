@@ -59,7 +59,7 @@ final class GiftCardEmailTaskHandler extends ScheduledTaskHandler
             try {
                 $this->emailService->sendForVoucher($voucher, $context);
             } catch (\Throwable $e) {
-                $this->exceptionLogger->error(
+                $this->exceptionLogger?->error(
                     \sprintf('GiftCard email failed for voucher %s: %s', $voucher->getId(), $e->getMessage()),
                     ['exception' => $e]
                 );

@@ -41,6 +41,13 @@
             "emailHelp": "Die Geschenkkarte wird per E-Mail gesendet, sobald Ihre Zahlung bestätigt wurde. Sie können auch ein späteres Sendedatum wählen.",
             "previewButton": "Vorschau",
             "addToCart": "In den Warenkorb"
+        },
+        "checkout": {
+            "addGiftCardLabel": "Geschenkkarte einlösen",
+            "addGiftCardPlaceholder": "Geschenkkartencode eingeben",
+            "invalidVoucherCode": "Ungültiger oder abgelaufener Geschenkkartencode.",
+            "voucherAlreadyInCart": "Dieser Geschenkkartencode befindet sich bereits im Warenkorb.",
+            "voucherAddedSuccess": "Geschenkkartencode erfolgreich angewendet."
         }
     }
 }

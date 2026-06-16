@@ -52,17 +52,18 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $customerId = $order->getOrderCustomer()?->getCustomerId() ?? '';
+        $customerId = \strtolower($order->getOrderCustomer()?->getCustomerId() ?? '');
         $orderNumber = $order->getOrderNumber() ?? '';
+        $orderId = \strtolower($order->getId());
 
         foreach ($lineItems as $lineItem) {
             if ($lineItem->getType() === LineItem::PRODUCT_LINE_ITEM_TYPE) {
-                $this->handleGiftCardPurchase($lineItem, $order->getId(), $context);
+                $this->handleGiftCardPurchase($lineItem, $orderId, $context);
                 continue;
             }
 
             if ($lineItem->getType() === GiftCardCartProcessor::LINE_ITEM_TYPE) {
-                $this->handleVoucherRedemption($lineItem, $order->getId(), $orderNumber, $customerId, $context);
+                $this->handleVoucherRedemption($lineItem, $orderId, $orderNumber, $customerId, $context);
             }
         }
     }

@@ -12,6 +12,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Shopware\Core\Framework\Uuid\Uuid;
+use Shopware\Core\System\SalesChannel\SalesChannelCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 
 final class GiftCardNavigationInstaller
@@ -20,8 +21,8 @@ final class GiftCardNavigationInstaller
     public const CATEGORY_URL = '/gift-card';
 
     /**
-     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $categoryRepository
-     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $salesChannelRepository
+     * @param EntityRepository<\Shopware\Core\Content\Category\CategoryCollection> $categoryRepository
+     * @param EntityRepository<\Shopware\Core\System\SalesChannel\SalesChannelCollection> $salesChannelRepository
      */
     public function __construct(
         private readonly EntityRepository $categoryRepository,
@@ -36,20 +37,28 @@ final class GiftCardNavigationInstaller
             $context
         )->first();
 
-        $domainCollection = $result?->get('domains');
+        if (!$result instanceof SalesChannelEntity) {
+            return self::CATEGORY_URL;
+        }
+
+        $domainCollection = $result->getDomains();
         if ($domainCollection === null || $domainCollection->count() === 0) {
             return self::CATEGORY_URL;
         }
 
         // Prefer the default language domain (no sub-path like /de)
         foreach ($domainCollection as $domain) {
-            $url = \rtrim((string) $domain->get('url'), '/');
-            if ($domain->get('languageId') === Defaults::LANGUAGE_SYSTEM) {
+            $url = \rtrim((string) $domain->getUrl(), '/');
+            if ($domain->getLanguageId() === Defaults::LANGUAGE_SYSTEM) {
                 return $url . self::CATEGORY_URL;
             }
         }
 
-        $url = \rtrim((string) $domainCollection->first()->get('url'), '/');
+        $firstDomain = $domainCollection->first();
+        if ($firstDomain === null) {
+            return self::CATEGORY_URL;
+        }
+        $url = \rtrim((string) $firstDomain->getUrl(), '/');
 
         return $url . self::CATEGORY_URL;
     }
@@ -66,8 +75,6 @@ final class GiftCardNavigationInstaller
             $context
         )->first();
 
-        $domainCollection = $result?->get('domains');
-
         // Always add system language fallback
         $defaultUrl = self::CATEGORY_URL;
         $translations = [
@@ -79,13 +86,18 @@ final class GiftCardNavigationInstaller
             ],
         ];
 
+        if (!$result instanceof SalesChannelEntity) {
+            return $translations;
+        }
+
+        $domainCollection = $result->getDomains();
         if ($domainCollection === null) {
             return $translations;
         }
 
         foreach ($domainCollection as $domain) {
-            $languageId = $domain->get('languageId');
-            $url = \rtrim((string) $domain->get('url'), '/') . self::CATEGORY_URL;
+            $languageId = $domain->getLanguageId();
+            $url = \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
 
             if ($languageId === Defaults::LANGUAGE_SYSTEM) {
                 $defaultUrl = $url;
@@ -110,8 +122,8 @@ final class GiftCardNavigationInstaller
         $salesChannels = $this->getStorefrontSalesChannels($context);
 
         foreach ($salesChannels as $salesChannel) {
-            $navigationCategoryId = $salesChannel->get('navigationCategoryId');
-            if (!\is_string($navigationCategoryId) || !Uuid::isValid($navigationCategoryId)) {
+            $navigationCategoryId = $salesChannel->getNavigationCategoryId();
+            if (!Uuid::isValid($navigationCategoryId)) {
                 continue;
             }
 
@@ -150,14 +162,17 @@ final class GiftCardNavigationInstaller
     }
 
     /**
-     * @return iterable<SalesChannelEntity>
+     * @return SalesChannelCollection
      */
-    private function getStorefrontSalesChannels(Context $context): iterable
+    private function getStorefrontSalesChannels(Context $context): SalesChannelCollection
     {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('typeId', Defaults::SALES_CHANNEL_TYPE_STOREFRONT));
 
-        return $this->salesChannelRepository->search($criteria, $context)->getEntities();
+        /** @var SalesChannelCollection $collection */
+        $collection = $this->salesChannelRepository->search($criteria, $context)->getEntities();
+
+        return $collection;
     }
 
     private function getLastChildCategoryId(string $parentId, string $ownCategoryId, Context $context): ?string

@@ -41,6 +41,13 @@
             "emailHelp": "The gift card will be sent by email as soon as your payment is confirmed. You can also choose a later sending date.",
             "previewButton": "Preview",
             "addToCart": "Add to cart"
+        },
+        "checkout": {
+            "addGiftCardLabel": "Redeem Gift Card",
+            "addGiftCardPlaceholder": "Enter gift card code",
+            "invalidVoucherCode": "Invalid or expired gift card code.",
+            "voucherAlreadyInCart": "This gift card code is already in the cart.",
+            "voucherAddedSuccess": "Gift card code applied successfully."
         }
     }
 }

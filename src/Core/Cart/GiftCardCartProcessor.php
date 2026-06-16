@@ -93,6 +93,17 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         string $customerId,
         Context $context,
     ): void {
+        $orderId = \strtolower($orderId);
+        $customerId = \strtolower($customerId);
+
+        error_log(sprintf(
+            "ICTECH_GC_LOG - persistRedemption: code=%s, amountUsed=%f, orderId=%s, customerId=%s",
+            $voucherCode,
+            $amountUsed,
+            $orderId,
+            $customerId
+        ));
+
         $voucher = $this->findValidVoucher(\strtoupper($voucherCode), $context);
 
         if ($voucher === null) {

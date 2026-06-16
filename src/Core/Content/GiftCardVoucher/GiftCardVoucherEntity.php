@@ -98,6 +98,16 @@ class GiftCardVoucherEntity extends Entity
         $this->orderId = $orderId;
     }
 
+    public function getOrderVersionId(): ?string
+    {
+        return $this->orderVersionId;
+    }
+
+    public function setOrderVersionId(?string $orderVersionId): void
+    {
+        $this->orderVersionId = $orderVersionId;
+    }
+
     public function getOrder(): ?OrderEntity
     {
         return $this->order;
