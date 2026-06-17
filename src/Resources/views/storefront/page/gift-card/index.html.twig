@@ -23,6 +23,7 @@
             <input type="hidden" name="lineItems[gift-card][stackable]" value="1">
             <input type="hidden" name="lineItems[gift-card][removable]" value="1">
             <input type="hidden" name="lineItems[gift-card][quantity]" value="1">
+
             <input type="hidden" name="lineItems[gift-card][payload]" data-gift-card-payload value="{}">
             <input type="hidden" name="giftCardTemplateId" data-gift-card-template-id value="">
 
@@ -44,7 +45,7 @@
                 <div data-gift-card-email-fields>
                     <div class="ictech-gift-card-field">
                         <label for="gift-card-email">{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}</label>
-                        <input id="gift-card-email" type="email" name="giftCardEmail" placeholder="{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}" data-gift-card-payload-field>
+                        <input id="gift-card-email" type="email" name="giftCardEmail" placeholder="{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}" data-gift-card-payload-field required>
                     </div>
 
                     <p class="ictech-gift-card-help">
@@ -59,6 +60,7 @@
                             name="giftCardSendDate"
                             min="{{ 'now'|date('Y-m-d') }}"
                             data-gift-card-payload-field
+                            required
                         >
                     </div>
                 </div>
@@ -135,17 +137,17 @@
 
                 <div class="ictech-gift-card-field">
                     <label for="gift-card-from">{{ 'ictech-gift-card.page.senderNameLabel'|trans }}</label>
-                    <input id="gift-card-from" type="text" name="giftCardSenderName" placeholder="{{ 'ictech-gift-card.page.senderNameLabel'|trans }}" data-gift-card-payload-field>
+                    <input id="gift-card-from" type="text" name="giftCardSenderName" placeholder="{{ 'ictech-gift-card.page.senderNameLabel'|trans }}" data-gift-card-payload-field required>
                 </div>
 
                 <div class="ictech-gift-card-field">
                     <label for="gift-card-recipient">{{ 'ictech-gift-card.page.recipientNameLabel'|trans }}</label>
-                    <input id="gift-card-recipient" type="text" name="giftCardRecipientName" placeholder="{{ 'ictech-gift-card.page.recipientNameLabel'|trans }}" data-gift-card-payload-field>
+                    <input id="gift-card-recipient" type="text" name="giftCardRecipientName" placeholder="{{ 'ictech-gift-card.page.recipientNameLabel'|trans }}" data-gift-card-payload-field required>
                 </div>
 
                 <div class="ictech-gift-card-field">
                     <label for="gift-card-message">{{ 'ictech-gift-card.page.messageLabel'|trans }}</label>
-                    <textarea id="gift-card-message" name="giftCardMessage" maxlength="200" rows="5" placeholder="{{ 'ictech-gift-card.page.messageLabel'|trans }}" data-gift-card-payload-field></textarea>
+                    <textarea id="gift-card-message" name="giftCardMessage" maxlength="200" rows="5" placeholder="{{ 'ictech-gift-card.page.messageLabel'|trans }}" data-gift-card-payload-field required></textarea>
                 </div>
 
                 <div class="ictech-gift-card-actions">

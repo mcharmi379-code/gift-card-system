@@ -103,6 +103,7 @@
             <argument type="service" id="ictech_gift_card_voucher.repository"/>
             <argument type="service" id="sales_channel.repository"/>
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="ictech_gift_card_template.repository"/>
         </service>
 
         <!-- ===== Scheduled Task ===== -->

@@ -99,6 +99,13 @@
         <title>PDF Configuration</title>
         <title lang="de-DE">PDF-Konfiguration</title>
 
+        <input-field type="bool">
+            <name>enablePdf</name>
+            <label>Enable PDF attachment</label>
+            <label lang="de-DE">PDF-Anhang aktivieren</label>
+            <defaultValue>true</defaultValue>
+        </input-field>
+
         <input-field type="text">
             <name>pdfPrefix</name>
             <label>PDF prefix</label>

@@ -9,6 +9,7 @@ use ICTECHGiftCard\Core\Content\GiftCardAuditLog\GiftCardAuditLogDefinition;
 use ICTECHGiftCard\Core\Content\GiftCardTransaction\GiftCardTransactionDefinition;
 use ICTECHGiftCard\Core\Enum\VoucherStatus;
 use Shopware\Core\Checkout\Customer\CustomerDefinition;
+use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemDefinition;
 use Shopware\Core\Checkout\Order\OrderDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\CustomFields;
@@ -61,7 +62,8 @@ class GiftCardVoucherDefinition extends EntityDefinition
             (new ReferenceVersionField(OrderDefinition::class, 'order_version_id'))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('order', 'order_id', OrderDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
-            (new StringField('order_line_item_id', 'orderLineItemId'))->addFlags(new ApiAware()),
+            (new FkField('order_line_item_id', 'orderLineItemId', OrderLineItemDefinition::class))->addFlags(new ApiAware()),
+            (new ManyToOneAssociationField('orderLineItem', 'order_line_item_id', OrderLineItemDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('customer_id', 'customerId', CustomerDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('customer', 'customer_id', CustomerDefinition::class, 'id', false))->addFlags(new ApiAware()),

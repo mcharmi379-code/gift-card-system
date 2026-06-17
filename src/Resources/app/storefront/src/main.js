@@ -6,6 +6,14 @@ function buildPayload(page) {
     page.querySelectorAll('[data-gift-card-payload-field]').forEach((field) => {
         if (!field.name) return;
         if ((field.type === 'radio' || field.type === 'checkbox') && !field.checked) return;
+
+        // Skip fields that are currently disabled/hidden under dynamic delivery logic
+        const deliveryMethodInput = page.querySelector('input[name="giftCardDeliveryMethod"]:checked');
+        const isPrint = deliveryMethodInput && deliveryMethodInput.value === 'print';
+        if (isPrint && (field.name === 'giftCardEmail' || field.name === 'giftCardSendDate')) {
+            return;
+        }
+
         payload[field.name] = field.value;
     });
 
@@ -15,10 +23,22 @@ function buildPayload(page) {
     return payload;
 }
 
+/**
+ * Sync visible form field values into the single hidden payload input
+ * as a JSON-encoded string to match Shopware's expected structure.
+ */
 function updatePayload(page) {
+    const payload = buildPayload(page);
+
+    // Add amount explicitly to payload if present
+    const amountSelect = page.querySelector('[data-gift-card-amount]');
+    if (amountSelect) {
+        payload.giftCardAmount = amountSelect.value;
+    }
+
     const payloadInput = page.querySelector('[data-gift-card-payload]');
     if (payloadInput) {
-        payloadInput.value = JSON.stringify(buildPayload(page));
+        payloadInput.value = JSON.stringify(payload);
     }
 }
 
@@ -37,9 +57,11 @@ function selectTemplate(page, button) {
     page.querySelectorAll('[data-gift-card-template]').forEach((item) => item.classList.remove('is-selected'));
     button.classList.add('is-selected');
 
+    const templateId = button.dataset.giftCardTemplate || '';
+
     const templateInput = page.querySelector('[data-gift-card-template-id]');
     if (templateInput) {
-        templateInput.value = button.dataset.giftCardTemplate || '';
+        templateInput.value = templateId;
     }
 
     updatePayload(page);
@@ -73,10 +95,24 @@ function initDeliveryToggle(page) {
     const emailFields = page.querySelector('[data-gift-card-email-fields]');
     if (!emailFields) return;
 
+    const emailInput = page.querySelector('input[name="giftCardEmail"]');
+    const dateInput = page.querySelector('input[name="giftCardSendDate"]');
+
     function toggle() {
         const selected = page.querySelector('input[name="giftCardDeliveryMethod"]:checked');
         const method = selected ? selected.value : 'email';
-        emailFields.hidden = method !== 'email';
+        
+        if (method === 'email') {
+            emailFields.hidden = false;
+            if (emailInput) emailInput.required = true;
+            if (dateInput) dateInput.required = true;
+        } else {
+            emailFields.hidden = true;
+            if (emailInput) emailInput.required = false;
+            if (dateInput) dateInput.required = false;
+        }
+
+        updatePayload(page);
     }
 
     page.querySelectorAll('input[name="giftCardDeliveryMethod"]').forEach((radio) => {
@@ -87,6 +123,11 @@ function initDeliveryToggle(page) {
 }
 
 function openPreview(page, previewUrl) {
+    const form = page.querySelector('form');
+    if (form && !form.reportValidity()) {
+        return; // Block opening the preview if form contains validation errors
+    }
+
     const payload = buildPayload(page);
 
     const amountSelect = page.querySelector('[data-gift-card-amount]');
@@ -96,7 +137,7 @@ function openPreview(page, previewUrl) {
         payload.giftCardId = selected ? selected.dataset.giftCardId : '';
     }
 
-    // Build GET URL with query params — avoids CSRF and iframe blank issues
+    // Build GET URL with query params
     const params = new URLSearchParams();
     Object.entries(payload).forEach(([key, value]) => {
         if (value !== '') params.set(key, value);
@@ -142,6 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (previewBtn) {
             previewBtn.addEventListener('click', () => openPreview(page, previewBtn.dataset.previewUrl));
         }
-    });
 
+        // Do initial sync
+        updatePayload(page);
+    });
 });
