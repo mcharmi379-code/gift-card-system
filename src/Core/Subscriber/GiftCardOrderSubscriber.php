@@ -426,3 +426,4 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         return $row !== false ? $row : null;
     }
 }
+ 

@@ -62,6 +62,10 @@ class GiftCardVoucherEntity extends Entity
 
     protected ?string $usedInOrderNumber = null;
 
+    protected ?string $deliveryMethod = null;
+
+    protected ?string $templateId = null;
+
     protected VoucherStatus $status = VoucherStatus::WaitingValidOrder;
 
     protected ?GiftCardTransactionCollection $transactions = null;
@@ -276,6 +280,26 @@ class GiftCardVoucherEntity extends Entity
     public function setUsedInOrderNumber(?string $usedInOrderNumber): void
     {
         $this->usedInOrderNumber = $usedInOrderNumber;
+    }
+
+    public function getDeliveryMethod(): ?string
+    {
+        return $this->deliveryMethod;
+    }
+
+    public function setDeliveryMethod(?string $deliveryMethod): void
+    {
+        $this->deliveryMethod = $deliveryMethod;
+    }
+
+    public function getTemplateId(): ?string
+    {
+        return $this->templateId;
+    }
+
+    public function setTemplateId(?string $templateId): void
+    {
+        $this->templateId = $templateId;
     }
 
     public function getStatus(): VoucherStatus

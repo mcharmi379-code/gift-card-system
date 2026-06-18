@@ -85,6 +85,8 @@ class GiftCardVoucherDefinition extends EntityDefinition
             (new DateField('expires_at', 'expiresAt'))->addFlags(new ApiAware()),
 
             (new StringField('used_in_order_number', 'usedInOrderNumber'))->addFlags(new ApiAware()),
+            (new StringField('delivery_method', 'deliveryMethod'))->addFlags(new ApiAware()),
+            (new FkField('template_id', 'templateId', \ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateDefinition::class))->addFlags(new ApiAware()),
 
             (new EnumField('status', 'status', VoucherStatus::WaitingValidOrder))->addFlags(new Required(), new ApiAware()),
 
