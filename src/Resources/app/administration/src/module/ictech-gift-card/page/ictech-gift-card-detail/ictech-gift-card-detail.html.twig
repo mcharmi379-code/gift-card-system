@@ -118,6 +118,15 @@
                     />
                     {% endblock %}
 
+                    {% block ictech_gift_card_detail_field_restrict_combine %}
+                    <sw-switch-field
+                        v-model:value="giftCard.restrictCombine"
+                        :label="$tc('ictech-gift-card.detail.labelRestrictCombine')"
+                        name="restrictCombine"
+                        bordered
+                    />
+                    {% endblock %}
+
                 </template>
             </sw-card>
             {% endblock %}

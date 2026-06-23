@@ -66,6 +66,7 @@
             "labelQuantity": "Available quantity (leave empty for unlimited)",
             "placeholderQuantity": "Unlimited",
             "labelActive": "Active",
+            "labelRestrictCombine": "Restrict combining with other gift cards",
             "labelSalesChannel": "Restrict to sales channel",
             "placeholderSalesChannel": "All sales channels",
             "cardTitleTemplate": "Template",

@@ -100,9 +100,9 @@
         font-size: 14px;
     }
 
-    input,
-    select,
-    textarea {
+    input:not(.form-control),
+    select:not(.form-select),
+    textarea:not(.form-control) {
         width: 100%;
         border: 1px solid #b8c0cc;
         padding: 9px 12px;
@@ -128,7 +128,7 @@
         font-size: 14px;
     }
 
-    input {
+    input:not(.form-control) {
         width: 100%;
         border: 1px solid #b8c0cc;
         padding: 9px 12px;
@@ -173,6 +173,19 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             background: rgba(255, 255, 255, .9);
+        }
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 16px;
+            border: solid #10b981;
+            border-width: 0 3px 3px 0;
+            transform: translate(-50%, -60%) rotate(45deg);
+            z-index: 1;
         }
     }
 }
@@ -345,6 +358,39 @@
     }
     50% {
         transform: scale(1.1);
+    }
+}
+
+.gift-card-status {
+    padding: 0.25em 0.6em;
+    font-size: 75%;
+    font-weight: 700;
+    border-radius: 10rem;
+    display: inline-block;
+
+    &--unused {
+        background-color: #d1fae5 !important;
+        color: #065f46 !important;
+    }
+
+    &--used {
+        background-color: #f3f4f6 !important;
+        color: #374151 !important;
+    }
+
+    &--waiting_valid_order {
+        background-color: #fef3c7 !important;
+        color: #92400e !important;
+    }
+
+    &--disabled {
+        background-color: #fee2e2 !important;
+        color: #991b1b !important;
+    }
+
+    &--expired {
+        background-color: #fee2e2 !important;
+        color: #991b1b !important;
     }
 }
 

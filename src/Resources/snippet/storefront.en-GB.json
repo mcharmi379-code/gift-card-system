@@ -1,10 +1,11 @@
 {
     "ictech-gift-card": {
         "account": {
-            "menuLabel": "Gift Cards",
+            "menuLabel": "My gift cards",
             "pageTitle": "My Gift Cards",
             "columnCode": "Code",
             "columnRecipient": "Recipient",
+            "columnRecipientEmail": "Recipient Email",
             "columnOriginalAmount": "Original Amount",
             "columnRemainingBalance": "Remaining Balance",
             "columnStatus": "Status",
@@ -17,7 +18,10 @@
             "partially_used": "Partially Used",
             "used": "Used",
             "expired": "Expired",
-            "revoked": "Revoked"
+            "revoked": "Revoked",
+            "waiting_valid_order": "Waiting for Payment",
+            "unused": "Unused",
+            "canceled": "Canceled"
         },
         "page": {
             "title": "Gift Cards",
@@ -47,7 +51,12 @@
             "addGiftCardPlaceholder": "Enter gift card code",
             "invalidVoucherCode": "Invalid or expired gift card code.",
             "voucherAlreadyInCart": "This gift card code is already in the cart.",
+            "voucherCannotBeCombined": "This gift card cannot be combined with other gift cards.",
+            "voucherCannotBeCombinedRestricted": "A restricted gift card is already in your cart.",
             "voucherAddedSuccess": "Gift card code applied successfully."
+        },
+        "error": {
+            "required": "Input should not be empty."
         }
     }
 }

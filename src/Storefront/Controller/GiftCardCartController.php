@@ -60,6 +60,32 @@ final class GiftCardCartController extends StorefrontController
                 return $this->createActionResponse($request);
             }
 
+            // Enforce combinability restrictions
+            $existingGiftCards = $cart->getLineItems()->filterType(GiftCardCartProcessor::LINE_ITEM_TYPE);
+            $newGiftCard = $voucher->getGiftCard();
+            $newIsRestricted = $newGiftCard !== null && $newGiftCard->getRestrictCombine();
+
+            if (\count($existingGiftCards) > 0) {
+                if ($newIsRestricted) {
+                    $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.voucherCannotBeCombined'));
+                    return $this->createActionResponse($request);
+                }
+
+                foreach ($existingGiftCards as $existingItem) {
+                    $existingCode = $existingItem->getReferencedId();
+                    if ($existingCode !== null) {
+                        $existingVoucher = $this->findValidVoucher(\strtoupper($existingCode), $context);
+                        if ($existingVoucher !== null) {
+                            $existingGiftCard = $existingVoucher->getGiftCard();
+                            if ($existingGiftCard !== null && $existingGiftCard->getRestrictCombine()) {
+                                $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.voucherCannotBeCombinedRestricted'));
+                                return $this->createActionResponse($request);
+                            }
+                        }
+                    }
+                }
+            }
+
             $lineItem = new LineItem(
                 $lineItemId,
                 GiftCardCartProcessor::LINE_ITEM_TYPE,
@@ -92,6 +118,7 @@ final class GiftCardCartController extends StorefrontController
                 new EqualsFilter('status', VoucherStatus::WaitingValidOrder->value),
             ]),
         ]));
+        $criteria->addAssociation('giftCard');
         $criteria->setLimit(1);
 
         /** @var GiftCardVoucherEntity|null $voucher */

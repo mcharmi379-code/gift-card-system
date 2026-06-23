@@ -56,6 +56,7 @@ class GiftCardDefinition extends EntityDefinition
             (new IntField('quantity', 'quantity'))->addFlags(new ApiAware()),
             (new IntField('quantity_issued', 'quantityIssued'))->addFlags(new ApiAware()),
             (new BoolField('active', 'active'))->addFlags(new Required(), new ApiAware()),
+            (new BoolField('restrict_combine', 'restrictCombine'))->addFlags(new ApiAware()),
 
             (new FkField('sales_channel_id', 'salesChannelId', SalesChannelDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('salesChannel', 'sales_channel_id', SalesChannelDefinition::class, 'id', false))->addFlags(new ApiAware()),

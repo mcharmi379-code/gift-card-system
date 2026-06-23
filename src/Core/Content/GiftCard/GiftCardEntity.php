@@ -32,6 +32,8 @@ class GiftCardEntity extends Entity
 
     protected bool $active = true;
 
+    protected bool $restrictCombine = false;
+
     protected ?string $salesChannelId = null;
 
     protected ?SalesChannelEntity $salesChannel = null;
@@ -120,6 +122,16 @@ class GiftCardEntity extends Entity
     public function setActive(bool $active): void
     {
         $this->active = $active;
+    }
+
+    public function getRestrictCombine(): bool
+    {
+        return $this->restrictCombine;
+    }
+
+    public function setRestrictCombine(bool $restrictCombine): void
+    {
+        $this->restrictCombine = $restrictCombine;
     }
 
     public function getSalesChannelId(): ?string
