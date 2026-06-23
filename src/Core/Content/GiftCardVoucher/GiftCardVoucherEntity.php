@@ -32,6 +32,8 @@ class GiftCardVoucherEntity extends Entity
 
     protected ?string $orderLineItemId = null;
 
+    protected ?\Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity $orderLineItem = null;
+
     protected ?string $customerId = null;
 
     protected ?CustomerEntity $customer = null;
@@ -130,6 +132,16 @@ class GiftCardVoucherEntity extends Entity
     public function setOrderLineItemId(?string $orderLineItemId): void
     {
         $this->orderLineItemId = $orderLineItemId;
+    }
+
+    public function getOrderLineItem(): ?\Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity
+    {
+        return $this->orderLineItem;
+    }
+
+    public function setOrderLineItem(?\Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity $orderLineItem): void
+    {
+        $this->orderLineItem = $orderLineItem;
     }
 
     public function getCustomerId(): ?string

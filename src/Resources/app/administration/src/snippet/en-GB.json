@@ -9,6 +9,7 @@
             "order": "Order",
             "product": "Product",
             "template": "Template",
+            "moderation": "Moderation Tools",
             "settings": "Settings"
         },
         "dashboard": {
@@ -71,6 +72,8 @@
             "cardTitleTemplate": "Template",
             "labelTemplate": "Gift Card Template",
             "placeholderTemplate": "Select a template",
+            "messageValidationError": "Please fix the highlighted fields and try again.",
+            "messageNameRequired": "Name is required.",
             "messageSaveSuccess": "Gift card saved successfully.",
             "messageSaveError": "An error occurred while saving the gift card."
         },
@@ -141,6 +144,8 @@
                 "used": "Used",
                 "usedDesc": "The gift card has been used, you can view the associated order.",
                 "usedInOrder": "Used in order #{number}",
+                "partiallyUsed": "Partially used",
+                "partiallyUsedDesc": "The gift card has been partially used.",
                 "canceled": "Canceled",
                 "canceledDesc": "The gift card has been canceled, for example related to an order cancellation or refund."
             }
@@ -150,20 +155,7 @@
             "messageSaveSuccess": "Settings saved successfully.",
             "messageSaveError": "An error occurred while saving the settings.",
             "previewPdf": "Preview PDF",
-            "messagePdfError": "An error occurred while generating the PDF preview.",
-            "variablesTitle": "Available PDF & Email Variables",
-            "variablesDescription": "Use these variables in your PDF content and email templates. They will be replaced with real data when the gift card is generated.",
-            "variables": {
-                "cardLastname": "Recipient last name",
-                "cardFirstname": "Recipient first name",
-                "cardPrice": "Gift card value / price",
-                "cardFrom": "Sender name",
-                "cardCode": "Voucher code",
-                "cardMessage": "Personal message",
-                "cardImage": "Card image (HTML img tag)",
-                "shopName": "Shop name",
-                "validityDate": "Validity / expiry date"
-            }
+            "messagePdfError": "An error occurred while generating the PDF preview."
         },
         "placeholder": {
             "order": {
@@ -176,8 +168,51 @@
             },
             "settings": {
                 "title": "Gift Card Settings",
-                "subline": "Global gift card settings will be added once the configuration scope is defined."
+                "subline": "Manage email and PDF settings here."
             }
+        },
+        "moderation": {
+            "title": "Moderation Tools",
+            "selectVoucherCardTitle": "Select Gift Card Voucher",
+            "voucherInfoCardTitle": "Voucher Details",
+            "actionsCardTitle": "Moderation Actions",
+            "auditLogCardTitle": "Audit Logs",
+            "labelVoucher": "Voucher Code",
+            "placeholderSelectVoucher": "Search / select a voucher code...",
+            "infoCode": "Voucher Code",
+            "infoStatus": "Status",
+            "infoOriginalAmount": "Original Amount",
+            "infoRemainingBalance": "Remaining Balance",
+            "infoRecipient": "Recipient",
+            "infoSender": "Sender",
+            "infoExpiresAt": "Expires At",
+            "infoSentAt": "Sent At",
+            "tabResend": "Manual Resend",
+            "tabAdjust": "Adjust Balance",
+            "tabRevoke": "Revoke",
+            "btnResend": "Resend Gift Card Email",
+            "btnAdjust": "Adjust Remaining Balance",
+            "btnRevoke": "Revoke Voucher",
+            "labelRecipientEmail": "Recipient Email",
+            "labelNewBalance": "New Remaining Balance",
+            "labelReason": "Reason",
+            "placeholderReasonRevoke": "Explain why this voucher is being deactivated (required)...",
+            "placeholderReasonAdjust": "Explain why the balance is being adjusted (optional)...",
+            "messageResendSuccess": "Email resent successfully.",
+            "messageResendError": "Failed to resend email.",
+            "messageAdjustSuccess": "Voucher balance updated successfully.",
+            "messageAdjustError": "Failed to adjust voucher balance.",
+            "messageRevokeSuccess": "Voucher revoked successfully.",
+            "messageRevokeError": "Failed to revoke voucher.",
+            "columnDate": "Date / Time",
+            "columnUser": "Admin User",
+            "columnAction": "Action",
+            "columnOldValue": "Old Value",
+            "columnNewValue": "New Value",
+            "columnReason": "Reason",
+            "actionRevoke": "Revoke",
+            "actionAdjust": "Adjust Balance",
+            "actionResend": "Resend Email"
         }
     }
 }

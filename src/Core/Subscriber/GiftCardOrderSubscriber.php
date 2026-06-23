@@ -232,6 +232,8 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             'senderName'        => $senderName !== '' ? $senderName : null,
             'personalMessage'   => $personalMessage !== '' ? $personalMessage : null,
             'scheduledSendDate' => $scheduledSendDate,
+            'deliveryMethod'    => $deliveryMethod,
+            'templateId'        => $templateId !== '' ? $templateId : null,
         ];
 
         // Store templateId in customFields for PDF generation later

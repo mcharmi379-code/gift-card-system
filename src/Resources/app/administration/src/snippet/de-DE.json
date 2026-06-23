@@ -9,6 +9,7 @@
             "order": "Bestellung",
             "product": "Produkt",
             "template": "Vorlage",
+            "moderation": "Moderations-Tools",
             "settings": "Einstellungen"
         },
         "dashboard": {
@@ -71,6 +72,8 @@
             "cardTitleTemplate": "Vorlage",
             "labelTemplate": "Geschenkkarten-Vorlage",
             "placeholderTemplate": "Vorlage ausw\u00e4hlen",
+            "messageValidationError": "Bitte korrigieren Sie die markierten Felder und versuchen Sie es erneut.",
+            "messageNameRequired": "Name ist erforderlich.",
             "messageSaveSuccess": "Geschenkkarte erfolgreich gespeichert.",
             "messageSaveError": "Beim Speichern der Geschenkkarte ist ein Fehler aufgetreten."
         },
@@ -141,6 +144,8 @@
                 "used": "Verwendet",
                 "usedDesc": "Die Geschenkkarte wurde verwendet, Sie k\u00f6nnen die zugeh\u00f6rige Bestellung einsehen.",
                 "usedInOrder": "Verwendet in Bestellung #{number}",
+                "partiallyUsed": "Teilweise verwendet",
+                "partiallyUsedDesc": "Die Geschenkkarte wurde teilweise verwendet.",
                 "canceled": "Storniert",
                 "canceledDesc": "Die Geschenkkarte wurde storniert, z.B. aufgrund einer Bestellstornierung oder R\u00fcckerstattung."
             }
@@ -150,20 +155,7 @@
             "messageSaveSuccess": "Einstellungen erfolgreich gespeichert.",
             "messageSaveError": "Beim Speichern der Einstellungen ist ein Fehler aufgetreten.",
             "previewPdf": "PDF-Vorschau",
-            "messagePdfError": "Beim Erstellen der PDF-Vorschau ist ein Fehler aufgetreten.",
-            "variablesTitle": "Verf\u00fcgbare PDF- & E-Mail-Variablen",
-            "variablesDescription": "Verwenden Sie diese Variablen in Ihren PDF-Inhalten und E-Mail-Vorlagen. Sie werden beim Generieren der Geschenkkarte durch echte Daten ersetzt.",
-            "variables": {
-                "cardLastname": "Nachname des Empf\u00e4ngers",
-                "cardFirstname": "Vorname des Empf\u00e4ngers",
-                "cardPrice": "Geschenkkartenwert / Preis",
-                "cardFrom": "Name des Absenders",
-                "cardCode": "Gutscheincode",
-                "cardMessage": "Pers\u00f6nliche Nachricht",
-                "cardImage": "Kartenbild (HTML img-Tag)",
-                "shopName": "Shop-Name",
-                "validityDate": "G\u00fcltigkeits- / Ablaufdatum"
-            }
+            "messagePdfError": "Beim Erstellen der PDF-Vorschau ist ein Fehler aufgetreten."
         },
         "placeholder": {
             "order": {
@@ -176,8 +168,51 @@
             },
             "settings": {
                 "title": "Geschenkkarten-Einstellungen",
-                "subline": "Globale Geschenkkarten-Einstellungen werden erg\u00e4nzt, sobald der Konfigurationsumfang definiert ist."
+                "subline": "E-Mail- und PDF-Einstellungen hier verwalten."
             }
+        },
+        "moderation": {
+            "title": "Moderations-Tools",
+            "selectVoucherCardTitle": "Geschenkkarten-Gutschein ausw\u00e4hlen",
+            "voucherInfoCardTitle": "Gutscheindetails",
+            "actionsCardTitle": "Moderationsaktionen",
+            "auditLogCardTitle": "Audit-Protokolle",
+            "labelVoucher": "Gutscheincode",
+            "placeholderSelectVoucher": "Gutscheincode suchen / ausw\u00e4hlen...",
+            "infoCode": "Gutscheincode",
+            "infoStatus": "Status",
+            "infoOriginalAmount": "Originaler Betrag",
+            "infoRemainingBalance": "Restbetrag",
+            "infoRecipient": "Empf\u00e4nger",
+            "infoSender": "Absender",
+            "infoExpiresAt": "Ablaufdatum",
+            "infoSentAt": "Gesendet am",
+            "tabResend": "Manuelles Senden",
+            "tabAdjust": "Saldo anpassen",
+            "tabRevoke": "Stornieren",
+            "btnResend": "Geschenkkarten-E-Mail erneut senden",
+            "btnAdjust": "Restguthaben anpassen",
+            "btnRevoke": "Gutschein stornieren",
+            "labelRecipientEmail": "Empfänger-E-Mail-Adresse",
+            "labelNewBalance": "Neuer Restbetrag",
+            "labelReason": "Grund",
+            "placeholderReasonRevoke": "Geben Sie an, warum dieser Gutschein storniert wird (erforderlich)...",
+            "placeholderReasonAdjust": "Geben Sie an, warum der Saldo angepasst wird (optional)...",
+            "messageResendSuccess": "E-Mail erfolgreich erneut gesendet.",
+            "messageResendError": "Fehler beim erneuten Senden der E-Mail.",
+            "messageAdjustSuccess": "Gutscheinsaldo erfolgreich angepasst.",
+            "messageAdjustError": "Fehler beim Anpassen des Gutscheinsaldos.",
+            "messageRevokeSuccess": "Gutschein erfolgreich storniert.",
+            "messageRevokeError": "Fehler beim Stornieren des Gutscheins.",
+            "columnDate": "Datum / Uhrzeit",
+            "columnUser": "Admin-Benutzer",
+            "columnAction": "Aktion",
+            "columnOldValue": "Alter Wert",
+            "columnNewValue": "Neuer Wert",
+            "columnReason": "Grund",
+            "actionRevoke": "Stornieren",
+            "actionAdjust": "Betrag anpassen",
+            "actionResend": "E-Mail senden"
         }
     }
 }

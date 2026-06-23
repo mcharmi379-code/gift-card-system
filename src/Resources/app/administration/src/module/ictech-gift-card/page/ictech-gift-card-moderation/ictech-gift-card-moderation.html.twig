@@ -1,0 +1,224 @@
+{% block ictech_gift_card_moderation %}
+<sw-page class="ictech-gift-card-moderation">
+
+    {% block ictech_gift_card_moderation_smart_bar_header %}
+    <template #smart-bar-header>
+        <h2>{{ $tc('ictech-gift-card.moderation.title') }}</h2>
+    </template>
+    {% endblock %}
+
+    {% block ictech_gift_card_moderation_content %}
+    <template #content>
+        <sw-card-view>
+
+            {% block ictech_gift_card_moderation_select_card %}
+            <sw-card
+                position-identifier="ictech-gift-card-moderation-select"
+                :title="$tc('ictech-gift-card.moderation.selectVoucherCardTitle')"
+                :is-loading="isLoading"
+            >
+                <template #default>
+                    <sw-entity-single-select
+                        :value="selectedVoucherId"
+                        :label="$tc('ictech-gift-card.moderation.labelVoucher')"
+                        :placeholder="$tc('ictech-gift-card.moderation.placeholderSelectVoucher')"
+                        entity="ictech_gift_card_voucher"
+                        labelProperty="code"
+                        name="voucherId"
+                        @update:value="onVoucherChange"
+                    />
+                </template>
+            </sw-card>
+            {% endblock %}
+
+            <!-- Voucher details card -->
+            {% block ictech_gift_card_moderation_details_card %}
+            <sw-card
+                v-if="voucher"
+                position-identifier="ictech-gift-card-moderation-details"
+                :title="$tc('ictech-gift-card.moderation.voucherInfoCardTitle')"
+                :is-loading="isLoading"
+            >
+                <div class="sw-description-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoCode') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ voucher.code }}</dd>
+
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoStatus') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">
+                            <sw-label :variant="getStatusVariant(voucher.status)" appearance="pill">
+                                {{ getStatusLabel(voucher.status) }}
+                            </sw-label>
+                        </dd>
+
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoOriginalAmount') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ formatAmount(voucher.originalAmount) }}</dd>
+
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoRemainingBalance') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ formatAmount(voucher.remainingBalance) }}</dd>
+                    </div>
+                    <div>
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoRecipient') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ voucher.recipientName }} ({{ voucher.recipientEmail }})</dd>
+
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoSender') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ voucher.senderName || '—' }}</dd>
+
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoExpiresAt') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ formatDate(voucher.expiresAt) }}</dd>
+
+                        <dt style="font-weight: bold; margin-top: 8px;">{{ $tc('ictech-gift-card.moderation.infoSentAt') }}</dt>
+                        <dd style="margin-left: 0; margin-bottom: 8px;">{{ formatDate(voucher.sentAt) }}</dd>
+                    </div>
+                </div>
+            </sw-card>
+            {% endblock %}
+
+            <!-- Moderation actions card -->
+            {% block ictech_gift_card_moderation_actions_card %}
+            <sw-card
+                v-if="voucher"
+                position-identifier="ictech-gift-card-moderation-actions"
+                :title="$tc('ictech-gift-card.moderation.actionsCardTitle')"
+                :is-loading="isLoading"
+            >
+                <sw-tabs
+                    position-identifier="ictech-gift-card-moderation-tabs"
+                    :default-item="activeTab"
+                    @new-item-active="activeTab = $event.name"
+                >
+                    <sw-tabs-item name="resend">
+                        {{ $tc('ictech-gift-card.moderation.tabResend') }}
+                    </sw-tabs-item>
+                    <sw-tabs-item name="adjust">
+                        {{ $tc('ictech-gift-card.moderation.tabAdjust') }}
+                    </sw-tabs-item>
+                    <sw-tabs-item name="revoke">
+                        {{ $tc('ictech-gift-card.moderation.tabRevoke') }}
+                    </sw-tabs-item>
+                </sw-tabs>
+
+                <!-- Manual Resend Tab -->
+                <div v-if="activeTab === 'resend'" style="padding: 16px 0;">
+                    <p style="margin-bottom: 16px;">
+                        Manually trigger a resend of the gift card email. You can update the recipient's email address below if needed.
+                    </p>
+                    <sw-text-field
+                        v-model:value="recipientEmail"
+                        :label="$tc('ictech-gift-card.moderation.labelRecipientEmail')"
+                        style="max-width: 400px; margin-bottom: 16px;"
+                    />
+                    <sw-button
+                        :isLoading="isResending"
+                        :disabled="resendDisabled || !recipientEmail"
+                        variant="primary"
+                        @click="onResendEmail"
+                    >
+                        {{ $tc('ictech-gift-card.moderation.btnResend') }}
+                    </sw-button>
+                </div>
+
+                <!-- Adjust Balance Tab -->
+                <div v-if="activeTab === 'adjust'" style="padding: 16px 0;">
+                    <p style="margin-bottom: 16px;">
+                        Manually adjust the remaining balance of the voucher code. This will log an audit entry.
+                    </p>
+                    <sw-number-field
+                        v-model:value="newBalance"
+                        :label="$tc('ictech-gift-card.moderation.labelNewBalance')"
+                        :min="0"
+                        :max="voucher.originalAmount"
+                        :digits="2"
+                        required
+                        style="max-width: 400px; margin-bottom: 16px;"
+                    />
+                    <sw-text-field
+                        v-model:value="reasonAdjust"
+                        :label="$tc('ictech-gift-card.moderation.labelReason')"
+                        :placeholder="$tc('ictech-gift-card.moderation.placeholderReasonAdjust')"
+                        style="max-width: 400px; margin-bottom: 16px;"
+                    />
+                    <sw-button
+                        :isLoading="isAdjusting"
+                        :disabled="adjustDisabled"
+                        variant="primary"
+                        @click="onAdjustBalance"
+                    >
+                        {{ $tc('ictech-gift-card.moderation.btnAdjust') }}
+                    </sw-button>
+                </div>
+
+                <!-- Revoke Tab -->
+                <div v-if="activeTab === 'revoke'" style="padding: 16px 0;">
+                    <p style="margin-bottom: 16px;">
+                        Deactivate this voucher. Once revoked, it cannot be redeemed or used in checkout. A reason is required for the audit log.
+                    </p>
+                    <sw-textarea-field
+                        v-model:value="reasonRevoke"
+                        :label="$tc('ictech-gift-card.moderation.labelReason')"
+                        :placeholder="$tc('ictech-gift-card.moderation.placeholderReasonRevoke')"
+                        required
+                        style="max-width: 500px; margin-bottom: 16px;"
+                    />
+                    <sw-button
+                        :isLoading="isRevoking"
+                        :disabled="revokeDisabled"
+                        variant="danger"
+                        @click="onRevokeVoucher"
+                    >
+                        {{ $tc('ictech-gift-card.moderation.btnRevoke') }}
+                    </sw-button>
+                </div>
+            </sw-card>
+            {% endblock %}
+
+            <!-- Audit logs card -->
+            {% block ictech_gift_card_moderation_logs_card %}
+            <sw-card
+                v-if="voucher"
+                position-identifier="ictech-gift-card-moderation-logs"
+                :title="$tc('ictech-gift-card.moderation.auditLogCardTitle')"
+                :is-loading="isLoading"
+            >
+                <sw-data-grid
+                    :data-source="auditLogs || []"
+                    :columns="auditLogColumns"
+                    :show-selection="false"
+                    :show-actions="false"
+                    identifier="ictech-gift-card-moderation-logs-grid"
+                >
+                    <template #column-createdAt="{ item }">
+                        {{ formatDate(item.createdAt) }}
+                    </template>
+
+                    <template #column-action="{ item }">
+                        <sw-label :variant="getActionVariant(item.action)" appearance="pill">
+                            {{ getActionLabel(item.action) }}
+                        </sw-label>
+                    </template>
+
+                    <template #column-oldValue="{ item }">
+                        <span v-if="item.action === 'balance_adjust'">{{ formatAmount(item.oldValue) }}</span>
+                        <span v-else-if="item.action === 'revoke'">{{ getStatusLabel(item.oldValue) }}</span>
+                        <span v-else>—</span>
+                    </template>
+
+                    <template #column-newValue="{ item }">
+                        <span v-if="item.action === 'balance_adjust'">{{ formatAmount(item.newValue) }}</span>
+                        <span v-else-if="item.action === 'revoke'">{{ getStatusLabel(item.newValue) }}</span>
+                        <span v-else>—</span>
+                    </template>
+
+                    <template #column-reason="{ item }">
+                        {{ item.reason || '—' }}
+                    </template>
+                </sw-data-grid>
+            </sw-card>
+            {% endblock %}
+
+        </sw-card-view>
+    </template>
+    {% endblock %}
+
+</sw-page>
+{% endblock %}

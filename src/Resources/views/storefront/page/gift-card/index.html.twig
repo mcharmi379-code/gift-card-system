@@ -45,7 +45,7 @@
                 <div data-gift-card-email-fields>
                     <div class="ictech-gift-card-field">
                         <label for="gift-card-email">{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}</label>
-                        <input id="gift-card-email" type="email" name="giftCardEmail" placeholder="{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}" data-gift-card-payload-field required>
+                        <input id="gift-card-email" type="email" name="giftCardEmail" placeholder="{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}" data-gift-card-payload-field>
                     </div>
 
                     <p class="ictech-gift-card-help">
@@ -60,7 +60,6 @@
                             name="giftCardSendDate"
                             min="{{ 'now'|date('Y-m-d') }}"
                             data-gift-card-payload-field
-                            required
                         >
                     </div>
                 </div>

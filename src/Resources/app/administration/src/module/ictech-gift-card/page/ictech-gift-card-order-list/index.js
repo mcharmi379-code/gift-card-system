@@ -128,6 +128,7 @@ export default {
                 { value: null, label: this.$tc('ictech-gift-card.order.list.filterAll') },
                 { value: 'waiting_valid_order', label: this.$tc('ictech-gift-card.order.status.waitingValidOrder') },
                 { value: 'unused', label: this.$tc('ictech-gift-card.order.status.unused') },
+                { value: 'partially_used', label: this.$tc('ictech-gift-card.order.status.partiallyUsed') },
                 { value: 'used', label: this.$tc('ictech-gift-card.order.status.used') },
                 { value: 'canceled', label: this.$tc('ictech-gift-card.order.status.canceled') },
             ];
@@ -182,6 +183,7 @@ export default {
             const map = {
                 waiting_valid_order: 'warning',
                 unused: 'success',
+                partially_used: 'info',
                 used: 'info',
                 canceled: 'neutral',
             };

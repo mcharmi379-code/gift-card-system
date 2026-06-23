@@ -16,11 +16,27 @@ class Migration1780900007AddDeliveryMethodToVoucher extends MigrationStep
 
     public function update(Connection $connection): void
     {
-        $connection->executeStatement("
-            ALTER TABLE `ictech_gift_card_voucher`
-                ADD COLUMN IF NOT EXISTS `delivery_method` VARCHAR(10) NULL DEFAULT NULL COMMENT 'email or print',
-                ADD COLUMN IF NOT EXISTS `template_id`     BINARY(16)  NULL DEFAULT NULL
-        ");
+        $columns = $connection->fetchAllAssociative(
+            "SHOW COLUMNS FROM `ictech_gift_card_voucher` LIKE 'delivery_method'"
+        );
+
+        if ($columns === []) {
+            $connection->executeStatement("
+                ALTER TABLE `ictech_gift_card_voucher`
+                    ADD COLUMN `delivery_method` VARCHAR(10) NULL DEFAULT NULL COMMENT 'email or print'
+            ");
+        }
+
+        $templateColumns = $connection->fetchAllAssociative(
+            "SHOW COLUMNS FROM `ictech_gift_card_voucher` LIKE 'template_id'"
+        );
+
+        if ($templateColumns === []) {
+            $connection->executeStatement("
+                ALTER TABLE `ictech_gift_card_voucher`
+                    ADD COLUMN `template_id` BINARY(16) NULL DEFAULT NULL
+            ");
+        }
     }
 
     public function updateDestructive(Connection $connection): void

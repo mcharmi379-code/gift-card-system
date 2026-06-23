@@ -23,7 +23,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
 {
     private const SYNC_FLAG = 'ictech_gift_card_product_sync_running';
-    private const VOUCHER_POOL_SIZE = 25;
 
     /**
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<GiftCardEntity>> $giftCardRepository
@@ -96,9 +95,8 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         $taxId = $this->getDefaultTaxId($context);
 
         if ($isInsert) {
-            // Brand new gift card — create product and voucher pool
+            // Brand new gift card — create the linked product only.
             $this->createProduct($giftCard, $taxId, $context);
-            $this->generateVoucherPool($giftCard, $context);
         } else {
             // Existing gift card updated — sync product fields only
             $this->updateProduct($giftCard, $taxId, $context);
@@ -228,81 +226,6 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     }
 
     // -------------------------------------------------------------------------
-    // Voucher pool — 25 pre-generated codes, status = waiting_valid_order
-    // -------------------------------------------------------------------------
-
-    private function generateVoucherPool(GiftCardEntity $giftCard, Context $context): void
-    {
-        $currencyId = $this->getDefaultCurrencyId($context);
-        $expiresAt  = $this->calculateExpiry($giftCard->getValidityDays());
-        $prefix     = \strtoupper(\trim($giftCard->getCodePrefix()));
-
-        $existing = $this->loadExistingCodes($giftCard->getId(), $context);
-        $vouchers  = [];
-
-        $attempts = 0;
-        while (\count($vouchers) < self::VOUCHER_POOL_SIZE && $attempts < self::VOUCHER_POOL_SIZE * 10) {
-            ++$attempts;
-            $code = $this->buildCode($prefix, $existing);
-            if ($code === null) {
-                continue;
-            }
-            $existing[$code] = true;
-            $vouchers[]      = [
-                'id'               => Uuid::randomHex(),
-                'giftCardId'       => $giftCard->getId(),
-                'code'             => $code,
-                'originalAmount'   => $giftCard->getAmount(),
-                'remainingBalance' => $giftCard->getAmount(),
-                'currencyId'       => $currencyId,
-                'status'           => VoucherStatus::WaitingValidOrder->value,
-                'expiresAt'        => $expiresAt,
-            ];
-        }
-
-        if ($vouchers !== []) {
-            $this->voucherRepository->create($vouchers, $context);
-        }
-    }
-
-    /**
-     * @param array<string, bool> $existing
-     */
-    private function buildCode(string $prefix, array $existing): ?string
-    {
-        $suffix = \strtoupper(\bin2hex(\random_bytes(4)));
-        $code   = $prefix . '-' . $suffix;
-
-        return isset($existing[$code]) ? null : $code;
-    }
-
-    /**
-     * @return array<string, bool>
-     */
-    private function loadExistingCodes(string $giftCardId, Context $context): array
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('giftCardId', $giftCardId));
-
-        $result   = $this->voucherRepository->search($criteria, $context);
-        $existing = [];
-
-        foreach ($result->getElements() as $entity) {
-            $vars = $entity->getVars();
-            if (isset($vars['code']) && \is_string($vars['code'])) {
-                $existing[$vars['code']] = true;
-            }
-        }
-
-        return $existing;
-    }
-
-    private function calculateExpiry(int $validityDays): string
-    {
-        return (new \DateTimeImmutable())->modify("+{$validityDays} days")->format('Y-m-d');
-    }
-
-    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
@@ -312,10 +235,5 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         $criteria->setLimit(1);
 
         return $this->taxRepository->searchIds($criteria, $context)->firstId();
-    }
-
-    private function getDefaultCurrencyId(Context $context): string
-    {
-        return $context->getCurrencyId();
     }
 }

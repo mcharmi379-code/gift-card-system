@@ -84,9 +84,15 @@ final class GiftCardEmailService
             return;
         }
 
-        $templateVars = $template->getVars();
-        $contentHtml  = \is_string($templateVars['contentHtml'] ?? null) ? $templateVars['contentHtml'] : '';
-        $contentPlain = \is_string($templateVars['contentPlain'] ?? null) ? $templateVars['contentPlain'] : '';
+        $contentHtml = $template->getTranslation('contentHtml');
+        if (!\is_string($contentHtml) || $contentHtml === '') {
+            $contentHtml = $this->getDefaultHtmlTemplate();
+        }
+
+        $contentPlain = $template->getTranslation('contentPlain');
+        if (!\is_string($contentPlain) || $contentPlain === '') {
+            $contentPlain = $this->getDefaultPlainTemplate();
+        }
         
         $subjectFormat = $this->systemConfigService->getString('ICTECHGiftCard.config.emailSubjectRecipient', $salesChannelId) ?: 'Gift card offer from %s';
         $senderNameVal = $voucher->getSenderName() ?? '';
@@ -156,16 +162,10 @@ final class GiftCardEmailService
 
         $shopName  = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId);
         $expiresAt = $voucher->getExpiresAt();
-        $subject   = $this->systemConfigService->getString(
-            self::CONFIG . 'emailSubjectRecipient',
-            $salesChannelId
+        $subject = \sprintf(
+            $this->systemConfigService->getString('ICTECHGiftCard.config.emailSubjectRecipient', $salesChannelId) ?: 'Your Gift Card',
+            $voucher->getSenderName() ?? $shopName
         );
-
-        if ($subject === '') {
-            $subject = 'Your Gift Card';
-        }
-
-        $subject = \sprintf($subject, $voucher->getSenderName() ?? $shopName);
 
         $data = [
             'salesChannelId' => $salesChannelId,
@@ -189,10 +189,7 @@ final class GiftCardEmailService
      */
     public function buildPdfContent(GiftCardVoucherEntity $voucher, ?string $salesChannelId): string
     {
-        $pdfContent = $this->systemConfigService->getString(
-            self::CONFIG . 'pdfContent',
-            $salesChannelId
-        );
+        $pdfContent = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId) ?: '';
 
         if ($pdfContent === '') {
             return '';
@@ -233,13 +230,17 @@ final class GiftCardEmailService
         }
 
         $media = $template->get('media');
-        if ($media === null) {
+        if (!$media instanceof \Shopware\Core\Content\Media\MediaEntity) {
             return '';
         }
 
-        $url = (string) ($media->get('url') ?? '');
-        if ($url === '') {
+        $url = $media->getUrl();
+        if ($url === null || $url === '') {
             return '';
+        }
+
+        if (\str_starts_with($url, '/')) {
+            $url = \rtrim($this->getShopUrl($salesChannelId), '/') . $url;
         }
 
         $configKey = $mode === 'pdf' ? 'pdfCardWidth' : 'emailCardWidth';
@@ -321,7 +322,9 @@ final class GiftCardEmailService
 
         $expiresAt = $voucher->getExpiresAt();
 
-        $contentHtml = '
+        $pdfContentHtml = $this->buildPdfContent($voucher, $salesChannelId, $context->getLanguageId());
+
+        $contentHtml = $pdfContentHtml !== '' ? $pdfContentHtml : '
             <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
                 <h2>🎁 Your Gift Card</h2>
                 <p>Hi {{ purchaser_name }},</p>
@@ -399,30 +402,30 @@ final class GiftCardEmailService
         $cardImage = '';
 
         if ($templateId !== null && $templateId !== '') {
+            /** @var string $templateId */
             $criteria = new Criteria([$templateId]);
             $criteria->addAssociation('media');
             $template = $this->templateRepository->search($criteria, $context)->first();
-            if ($template !== null && $template->getMedia() !== null) {
-                $media = $template->getMedia();
-                $mode = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfImageSourceMode', $salesChannelId) ?: 'http';
-                $w = $this->systemConfigService->getInt('ICTECHGiftCard.config.pdfCardWidth', $salesChannelId) ?: 300;
-                $h = $this->systemConfigService->getInt('ICTECHGiftCard.config.pdfCardHeight', $salesChannelId) ?: 192;
-                
-                $imgUrl = '';
-                if ($mode === 'local') {
-                    $relativePath = $media->getPath();
-                    $publicDir = '/var/www/html/sw6.6.10.8/public/';
-                    $localPath = $publicDir . $relativePath;
-                    if (\file_exists($localPath)) {
-                        $imgUrl = $localPath;
-                    } else {
-                        $imgUrl = $media->getUrl();
+            if ($template !== null) {
+                $media = $template->get('media');
+                if ($media instanceof \Shopware\Core\Content\Media\MediaEntity) {
+                    $url = $media->getUrl();
+                    if ($url !== null && $url !== '') {
+                        $mode = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfImageSourceMode', $salesChannelId) ?: 'http';
+                        $w = $this->systemConfigService->getInt('ICTECHGiftCard.config.pdfCardWidth', $salesChannelId) ?: 300;
+                        $h = $this->systemConfigService->getInt('ICTECHGiftCard.config.pdfCardHeight', $salesChannelId) ?: 192;
+                        $imgUrl = '';
+                        if ($mode === 'local') {
+                            $relativePath = $media->getPath();
+                            $publicDir = '/var/www/html/sw6.6.10.8/public/';
+                            $localPath = $publicDir . $relativePath;
+                            $imgUrl = \file_exists($localPath) ? $localPath : $url;
+                        } else {
+                            $imgUrl = $url;
+                        }
+                        $cardImage = '<img src="' . \htmlspecialchars($imgUrl) . '" width="' . $w . '" height="' . $h . '" alt="Gift Card" style="max-width:100%">';
                     }
-                } else {
-                    $imgUrl = $media->getUrl();
                 }
-                
-                $cardImage = '<img src="' . \htmlspecialchars($imgUrl) . '" width="' . $w . '" height="' . $h . '" alt="Gift Card" style="max-width:100%">';
             }
         }
 
@@ -430,15 +433,17 @@ final class GiftCardEmailService
         $expiresAt = $voucher->getExpiresAt();
         
         $currencySymbol = '€';
-        if ($voucher->getCurrency() !== null) {
-            $currencySymbol = $voucher->getCurrency()->getSymbol();
+        $currency = $voucher->get('currency');
+        if ($currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
+            $currencySymbol = $currency->getSymbol() ?? '€';
         } else {
             // Reload voucher with currency association to get the symbol
             $voucherCriteria = new Criteria([$voucher->getId()]);
             $voucherCriteria->addAssociation('currency');
             $reloaded = $this->voucherRepository->search($voucherCriteria, $context)->first();
-            if ($reloaded !== null && $reloaded->getCurrency() !== null) {
-                $currencySymbol = $reloaded->getCurrency()->getSymbol();
+            $reloadedCurrency = $reloaded?->get('currency');
+            if ($reloadedCurrency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
+                $currencySymbol = $reloadedCurrency->getSymbol() ?? '€';
             }
         }
         
@@ -491,5 +496,57 @@ final class GiftCardEmailService
     private function getShopUrl(?string $salesChannelId): string
     {
         return $this->systemConfigService->getString('core.basicInformation.shopUrl', $salesChannelId);
+    }
+
+    private function getDefaultHtmlTemplate(): string
+    {
+        return <<<HTML
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
+    <h2>🎁 Your Gift Card</h2>
+    <p>Hi {{ recipient_name }},</p>
+    <p>{{ sender_name }} has sent you a gift card worth <strong>€{{ amount }}</strong>!</p>
+    {% if message %}
+    <blockquote style="border-left:4px solid #57D9A3;padding-left:16px;color:#555;">
+        {{ message }}
+    </blockquote>
+    {% endif %}
+    <div style="background:#f5f5f5;padding:20px;text-align:center;border-radius:8px;margin:24px 0;">
+        <p style="margin:0;font-size:12px;color:#999;">Your voucher code</p>
+        <p style="margin:8px 0;font-size:28px;font-weight:bold;letter-spacing:4px;color:#333;">{{ voucher_code }}</p>
+        <p style="margin:0;font-size:12px;color:#999;">Valid until {{ validity_date }}</p>
+    </div>
+    <p>
+        <a href="{{ shop_url }}" style="background:#57D9A3;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;display:inline-block;">
+            Shop Now
+        </a>
+    </p>
+    <p style="font-size:12px;color:#999;">
+        To redeem, enter the voucher code at checkout. The amount will be deducted from your cart total.
+        Any remaining balance can be used in future purchases until {{ validity_date }}.
+    </p>
+</div>
+HTML;
+    }
+
+    private function getDefaultPlainTemplate(): string
+    {
+        return <<<TEXT
+Your Gift Card
+
+Hi {{ recipient_name }},
+
+{{ sender_name }} has sent you a gift card worth €{{ amount }}!
+
+{% if message %}
+Message: {{ message }}
+{% endif %}
+
+Your voucher code: {{ voucher_code }}
+Valid until: {{ validity_date }}
+
+Shop at: {{ shop_url }}
+
+To redeem, enter the code at checkout.
+TEXT;
     }
 }

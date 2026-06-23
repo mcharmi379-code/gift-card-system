@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ICTECHGiftCard\Migration;
+
+use Doctrine\DBAL\Connection;
+use Shopware\Core\Framework\Migration\MigrationStep;
+
+class Migration1780900009AddPartiallyUsedToVoucherStatus extends MigrationStep
+{
+    public function getCreationTimestamp(): int
+    {
+        return 1780900009;
+    }
+
+    public function update(Connection $connection): void
+    {
+        $connection->executeStatement(
+            "ALTER TABLE `ictech_gift_card_voucher`
+             MODIFY COLUMN `status` ENUM('waiting_valid_order', 'unused', 'partially_used', 'used', 'canceled')
+             NOT NULL DEFAULT 'waiting_valid_order'"
+        );
+    }
+
+    public function updateDestructive(Connection $connection): void
+    {
+    }
+}

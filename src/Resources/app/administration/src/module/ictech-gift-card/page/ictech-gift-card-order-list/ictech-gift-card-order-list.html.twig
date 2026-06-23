@@ -142,13 +142,7 @@
 
                     {% block ictech_gift_card_order_list_actions %}
                     <template #actions="{ item }">
-                        <sw-context-menu-item
-                            icon="regular-eye"
-                            :disabled="!item.orderId"
-                            @click="openOrder(item)"
-                        >
-                            {{ $tc('global.default.view') }}
-                        </sw-context-menu-item>
+
                         <sw-context-menu-item
                             variant="danger"
                             icon="regular-trash"

@@ -19,11 +19,13 @@ final class Migration1780900001UpdateVoucherStatusAndAddOrderNumber extends Migr
 
     public function update(Connection $connection): void
     {
-        $connection->executeStatement("
-            ALTER TABLE `ictech_gift_card_voucher`
-                MODIFY COLUMN `status` ENUM('waiting_valid_order','unused','used','canceled')
-                    NOT NULL DEFAULT 'waiting_valid_order'
-        ");
+        $connection->executeStatement(
+            "
+                ALTER TABLE `ictech_gift_card_voucher`
+                    MODIFY COLUMN `status` ENUM('waiting_valid_order','unused','partially_used','used','canceled')
+                        NOT NULL DEFAULT 'waiting_valid_order'
+            "
+        );
 
         $columns = $connection->fetchAllAssociative(
             "SHOW COLUMNS FROM `ictech_gift_card_voucher` LIKE 'used_in_order_number'"

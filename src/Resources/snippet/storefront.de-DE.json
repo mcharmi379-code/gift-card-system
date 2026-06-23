@@ -1,7 +1,7 @@
 {
     "ictech-gift-card": {
         "account": {
-            "menuLabel": "Geschenkkarten",
+            "menuLabel": "Meine Geschenkkarten",
             "pageTitle": "Meine Geschenkkarten",
             "columnCode": "Code",
             "columnRecipient": "Empfänger",

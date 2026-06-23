@@ -112,7 +112,13 @@ final class GiftCardCartProcessor implements CartProcessorInterface
 
         $balanceBefore = $voucher->getRemainingBalance();
         $balanceAfter  = \round($balanceBefore - $amountUsed, 2);
-        $newStatus     = $balanceAfter <= 0.0 ? VoucherStatus::Used : VoucherStatus::Unused;
+
+        $newStatus = VoucherStatus::Unused;
+        if ($balanceAfter <= 0.0) {
+            $newStatus = VoucherStatus::Used;
+        } elseif ($balanceAfter < $voucher->getOriginalAmount()) {
+            $newStatus = VoucherStatus::PartiallyUsed;
+        }
 
         $this->transactionRepository->create([[
             'id'             => Uuid::randomHex(),

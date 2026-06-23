@@ -47,7 +47,7 @@ class GiftCardTransactionDefinition extends EntityDefinition
             (new ManyToOneAssociationField('voucher', 'voucher_id', GiftCardVoucherDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('order_id', 'orderId', OrderDefinition::class))->addFlags(new ApiAware()),
-            (new ReferenceVersionField(OrderDefinition::class, 'order_version_id'))->addFlags(new ApiAware()),
+            (new ReferenceVersionField(OrderDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('order', 'order_id', OrderDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('customer_id', 'customerId', CustomerDefinition::class))->addFlags(new ApiAware()),

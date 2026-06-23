@@ -19,6 +19,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\EmailField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\EnumField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\ApiAware;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\CascadeDelete;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\ReferenceVersionField;
@@ -59,7 +60,7 @@ class GiftCardVoucherDefinition extends EntityDefinition
             (new ManyToOneAssociationField('giftCard', 'gift_card_id', GiftCardDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('order_id', 'orderId', OrderDefinition::class))->addFlags(new ApiAware()),
-            (new ReferenceVersionField(OrderDefinition::class, 'order_version_id'))->addFlags(new ApiAware()),
+            (new ReferenceVersionField(OrderDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('order', 'order_id', OrderDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('order_line_item_id', 'orderLineItemId', OrderLineItemDefinition::class))->addFlags(new ApiAware()),
@@ -90,8 +91,8 @@ class GiftCardVoucherDefinition extends EntityDefinition
 
             (new EnumField('status', 'status', VoucherStatus::WaitingValidOrder))->addFlags(new Required(), new ApiAware()),
 
-            (new OneToManyAssociationField('transactions', GiftCardTransactionDefinition::class, 'voucher_id'))->addFlags(new ApiAware()),
-            (new OneToManyAssociationField('auditLogs', GiftCardAuditLogDefinition::class, 'voucher_id'))->addFlags(new ApiAware()),
+            (new OneToManyAssociationField('transactions', GiftCardTransactionDefinition::class, 'voucher_id'))->addFlags(new ApiAware(), new CascadeDelete()),
+            (new OneToManyAssociationField('auditLogs', GiftCardAuditLogDefinition::class, 'voucher_id'))->addFlags(new ApiAware(), new CascadeDelete()),
 
             new CustomFields(),
         ]);

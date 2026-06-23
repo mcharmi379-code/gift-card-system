@@ -1,7 +1,7 @@
 {
     "ictech-gift-card": {
         "account": {
-            "menuLabel": "Gift Cards",
+            "menuLabel": "My Gift Cards",
             "pageTitle": "My Gift Cards",
             "columnCode": "Code",
             "columnRecipient": "Recipient",
