@@ -127,6 +127,7 @@
                 "columnCode": "Code",
                 "columnStatus": "Status",
                 "columnBalance": "Remaining",
+                "columnUsedInOrders": "Used in Order",
                 "columnDate": "Date",
                 "partial": "partial",
                 "actionViewOrder": "View order",

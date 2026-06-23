@@ -127,6 +127,7 @@
                 "columnCode": "Code",
                 "columnStatus": "Status",
                 "columnBalance": "Restbetrag",
+                "columnUsedInOrders": "Verwendet in Bestellung",
                 "columnDate": "Datum",
                 "partial": "teilweise",
                 "actionViewOrder": "Bestellung anzeigen",
