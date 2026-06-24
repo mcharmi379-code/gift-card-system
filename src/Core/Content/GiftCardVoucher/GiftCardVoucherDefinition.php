@@ -32,7 +32,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 use Shopware\Core\System\Currency\CurrencyDefinition;
 
-class GiftCardVoucherDefinition extends EntityDefinition
+final class GiftCardVoucherDefinition extends EntityDefinition
 {
     final public const ENTITY_NAME = 'ictech_gift_card_voucher';
 

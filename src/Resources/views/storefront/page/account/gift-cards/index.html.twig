@@ -34,7 +34,7 @@
                                     <td>{{ voucher.recipientName }}</td>
                                     <td>
                                         {% if voucher.customFields.deliveryMethod is defined %}
-                                            {% if voucher.customFields.deliveryMethod == 'print' %}
+                                            {% if voucher.customFields.deliveryMethod is same as('print') %}
                                                 -
                                             {% else %}
                                                 {{ voucher.recipientEmail }}
@@ -47,7 +47,7 @@
                                     <td>{{ voucher.remainingBalance|currency }}</td>
                                     <td>
                                         {% set isExpired = false %}
-                                        {% if voucher.expiresAt and voucher.expiresAt < date() and voucher.status.value == 'unused' %}
+                                        {% if voucher.expiresAt and voucher.expiresAt < date() and voucher.status.value is same as('unused') %}
                                             {% set isExpired = true %}
                                         {% endif %}
 

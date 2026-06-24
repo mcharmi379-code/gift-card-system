@@ -39,72 +39,114 @@ final class GiftCardCartController extends StorefrontController
     public function addGiftCard(Cart $cart, Request $request, SalesChannelContext $context): Response
     {
         try {
-            $code = (string) $request->request->get('code');
-            $code = \trim($code);
+            $code = \trim((string) $request->request->get('code'));
 
             if ($code === '') {
                 throw RoutingException::missingRequestParameter('code');
             }
 
-            $voucher = $this->findValidVoucher(\strtoupper($code), $context);
-
-            if ($voucher === null) {
-                $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.invalidVoucherCode'));
-                return $this->createActionResponse($request);
-            }
-
-            // Check if already in cart
-            $lineItemId = md5(GiftCardCartProcessor::LINE_ITEM_TYPE . '_' . $voucher->getCode());
-            if ($cart->has($lineItemId)) {
-                $this->addFlash(self::WARNING, $this->trans('ictech-gift-card.checkout.voucherAlreadyInCart'));
-                return $this->createActionResponse($request);
-            }
-
-            // Enforce combinability restrictions
-            $existingGiftCards = $cart->getLineItems()->filterType(GiftCardCartProcessor::LINE_ITEM_TYPE);
-            $newGiftCard = $voucher->getGiftCard();
-            $newIsRestricted = $newGiftCard !== null && $newGiftCard->getRestrictCombine();
-
-            if (\count($existingGiftCards) > 0) {
-                if ($newIsRestricted) {
-                    $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.voucherCannotBeCombined'));
-                    return $this->createActionResponse($request);
-                }
-
-                foreach ($existingGiftCards as $existingItem) {
-                    $existingCode = $existingItem->getReferencedId();
-                    if ($existingCode !== null) {
-                        $existingVoucher = $this->findValidVoucher(\strtoupper($existingCode), $context);
-                        if ($existingVoucher !== null) {
-                            $existingGiftCard = $existingVoucher->getGiftCard();
-                            if ($existingGiftCard !== null && $existingGiftCard->getRestrictCombine()) {
-                                $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.voucherCannotBeCombinedRestricted'));
-                                return $this->createActionResponse($request);
-                            }
-                        }
-                    }
-                }
-            }
-
-            $lineItem = new LineItem(
-                $lineItemId,
-                GiftCardCartProcessor::LINE_ITEM_TYPE,
-                $voucher->getCode(),
-                1
-            );
-            $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
-            $lineItem->setGood(false);
-            $lineItem->setStackable(false);
-            $lineItem->setRemovable(true);
-
-            $this->cartService->add($cart, $lineItem, $context);
-
-            $this->addFlash(self::SUCCESS, $this->trans('ictech-gift-card.checkout.voucherAddedSuccess'));
+            $this->processVoucherAddition($cart, \strtoupper($code), $context);
         } catch (\Exception $e) {
             $this->addFlash(self::DANGER, $this->trans('error.message-default'));
         }
 
         return $this->createActionResponse($request);
+    }
+
+    private function processVoucherAddition(Cart $cart, string $code, SalesChannelContext $context): void
+    {
+        $voucher = $this->findValidVoucher($code, $context);
+
+        if ($voucher === null) {
+            $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.invalidVoucherCode'));
+            return;
+        }
+
+        $lineItemId = md5(GiftCardCartProcessor::LINE_ITEM_TYPE . '_' . $voucher->getCode());
+        if ($cart->has($lineItemId)) {
+            $this->addFlash(self::WARNING, $this->trans('ictech-gift-card.checkout.voucherAlreadyInCart'));
+            return;
+        }
+
+        if ($this->hasCombinationRestrictionConflict($cart, $voucher, $context)) {
+            return;
+        }
+
+        $this->addVoucherLineItem($cart, $voucher, $lineItemId, $context);
+
+        $this->addFlash(self::SUCCESS, $this->trans('ictech-gift-card.checkout.voucherAddedSuccess'));
+    }
+
+    private function hasCombinationRestrictionConflict(
+        Cart $cart,
+        GiftCardVoucherEntity $voucher,
+        SalesChannelContext $context,
+    ): bool {
+        $existingGiftCards = $cart->getLineItems()->filterType(GiftCardCartProcessor::LINE_ITEM_TYPE);
+        if (\count($existingGiftCards) === 0) {
+            return false;
+        }
+
+        $newGiftCard = $voucher->getGiftCard();
+        if ($newGiftCard !== null && $newGiftCard->getRestrictCombine()) {
+            $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.voucherCannotBeCombined'));
+            return true;
+        }
+
+        return $this->hasRestrictedExistingGiftCard($existingGiftCards, $context);
+    }
+
+    private function hasRestrictedExistingGiftCard(
+        \Shopware\Core\Checkout\Cart\LineItem\LineItemCollection $existingGiftCards,
+        SalesChannelContext $context,
+    ): bool {
+        foreach ($existingGiftCards as $existingItem) {
+            if ($this->isLineItemRestricted($existingItem, $context)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function isLineItemRestricted(LineItem $existingItem, SalesChannelContext $context): bool
+    {
+        $existingCode = $existingItem->getReferencedId();
+        if ($existingCode === null) {
+            return false;
+        }
+
+        $existingVoucher = $this->findValidVoucher(\strtoupper($existingCode), $context);
+        if ($existingVoucher === null) {
+            return false;
+        }
+
+        $existingGiftCard = $existingVoucher->getGiftCard();
+        if ($existingGiftCard !== null && $existingGiftCard->getRestrictCombine()) {
+            $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.voucherCannotBeCombinedRestricted'));
+            return true;
+        }
+
+        return false;
+    }
+
+    private function addVoucherLineItem(
+        Cart $cart,
+        GiftCardVoucherEntity $voucher,
+        string $lineItemId,
+        SalesChannelContext $context,
+    ): void {
+        $lineItem = new LineItem(
+            $lineItemId,
+            GiftCardCartProcessor::LINE_ITEM_TYPE,
+            $voucher->getCode(),
+            1
+        );
+        $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
+        $lineItem->setGood(false);
+        $lineItem->setStackable(false);
+        $lineItem->setRemovable(true);
+
+        $this->cartService->add($cart, $lineItem, $context);
     }
 
     private function findValidVoucher(string $code, SalesChannelContext $context): ?GiftCardVoucherEntity

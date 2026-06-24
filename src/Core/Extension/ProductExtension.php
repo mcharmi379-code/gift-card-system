@@ -11,7 +11,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\SetNullOnDelete;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\OneToManyAssociationField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
-class ProductExtension extends EntityExtension
+final class ProductExtension extends EntityExtension
 {
     public function extendFields(FieldCollection $collection): void
     {

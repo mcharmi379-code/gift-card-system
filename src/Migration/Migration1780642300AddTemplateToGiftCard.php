@@ -10,7 +10,7 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 /**
  * @internal
  */
-class Migration1780642300AddTemplateToGiftCard extends MigrationStep
+final class Migration1780642300AddTemplateToGiftCard extends MigrationStep
 {
     public function getCreationTimestamp(): int
     {
@@ -23,7 +23,7 @@ class Migration1780642300AddTemplateToGiftCard extends MigrationStep
             "SHOW COLUMNS FROM `ictech_gift_card` LIKE 'template_id'"
         );
 
-        if (empty($columns)) {
+        if ($columns === []) {
             $connection->executeStatement(
                 <<<'SQL'
                 ALTER TABLE `ictech_gift_card`

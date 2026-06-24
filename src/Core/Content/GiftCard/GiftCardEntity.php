@@ -13,7 +13,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityCustomFieldsTrait;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 
-class GiftCardEntity extends Entity
+final class GiftCardEntity extends Entity
 {
     use EntityCustomFieldsTrait;
     use EntityIdTrait;

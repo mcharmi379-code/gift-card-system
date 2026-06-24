@@ -20,7 +20,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\OneToManyAssociationField
 use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
-class GiftCardTemplateDefinition extends EntityDefinition
+final class GiftCardTemplateDefinition extends EntityDefinition
 {
     final public const ENTITY_NAME = 'ictech_gift_card_template';
 

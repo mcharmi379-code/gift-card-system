@@ -39,11 +39,23 @@ final class GiftCardAccountController extends StorefrontController
     public function index(Request $request, SalesChannelContext $context, CustomerEntity $customer): Response
     {
         $page = $this->genericPageLoader->load($request, $context);
+        $vouchers = $this->getVouchersForCustomer($request, $customer, $context);
 
-        $p = $request->query->getInt('p', 1);
-        if ($p < 1) {
-            $p = 1;
-        }
+        return $this->renderStorefront('@ICTECHGiftCard/storefront/page/account/gift-cards/index.html.twig', [
+            'page' => $page,
+            'vouchers' => $vouchers,
+        ]);
+    }
+
+    /**
+     * @return \Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult<\ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection>
+     */
+    private function getVouchersForCustomer(
+        Request $request,
+        CustomerEntity $customer,
+        SalesChannelContext $context,
+    ): \Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult {
+        $p = \max(1, $request->query->getInt('p', 1));
         $limit = 10;
 
         $criteria = new Criteria();
@@ -61,11 +73,6 @@ final class GiftCardAccountController extends StorefrontController
         $criteria->setOffset(($p - 1) * $limit);
         $criteria->setTotalCountMode(Criteria::TOTAL_COUNT_MODE_EXACT);
 
-        $vouchers = $this->giftCardVoucherRepository->search($criteria, $context->getContext());
-
-        return $this->renderStorefront('@ICTECHGiftCard/storefront/page/account/gift-cards/index.html.twig', [
-            'page' => $page,
-            'vouchers' => $vouchers,
-        ]);
+        return $this->giftCardVoucherRepository->search($criteria, $context->getContext());
     }
 }

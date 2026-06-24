@@ -1,0 +1,51 @@
+{% block ictech_gift_card_delivery %}
+    <section class="ictech-gift-card-section">
+        <h2>1 &bull; {{ 'ictech-gift-card.page.deliveryMethod'|trans }}</h2>
+
+        <div class="ictech-gift-card-delivery" role="group" aria-label="{{ 'ictech-gift-card.page.deliveryMethodLabel'|trans }}">
+            <label>
+                <input type="radio" name="giftCardDeliveryMethod" value="print" checked data-gift-card-payload-field>
+                <span>{{ 'ictech-gift-card.page.deliveryPrint'|trans }}</span>
+            </label>
+            <label>
+                <input type="radio" name="giftCardDeliveryMethod" value="email" data-gift-card-payload-field>
+                <span>{{ 'ictech-gift-card.page.deliveryEmail'|trans }}</span>
+            </label>
+        </div>
+
+        {# Shown only when "Send by email" is selected #}
+        <div data-gift-card-email-fields>
+            <div class="form-group ictech-gift-card-field">
+                <label for="gift-card-email">
+                    {{ 'ictech-gift-card.page.mailRecipientLabel'|trans }} <span class="text-danger">*</span>
+                </label>
+                <input id="gift-card-email" type="email" name="giftCardEmail" placeholder="{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}" class="form-control" data-gift-card-payload-field required="required">
+                <div class="invalid-feedback">
+                    {{ 'ictech-gift-card.error.required'|trans }}
+                </div>
+            </div>
+
+            <p class="ictech-gift-card-help">
+                {{ 'ictech-gift-card.page.emailHelp'|trans }}
+            </p>
+
+            <div class="form-group ictech-gift-card-field ictech-gift-card-date">
+                <label for="gift-card-send-date">
+                    {{ 'ictech-gift-card.page.dateSendLabel'|trans }} <span class="text-danger">*</span>
+                </label>
+                <input
+                    id="gift-card-send-date"
+                    type="date"
+                    name="giftCardSendDate"
+                    class="form-control"
+                    min="{{ 'now'|date('Y-m-d') }}"
+                    data-gift-card-payload-field
+                    required="required"
+                >
+                <div class="invalid-feedback">
+                    {{ 'ictech-gift-card.error.required'|trans }}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

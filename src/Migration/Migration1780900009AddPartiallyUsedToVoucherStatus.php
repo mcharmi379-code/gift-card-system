@@ -7,7 +7,7 @@ namespace ICTECHGiftCard\Migration;
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
-class Migration1780900009AddPartiallyUsedToVoucherStatus extends MigrationStep
+final class Migration1780900009AddPartiallyUsedToVoucherStatus extends MigrationStep
 {
     public function getCreationTimestamp(): int
     {

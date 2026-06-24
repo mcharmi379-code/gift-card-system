@@ -44,11 +44,16 @@
             <argument type="service" id="sales_channel.repository" />
         </service>
 
-        <service id="ICTECHGiftCard\Core\ScheduledTask\GiftCardEmailTaskHandler" public="false">
+        <service id="ICTECHGiftCard\Core\ScheduledTask\ICTECHGiftCardEmailTask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+
+        <service id="ICTECHGiftCard\Core\ScheduledTask\ICTECHGiftCardEmailTaskHandler" public="false">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="logger" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
+            <tag name="messenger.message_handler" />
         </service>
 
         <service id="ICTECHGiftCard\Storefront\Controller\GiftCardPageController" public="true">

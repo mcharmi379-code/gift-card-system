@@ -6,7 +6,7 @@ namespace ICTECHGiftCard\Core\ScheduledTask;
 
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTask;
 
-final class GiftCardEmailTask extends ScheduledTask
+final class ICTECHGiftCardEmailTask extends ScheduledTask
 {
     public static function getTaskName(): string
     {

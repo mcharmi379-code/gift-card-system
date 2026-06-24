@@ -9,7 +9,7 @@ use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
-class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
+final class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
 {
     private const TECHNICAL_NAME = 'ictech_gift_card';
 

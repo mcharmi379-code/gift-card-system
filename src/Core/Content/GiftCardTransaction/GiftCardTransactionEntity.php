@@ -10,7 +10,7 @@ use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 
-class GiftCardTransactionEntity extends Entity
+final class GiftCardTransactionEntity extends Entity
 {
     use EntityIdTrait;
 

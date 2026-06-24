@@ -15,7 +15,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityCustomFieldsTrait;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 use Shopware\Core\System\Currency\CurrencyEntity;
 
-class GiftCardVoucherEntity extends Entity
+final class GiftCardVoucherEntity extends Entity
 {
     use EntityCustomFieldsTrait;
     use EntityIdTrait;

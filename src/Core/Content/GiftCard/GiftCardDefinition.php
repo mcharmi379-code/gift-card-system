@@ -26,7 +26,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelDefinition;
 
-class GiftCardDefinition extends EntityDefinition
+final class GiftCardDefinition extends EntityDefinition
 {
     final public const ENTITY_NAME = 'ictech_gift_card';
 

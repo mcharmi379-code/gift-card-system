@@ -7,7 +7,7 @@ namespace ICTECHGiftCard\Migration;
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
 
-class Migration1780900011FixGiftCardVoucherForeignKey extends MigrationStep
+final class Migration1780900011FixGiftCardVoucherForeignKey extends MigrationStep
 {
     public function getCreationTimestamp(): int
     {
@@ -20,8 +20,8 @@ class Migration1780900011FixGiftCardVoucherForeignKey extends MigrationStep
             $connection->executeStatement(
                 'ALTER TABLE `ictech_gift_card_voucher` DROP FOREIGN KEY `fk.ictech_gift_card_voucher.gift_card_id`'
             );
-        } catch (\Throwable) {
-            // Ignore if the constraint does not exist yet.
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
         }
 
         $connection->executeStatement(

@@ -11,7 +11,7 @@ use Shopware\Core\Framework\Migration\MigrationStep;
  * Pool vouchers (status=waiting_valid_order) have no recipient/schedule yet.
  * Make these columns nullable so we don't need placeholder values.
  */
-class Migration1780900005MakeVoucherPoolFieldsNullable extends MigrationStep
+final class Migration1780900005MakeVoucherPoolFieldsNullable extends MigrationStep
 {
     public function getCreationTimestamp(): int
     {

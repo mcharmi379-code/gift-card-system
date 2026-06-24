@@ -11,7 +11,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\OneToManyAssociationField
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelDefinition;
 
-class SalesChannelExtension extends EntityExtension
+final class SalesChannelExtension extends EntityExtension
 {
     public function extendFields(FieldCollection $collection): void
     {
