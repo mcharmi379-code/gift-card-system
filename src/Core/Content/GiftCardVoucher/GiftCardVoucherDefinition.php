@@ -56,7 +56,7 @@ class GiftCardVoucherDefinition extends EntityDefinition
         return new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
 
-            (new FkField('gift_card_id', 'giftCardId', GiftCardDefinition::class))->addFlags(new Required(), new ApiAware()),
+            (new FkField('gift_card_id', 'giftCardId', GiftCardDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('giftCard', 'gift_card_id', GiftCardDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('order_id', 'orderId', OrderDefinition::class))->addFlags(new ApiAware()),

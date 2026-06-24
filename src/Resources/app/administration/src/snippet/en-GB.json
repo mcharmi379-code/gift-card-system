@@ -128,6 +128,8 @@
                 "columnStatus": "Status",
                 "columnBalance": "Remaining",
                 "columnUsedInOrders": "Used in Order",
+                "columnScheduledSendDate": "Scheduled Delivery",
+                "columnSentAt": "Sent Date",
                 "columnDate": "Date",
                 "partial": "partial",
                 "actionViewOrder": "View order",

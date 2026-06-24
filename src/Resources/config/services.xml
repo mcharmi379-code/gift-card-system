@@ -15,7 +15,7 @@
             <argument type="service" id="sales_channel.repository" />
         </service>
 
-        <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService" public="false">
+        <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService" public="true">
             <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService" />
             <argument type="service" id="mail_template.repository" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />

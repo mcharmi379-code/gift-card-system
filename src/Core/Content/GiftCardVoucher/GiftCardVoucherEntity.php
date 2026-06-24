@@ -20,7 +20,7 @@ class GiftCardVoucherEntity extends Entity
     use EntityCustomFieldsTrait;
     use EntityIdTrait;
 
-    protected string $giftCardId = '';
+    protected ?string $giftCardId = null;
 
     protected ?GiftCardEntity $giftCard = null;
 
@@ -74,12 +74,12 @@ class GiftCardVoucherEntity extends Entity
 
     protected ?GiftCardAuditLogCollection $auditLogs = null;
 
-    public function getGiftCardId(): string
+    public function getGiftCardId(): ?string
     {
         return $this->giftCardId;
     }
 
-    public function setGiftCardId(string $giftCardId): void
+    public function setGiftCardId(?string $giftCardId): void
     {
         $this->giftCardId = $giftCardId;
     }

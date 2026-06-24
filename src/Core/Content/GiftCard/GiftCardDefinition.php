@@ -16,6 +16,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\ApiAware;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\CascadeDelete;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\SetNullOnDelete;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IntField;
@@ -71,7 +72,7 @@ class GiftCardDefinition extends EntityDefinition
             (new ReferenceVersionField(ProductDefinition::class, 'product_version_id'))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('product', 'product_id', ProductDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
-            (new OneToManyAssociationField('vouchers', GiftCardVoucherDefinition::class, 'gift_card_id'))->addFlags(new ApiAware(), new CascadeDelete()),
+            (new OneToManyAssociationField('vouchers', GiftCardVoucherDefinition::class, 'gift_card_id'))->addFlags(new ApiAware(), new SetNullOnDelete()),
 
             new CustomFields(),
         ]);
