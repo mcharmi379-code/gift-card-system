@@ -93,7 +93,7 @@ final class GiftCardEmailService
         if (!\is_string($contentPlain) || $contentPlain === '') {
             $contentPlain = $this->getDefaultPlainTemplate();
         }
-
+        
         $subjectFormat = $this->systemConfigService->getString('ICTECHGiftCard.config.emailSubjectRecipient', $salesChannelId) ?: 'Gift card offer from %s';
         $senderNameVal = $voucher->getSenderName() ?? '';
         $subject = \sprintf($subjectFormat, $senderNameVal);
@@ -113,8 +113,7 @@ final class GiftCardEmailService
 
         // Attach Inline Template Image for email
         $customFields = $voucher->getCustomFields() ?? [];
-        $rawTemplateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
-        $templateId = \is_string($rawTemplateId) ? $rawTemplateId : null;
+        $templateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
         if ($templateId !== null && $templateId !== '') {
             $criteria = new Criteria([$templateId]);
             $criteria->addAssociation('media');
@@ -128,13 +127,10 @@ final class GiftCardEmailService
                     $localPath = $publicDir . $relativePath;
                     if (\file_exists($localPath)) {
                         $mimeType = $media->getMimeType() ?: 'image/png';
-                        $fileHandle = fopen($localPath, 'r');
-                        if ($fileHandle !== false) {
-                            $part = new \Symfony\Component\Mime\Part\DataPart($fileHandle, 'giftcard_image', $mimeType);
-                            $part->asInline();
-                            $part->setContentId('giftcard_image@plugin');
-                            $data['attachments'] = [$part];
-                        }
+                        $part = new \Symfony\Component\Mime\Part\DataPart(fopen($localPath, 'r'), 'giftcard_image', $mimeType);
+                        $part->asInline();
+                        $part->setContentId('giftcard_image@plugin');
+                        $data['attachments'] = [$part];
                     }
                 }
             }
@@ -152,7 +148,7 @@ final class GiftCardEmailService
                         'content' => $pdfBinary,
                         'fileName' => $pdfFilename,
                         'mimeType' => 'application/pdf',
-                    ],
+                    ]
                 ];
             } catch (\Throwable $e) {
                 // Fail silently to not block mail sending if PDF generation has issues
@@ -220,7 +216,7 @@ final class GiftCardEmailService
     {
         $pdfContent = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId) ?: '';
 
-        if ($pdfContent === '') {
+        if ($pdfContent === '')     {
             return '';
         }
 
@@ -247,8 +243,7 @@ final class GiftCardEmailService
     private function buildCardImageHtml(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode): string
     {
         $customFields = $voucher->getCustomFields() ?? [];
-        $rawTemplateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
-        $templateId = \is_string($rawTemplateId) ? $rawTemplateId : null;
+        $templateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
         if ($templateId === null || $templateId === '') {
             return '';
         }
@@ -266,7 +261,7 @@ final class GiftCardEmailService
         }
 
         $url = $media->getUrl();
-        if ($url === '') {
+        if ($url === null || $url === '') {
             return '';
         }
 
@@ -280,9 +275,9 @@ final class GiftCardEmailService
         $h = (int) ($this->systemConfigService->get(self::CONFIG . $configKeyH, $salesChannelId) ?? 192);
 
         $relativePath = $media->getPath();
-        $projectDir   = dirname(__DIR__, 6);
-        $publicDir    = \rtrim($projectDir, '/') . '/public/';
-        $localPath    = $publicDir . $relativePath;
+        $projectDir = dirname(__DIR__, 6);
+        $publicDir = \rtrim($projectDir, '/') . '/public/';
+        $localPath = $publicDir . $relativePath;
 
         $imgUrl = $url;
         if (\file_exists($localPath)) {
@@ -293,84 +288,7 @@ final class GiftCardEmailService
             }
         }
 
-        // ── Read customization overlay stored by the admin template editor ──
-        $templateCustomFields = $template->get('customFields') ?? [];
-        if (!is_array($templateCustomFields)) {
-            $templateCustomFields = [];
-        }
-        $customize = $templateCustomFields['giftCardTemplateCustomize'] ?? [];
-        if (!is_array($customize)) {
-            $customize = [];
-        }
-
-        // Design elements (textOne/textTwo/textThree/colorOne) come from the admin template.
-        // Price and Discount Code are ALWAYS the real purchase values from the voucher entity.
-        $rawTextOne   = $customize['textOne']   ?? '';
-        $rawTextTwo   = $customize['textTwo']   ?? '';
-        $rawTextThree = $customize['textThree'] ?? '';
-        $rawColorOne  = $customize['colorOne']  ?? '#ffffff';
-        $textOne      = \htmlspecialchars(\is_string($rawTextOne)   ? $rawTextOne   : '', \ENT_QUOTES);
-        $textTwo      = \htmlspecialchars(\is_string($rawTextTwo)   ? $rawTextTwo   : '', \ENT_QUOTES);
-        $textThree    = \htmlspecialchars(\is_string($rawTextThree) ? $rawTextThree : '', \ENT_QUOTES);
-        $colorOne     = \htmlspecialchars(\is_string($rawColorOne)  ? $rawColorOne  : '#ffffff', \ENT_QUOTES);
-
-        // Dynamic values from the actual purchase
-        $price        = \htmlspecialchars(\number_format($voucher->getOriginalAmount(), 2), \ENT_QUOTES);
-        $discountCode = \htmlspecialchars($voucher->getCode(), \ENT_QUOTES);
-
-        // Percentage-based font sizes relative to card width
-        $priceFontSize    = (int) \round($w * 0.10);   // ~10% of width
-        $headlineFontSize = (int) \round($w * 0.075);  // ~7.5% of width
-        $brandFontSize    = (int) \round($w * 0.045);  // ~4.5% of width
-        $codeFontSize     = (int) \round($w * 0.038);  // ~3.8% of width
-
-        // Build the overlay — price and discountCode are always shown (they always have real values)
-        $headlineBlock = '';
-        if ($textTwo !== '' || $textThree !== '') {
-            $headlineBlock = '
-                <div style="position:absolute;top:8%;left:6%;max-width:42%;
-                            font-size:' . $headlineFontSize . 'px;line-height:1.08;font-weight:700;
-                            text-transform:uppercase;color:' . $colorOne . ';">
-                    ' . ($textTwo   !== '' ? '<strong style="display:block;">' . $textTwo   . '</strong>' : '') . '
-                    ' . ($textThree !== '' ? '<strong style="display:block;">' . $textThree . '</strong>' : '') . '
-                </div>';
-        }
-
-        $priceBlock = '
-            <b style="position:absolute;top:5%;right:5%;max-width:28%;
-                       font-size:' . $priceFontSize . 'px;line-height:1;font-weight:700;
-                       text-align:right;color:' . $colorOne . ';">
-                ' . $price . '
-            </b>';
-
-        $brandBlock = '';
-        if ($textOne !== '') {
-            $brandBlock = '
-                <span style="position:absolute;bottom:16%;right:6%;max-width:40%;
-                              font-size:' . $brandFontSize . 'px;font-weight:700;
-                              text-align:right;color:' . $colorOne . ';">
-                    ' . $textOne . '
-                </span>';
-        }
-
-        $codeBlock = '
-            <em style="position:absolute;bottom:7%;right:6%;max-width:40%;
-                        font-size:' . $codeFontSize . 'px;font-weight:700;font-style:normal;
-                        text-align:right;color:' . $colorOne . ';">
-                ' . $discountCode . '
-            </em>';
-
-        $overlayHtml = $headlineBlock . $priceBlock . $brandBlock . $codeBlock;
-
-        // Wrap image + overlay in a relative container
-        return '
-            <div style="position:relative;display:inline-block;width:' . $w . 'px;height:' . $h . 'px;overflow:hidden;vertical-align:top;">
-                <img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '"
-                     width="' . $w . '" height="' . $h . '"
-                     alt="Gift Card"
-                     style="display:block;width:100%;height:100%;object-fit:cover;">
-                ' . $overlayHtml . '
-            </div>';
+        return '<img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '" width="' . $w . '" height="' . $h . '" alt="Gift Card" style="max-width:100%">';
     }
 
     public function sendPurchaserConfirmationEmail(
@@ -444,40 +362,21 @@ final class GiftCardEmailService
 
         $expiresAt = $voucher->getExpiresAt();
 
-        $cardImgHtml = $this->buildCardImageHtml($voucher, $salesChannelId, 'email');
+        $pdfContentHtml = $this->buildPdfContent($voucher, $salesChannelId, $context->getLanguageId());
 
-        $contentHtml = '
-            <div style="font-family: \'Outfit\', \'Inter\', Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e1e8ed; border-radius: 16px; background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <span style="font-size: 40px;">🎁</span>
-                    <h2 style="margin: 12px 0 6px; font-size: 24px; color: #1e293b; font-weight: 700;">Your Gift Card is Ready!</h2>
-                    <p style="margin: 0; font-size: 14px; color: #64748b;">Print at home or use it online</p>
+        $contentHtml = $pdfContentHtml !== '' ? $pdfContentHtml : '
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;">
+                <h2>🎁 Your Gift Card</h2>
+                <p>Hi {{ purchaser_name }},</p>
+                <p>Thank you for purchasing a gift card. Here are your gift card details:</p>
+                <div style="background:#f5f5f5;padding:20px;text-align:center;border-radius:8px;margin:24px 0;">
+                    <p style="margin:0;font-size:12px;color:#999;">Your voucher code</p>
+                    <p style="margin:8px 0;font-size:28px;font-weight:bold;letter-spacing:4px;color:#333;">{{ voucher_code }}</p>
+                    <p style="margin:0;font-size:12px;color:#999;">Amount: <strong>€{{ amount }}</strong></p>
+                    <p style="margin:0;font-size:12px;color:#999;">Valid until {{ validity_date }}</p>
                 </div>
-                
-                <p style="font-size: 16px; color: #334155; line-height: 1.6;">Hi {{ purchaser_name }},</p>
-                <p style="font-size: 16px; color: #334155; line-height: 1.6;">Thank you for your purchase! Your gift card has been generated. Below are your card details. We have also attached a printable PDF version of your gift card to this email.</p>
-                
-                <div style="text-align: center; margin: 24px 0;">
-                    {{ card_image|raw }}
-                </div>
-
-                <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 24px; text-align: center; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
-                    <p style="margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; font-weight: 600;">Your Voucher Code</p>
-                    <p style="margin: 0 0 12px; font-size: 28px; font-weight: 800; letter-spacing: 4px; color: #0f172a; font-family: monospace;">{{ voucher_code }}</p>
-                    <p style="margin: 0; font-size: 16px; color: #334155; font-weight: 600;">Value: <span style="color: #10b981;">€{{ amount }}</span></p>
-                    <p style="margin: 8px 0 0; font-size: 12px; color: #94a3b8;">Valid until {{ validity_date }}</p>
-                </div>
-
-                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                    <p style="font-size: 14px; color: #64748b; line-height: 1.5; margin: 0 0 16px;">
-                        <strong>How to redeem:</strong> Simply enter the voucher code <strong>{{ voucher_code }}</strong> in the shopping cart before proceeding to checkout. The card value will be deducted from your total.
-                    </p>
-                    <div style="text-align: center;">
-                        <a href="{{ shop_url }}" style="background: #10b981; color: #ffffff; padding: 12px 32px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);">
-                            Shop Now
-                        </a>
-                    </div>
-                </div>
+                <p>Redemption details: Enter the voucher code in the shopping cart before checking out to redeem it.</p>
+                <p><a href="{{ shop_url }}" style="background:#57D9A3;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;display:inline-block;">Shop Now</a></p>
             </div>
         ';
 
@@ -492,35 +391,6 @@ final class GiftCardEmailService
             'contentPlain'    => $contentPlain,
         ];
 
-        // Attach Inline Template Image for email
-        $customFields = $voucher->getCustomFields() ?? [];
-        $rawTemplateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
-        $templateId = \is_string($rawTemplateId) ? $rawTemplateId : null;
-        if ($templateId !== null && $templateId !== '') {
-            $criteria = new Criteria([$templateId]);
-            $criteria->addAssociation('media');
-            $template = $this->templateRepository->search($criteria, $context)->first();
-            if ($template !== null) {
-                $media = $template->get('media');
-                if ($media instanceof \Shopware\Core\Content\Media\MediaEntity) {
-                    $relativePath = $media->getPath();
-                    $projectDir = dirname(__DIR__, 6);
-                    $publicDir = \rtrim($projectDir, '/') . '/public/';
-                    $localPath = $publicDir . $relativePath;
-                    if (\file_exists($localPath)) {
-                        $mimeType = $media->getMimeType() ?: 'image/png';
-                        $fileHandle = fopen($localPath, 'r');
-                        if ($fileHandle !== false) {
-                            $part = new \Symfony\Component\Mime\Part\DataPart($fileHandle, 'giftcard_image', $mimeType);
-                            $part->asInline();
-                            $part->setContentId('giftcard_image@plugin');
-                            $data['attachments'] = [$part];
-                        }
-                    }
-                }
-            }
-        }
-
         // Attach PDF if enabled
         $enablePdf = $this->systemConfigService->getBool('ICTECHGiftCard.config.enablePdf', $salesChannelId);
         if ($enablePdf) {
@@ -533,7 +403,7 @@ final class GiftCardEmailService
                         'content' => $pdfBinary,
                         'fileName' => $pdfFilename,
                         'mimeType' => 'application/pdf',
-                    ],
+                    ]
                 ];
             } catch (\Throwable $e) {
                 // Fail silently to not block mail sending if PDF generation has issues
@@ -546,7 +416,6 @@ final class GiftCardEmailService
             'amount'          => number_format($voucher->getOriginalAmount(), 2),
             'validity_date'   => $expiresAt?->format('d.m.Y') ?? '',
             'shop_url'        => $this->getShopUrl($salesChannelId),
-            'card_image'      => $cardImgHtml,
         ];
 
         $this->mailService->send($data, $context, $templateData);
@@ -561,10 +430,10 @@ final class GiftCardEmailService
     public function generatePdfForVoucher(GiftCardVoucherEntity $voucher, Context $context): string
     {
         $salesChannelId = $this->getDefaultSalesChannelId($context);
-
+        
         $html = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
-
-        if ($html === '') {
+        
+        if (empty($html)) {
             $html = '<html><body>Gift Card Code: {{card_code}}</body></html>';
         }
 
@@ -572,11 +441,11 @@ final class GiftCardEmailService
 
         $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId) ?: 'Our Shop';
         $expiresAt = $voucher->getExpiresAt();
-
+        
         $currencySymbol = '€';
         $currency = $voucher->get('currency');
         if ($currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
-            $currencySymbol = $currency->getSymbol();
+            $currencySymbol = $currency->getSymbol() ?? '€';
         } else {
             // Reload voucher with currency association to get the symbol
             $voucherCriteria = new Criteria([$voucher->getId()]);
@@ -584,10 +453,10 @@ final class GiftCardEmailService
             $reloaded = $this->voucherRepository->search($voucherCriteria, $context)->first();
             $reloadedCurrency = $reloaded?->get('currency');
             if ($reloadedCurrency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
-                $currencySymbol = $reloadedCurrency->getSymbol();
+                $currencySymbol = $reloadedCurrency->getSymbol() ?? '€';
             }
         }
-
+        
         $priceStr = \number_format($voucher->getOriginalAmount(), 2) . ' ' . $currencySymbol;
 
         $replacements = [
