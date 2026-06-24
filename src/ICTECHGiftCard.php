@@ -79,6 +79,7 @@ final class ICTECHGiftCard extends Plugin
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_transaction`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_voucher`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card`');
+        $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_template_translation`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_template`');
     }
 

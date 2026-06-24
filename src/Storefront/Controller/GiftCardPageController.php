@@ -236,7 +236,8 @@ final class GiftCardPageController extends StorefrontController
                 continue;
             }
 
-            $tag = \trim($template->getTag());
+            $translated = $template->getTranslated();
+            $tag = isset($translated['tag']) ? \trim((string) $translated['tag']) : \trim($template->getTag());
             $key = $tag !== '' ? $tag : 'Various';
 
             $filters['all']['count']++;

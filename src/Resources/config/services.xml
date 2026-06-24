@@ -32,6 +32,14 @@
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
         </service>
 
+        <service id="ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateDefinition">
+            <tag name="shopware.entity.definition" entity="ictech_gift_card_template" />
+        </service>
+
+        <service id="ICTECHGiftCard\Core\Content\GiftCardTemplate\Aggregate\GiftCardTemplateTranslation\GiftCardTemplateTranslationDefinition">
+            <tag name="shopware.entity.definition" entity="ictech_gift_card_template_translation" />
+        </service>
+
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardOrderSubscriber" public="false">
             <argument type="service" id="Doctrine\DBAL\Connection" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />

@@ -94,11 +94,11 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
 
         $taxId = $this->getDefaultTaxId($context);
 
-        if ($isInsert) {
-            // Brand new gift card — create the linked product only.
+        if ($giftCard->getProductId() === null) {
+            // Brand new or missing product — create the linked product
             $this->createProduct($giftCard, $taxId, $context);
         } else {
-            // Existing gift card updated — sync product fields only
+            // Existing gift card updated — sync product fields
             $this->updateProduct($giftCard, $taxId, $context);
         }
     }
@@ -158,7 +158,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     ): array {
         $payload = [
             'id'             => $productId,
-            'productNumber'  => 'GIFTCARD-' . \strtoupper(\substr($giftCard->getId(), 0, 8)),
+            'productNumber'  => 'GIFTCARD-' . \strtoupper(\substr($giftCard->getId(), -8)),
             'name'           => $giftCard->getName(),
             'stock'          => 999999,
             'price'          => [[

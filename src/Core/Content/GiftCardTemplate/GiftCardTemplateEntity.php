@@ -10,6 +10,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCustomFieldsTrait;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 
+use ICTECHGiftCard\Core\Content\GiftCardTemplate\Aggregate\GiftCardTemplateTranslation\GiftCardTemplateTranslationCollection;
+
 class GiftCardTemplateEntity extends Entity
 {
     use EntityCustomFieldsTrait;
@@ -26,6 +28,8 @@ class GiftCardTemplateEntity extends Entity
     protected bool $active = true;
 
     protected ?GiftCardCollection $giftCards = null;
+
+    protected ?GiftCardTemplateTranslationCollection $translations = null;
 
     public function getName(): string
     {
@@ -85,5 +89,15 @@ class GiftCardTemplateEntity extends Entity
     public function setGiftCards(GiftCardCollection $giftCards): void
     {
         $this->giftCards = $giftCards;
+    }
+
+    public function getTranslations(): ?GiftCardTemplateTranslationCollection
+    {
+        return $this->translations;
+    }
+
+    public function setTranslations(GiftCardTemplateTranslationCollection $translations): void
+    {
+        $this->translations = $translations;
     }
 }
