@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Service;
 
+use Doctrine\DBAL\Connection;
 use Shopware\Core\Content\Category\CategoryDefinition;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
@@ -27,6 +28,7 @@ final class GiftCardNavigationInstaller
     public function __construct(
         private readonly EntityRepository $categoryRepository,
         private readonly EntityRepository $salesChannelRepository,
+        private readonly Connection $connection,
     ) {
     }
 
@@ -75,11 +77,24 @@ final class GiftCardNavigationInstaller
             $context
         )->first();
 
+        // Query all languages and their locale codes to support German translation
+        $languages = [];
+        try {
+            $languages = $this->connection->fetchAllKeyValue(
+                'SELECT LOWER(HEX(l.id)) as id, lo.code FROM language l INNER JOIN locale lo ON l.locale_id = lo.id'
+            );
+        } catch (\Exception) {
+            // Fallback if DB query fails during tests
+        }
+
         // Always add system language fallback
         $defaultUrl = self::CATEGORY_URL;
+        $systemLocale = $languages[Defaults::LANGUAGE_SYSTEM] ?? 'en-GB';
+        $systemName = \str_starts_with($systemLocale, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+
         $translations = [
             Defaults::LANGUAGE_SYSTEM => [
-                'name' => self::CATEGORY_NAME,
+                'name' => $systemName,
                 'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
                 'externalLink' => $defaultUrl,
                 'linkNewTab' => false,
@@ -103,8 +118,11 @@ final class GiftCardNavigationInstaller
                 $defaultUrl = $url;
             }
 
+            $locale = $languages[$languageId] ?? 'en-GB';
+            $name = \str_starts_with($locale, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+
             $translations[$languageId] = [
-                'name' => self::CATEGORY_NAME,
+                'name' => $name,
                 'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
                 'externalLink' => $url,
                 'linkNewTab' => false,

@@ -18,6 +18,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\MultiFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\NotFilter;
 use Shopware\Core\Framework\Routing\RoutingException;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Controller\StorefrontController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +33,7 @@ final class GiftCardCartController extends StorefrontController
     public function __construct(
         private readonly CartService $cartService,
         private readonly EntityRepository $voucherRepository,
+        private readonly SystemConfigService $systemConfigService,
     ) {
     }
 
@@ -39,6 +41,12 @@ final class GiftCardCartController extends StorefrontController
     public function addGiftCard(Cart $cart, Request $request, SalesChannelContext $context): Response
     {
         try {
+            $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
+            if (!$active) {
+                $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.invalidVoucherCode'));
+                return $this->createActionResponse($request);
+            }
+
             $code = (string) $request->request->get('code');
             $code = \trim($code);
 

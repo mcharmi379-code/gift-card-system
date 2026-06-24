@@ -4,11 +4,22 @@
     {% set defaultAmount = giftCardDefaultAmount %}
 
     <div class="ictech-gift-card-page" data-ictech-gift-card-page>
-        <h1 class="ictech-gift-card-page__title">{{ 'ictech-gift-card.page.title'|trans }}</h1>
+        {% if not active or not defaultAmount %}
+            <div class="cms-listing-col wishlist-listing-col col-12 text-center py-5">
+                <img src="{{ asset('assets/illustration/wishlist_empty.svg', 'theme') }}"
+                     alt="{{ 'ictech-gift-card.page.noGiftCardsAvailableDescription'|trans|striptags }}"
+                     class="wishlist-listing-empty"
+                     style="max-width: 300px; margin: 0 auto 24px; display: block;">
 
-        <div class="ictech-gift-card-page__intro">
-            {{ 'ictech-gift-card.page.intro'|trans }}
-        </div>
+                <h1 class="text-center wishlist-listing-header">{{ 'ictech-gift-card.page.noGiftCardsAvailableHeader'|trans }}</h1>
+                <p class="text-center wishlist-listing-description text-muted">{{ 'ictech-gift-card.page.noGiftCardsAvailableDescription'|trans }}</p>
+            </div>
+        {% else %}
+            <h1 class="ictech-gift-card-page__title">{{ 'ictech-gift-card.page.title'|trans }}</h1>
+
+            <div class="ictech-gift-card-page__intro">
+                {{ 'ictech-gift-card.page.intro'|trans }}
+            </div>
 
         <form
             action="{{ path('frontend.checkout.line-item.add') }}"
@@ -127,6 +138,9 @@
                         <p>{{ 'ictech-gift-card.page.noTemplates'|trans }}</p>
                     {% endfor %}
                 </div>
+                <div class="invalid-feedback d-none mt-2" data-gift-card-template-error style="font-size: 0.875rem; color: #dc3545;">
+                    {{ 'ictech-gift-card.error.templateRequired'|trans }}
+                </div>
             </section>
 
             <section class="ictech-gift-card-section">
@@ -192,6 +206,7 @@
                 </div>
             </section>
         </form>
+        {% endif %}
 
     </div>
 {% endblock %}

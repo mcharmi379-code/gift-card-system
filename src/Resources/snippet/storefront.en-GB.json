@@ -44,7 +44,9 @@
             "dateSendLabel": "Send date",
             "emailHelp": "The gift card will be sent by email as soon as your payment is confirmed. You can also choose a later sending date.",
             "previewButton": "Preview",
-            "addToCart": "Add to cart"
+            "addToCart": "Add to cart",
+            "noGiftCardsAvailableHeader": "No gift cards available",
+            "noGiftCardsAvailableDescription": "Currently, there are no gift cards available. Please check back later."
         },
         "checkout": {
             "addGiftCardLabel": "Redeem Gift Card",
@@ -56,7 +58,8 @@
             "voucherAddedSuccess": "Gift card code applied successfully."
         },
         "error": {
-            "required": "Input should not be empty."
+            "required": "Input should not be empty.",
+            "templateRequired": "Please select a gift card template."
         }
     }
 }

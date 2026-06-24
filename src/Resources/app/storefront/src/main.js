@@ -86,6 +86,16 @@ function selectTemplate(page, button) {
         templateInput.value = templateId;
     }
 
+    const templateError = page.querySelector('[data-gift-card-template-error]');
+    if (templateError) {
+        templateError.classList.remove('d-block');
+        templateError.classList.add('d-none');
+    }
+    const grid = page.querySelector('.ictech-gift-card-template-grid');
+    if (grid) {
+        grid.classList.remove('is-invalid');
+    }
+
     updatePayload(page);
 }
 
@@ -162,8 +172,32 @@ function initDeliveryToggle(page) {
 
 function openPreview(page, previewUrl) {
     const form = page.querySelector('form');
+    const templateInput = page.querySelector('[data-gift-card-template-id]');
+    const isTemplateValid = templateInput && templateInput.value;
+    const templateError = page.querySelector('[data-gift-card-template-error]');
+
+    if (!isTemplateValid) {
+        if (templateError) {
+            templateError.classList.remove('d-none');
+            templateError.classList.add('d-block');
+        }
+        const grid = page.querySelector('.ictech-gift-card-template-grid');
+        if (grid) {
+            grid.classList.add('is-invalid');
+        }
+    } else {
+        if (templateError) {
+            templateError.classList.remove('d-block');
+            templateError.classList.add('d-none');
+        }
+        const grid = page.querySelector('.ictech-gift-card-template-grid');
+        if (grid) {
+            grid.classList.remove('is-invalid');
+        }
+    }
+
     if (form) {
-        if (!form.reportValidity()) {
+        if (!form.reportValidity() || !isTemplateValid) {
             form.classList.add('was-validated');
             return; // Block opening the preview if form contains validation errors
         }
@@ -203,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize unique line item key (also sets value of product ID field to the key)
         updateLineItemKey(page, generateUuid());
 
-        if (firstTemplate) selectTemplate(page, firstTemplate);
+        // Do not automatically select the first template, as template selection is now mandatory
         if (amountSelect) {
             updateAmount(page, amountSelect);
             amountSelect.addEventListener('change', () => updateAmount(page, amountSelect));
@@ -233,7 +267,31 @@ document.addEventListener('DOMContentLoaded', () => {
         // Regenerate unique key after submission so next addition gets a new line item
         if (form) {
             form.addEventListener('submit', (event) => {
-                if (!form.checkValidity()) {
+                const templateInput = page.querySelector('[data-gift-card-template-id]');
+                const isTemplateValid = templateInput && templateInput.value;
+                const templateError = page.querySelector('[data-gift-card-template-error]');
+
+                if (!isTemplateValid) {
+                    if (templateError) {
+                        templateError.classList.remove('d-none');
+                        templateError.classList.add('d-block');
+                    }
+                    const grid = page.querySelector('.ictech-gift-card-template-grid');
+                    if (grid) {
+                        grid.classList.add('is-invalid');
+                    }
+                } else {
+                    if (templateError) {
+                        templateError.classList.remove('d-block');
+                        templateError.classList.add('d-none');
+                    }
+                    const grid = page.querySelector('.ictech-gift-card-template-grid');
+                    if (grid) {
+                        grid.classList.remove('is-invalid');
+                    }
+                }
+
+                if (!form.checkValidity() || !isTemplateValid) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
                     form.classList.add('was-validated');

@@ -23,6 +23,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\MultiFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\NotFilter;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 final class GiftCardCartProcessor implements CartProcessorInterface
 {
@@ -36,6 +37,7 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         private readonly EntityRepository $voucherRepository,
         private readonly EntityRepository $transactionRepository,
         private readonly AbsolutePriceCalculator $priceCalculator,
+        private readonly SystemConfigService $systemConfigService,
     ) {
     }
 
@@ -46,6 +48,14 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         SalesChannelContext $context,
         CartBehavior $behavior,
     ): void {
+        $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
+        if (!$active) {
+            foreach ($original->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
+                $original->getLineItems()->remove($lineItem->getId());
+            }
+            return;
+        }
+
         $runningTotal = $toCalculate->getPrice()->getTotalPrice();
         $hasRestricted = false;
         $appliedCount = 0;

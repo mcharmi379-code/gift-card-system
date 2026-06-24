@@ -13,6 +13,7 @@
         <service id="ICTECHGiftCard\Service\GiftCardNavigationInstaller" public="false">
             <argument type="service" id="category.repository" />
             <argument type="service" id="sales_channel.repository" />
+            <argument type="service" id="Doctrine\DBAL\Connection" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService" public="false">
@@ -28,6 +29,7 @@
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ictech_gift_card_transaction.repository" />
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator" />
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardOrderSubscriber" public="false">
@@ -64,6 +66,7 @@
             <tag name="controller.service_arguments" />
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
         </service>
 
         <service id="ICTECHGiftCard\Storefront\Controller\GiftCardAccountController" public="true">

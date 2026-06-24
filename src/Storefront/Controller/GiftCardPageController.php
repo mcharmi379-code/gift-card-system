@@ -125,6 +125,8 @@ final class GiftCardPageController extends StorefrontController
         $page = $this->genericPageLoader->load($request, $context);
         $salesChannelId = $context->getSalesChannelId();
 
+        $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $salesChannelId);
+
         $templates = $this->loadTemplates($context);
         $giftCards = $this->loadGiftCards($context);
         $amountOptions = $this->buildAmountOptions($giftCards);
@@ -137,6 +139,7 @@ final class GiftCardPageController extends StorefrontController
             'giftCardTagFilters' => $tagFilters,
             'giftCardAmountOptions' => $amountOptions,
             'giftCardDefaultAmount' => $amountOptions[0] ?? null,
+            'active' => $active,
         ]);
     }
 

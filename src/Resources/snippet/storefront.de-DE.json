@@ -44,11 +44,13 @@
             "dateSendLabel": "Sendedatum",
             "emailHelp": "Die Geschenkkarte wird per E-Mail gesendet, sobald Ihre Zahlung bestätigt wurde. Sie können auch ein späteres Sendedatum wählen.",
             "previewButton": "Vorschau",
-            "addToCart": "In den Warenkorb"
+            "addToCart": "In den Warenkorb",
+            "noGiftCardsAvailableHeader": "Keine Geschenkkarten verfügbar",
+            "noGiftCardsAvailableDescription": "Derzeit sind keine Geschenkkarten verfügbar. Bitte versuchen Sie es später noch einmal."
         },
         "checkout": {
             "addGiftCardLabel": "Geschenkkarte einlösen",
-            "addGiftCardPlaceholder": "Geschenkkartencode eingeben",
+            "addGiftCardPlaceholder": "Geschenkkartecode eingeben",
             "invalidVoucherCode": "Ungültiger oder abgelaufener Geschenkkartencode.",
             "voucherAlreadyInCart": "Dieser Geschenkkartencode befindet sich bereits im Warenkorb.",
             "voucherCannotBeCombined": "Diese Geschenkkarte kann nicht mit anderen Geschenkkarten kombiniert werden.",
@@ -56,7 +58,8 @@
             "voucherAddedSuccess": "Geschenkkartencode erfolgreich angewendet."
         },
         "error": {
-            "required": "Eingabe darf nicht leer sein."
+            "required": "Eingabe darf nicht leer sein.",
+            "templateRequired": "Bitte wählen Sie eine Geschenkkartenvorlage aus."
         }
     }
 }

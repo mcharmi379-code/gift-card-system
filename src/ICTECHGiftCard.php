@@ -47,9 +47,10 @@ final class ICTECHGiftCard extends Plugin
         $this->createMailTemplateType($installContext);
         $categoryRepository = $this->container?->get('category.repository');
         $salesChannelRepository = $this->container?->get('sales_channel.repository');
+        $connection = $this->container?->get(Connection::class);
 
-        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository) {
-            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository);
+        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository && $connection instanceof Connection) {
+            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository, $connection);
             $installer->install($installContext->getContext());
         }
     }
@@ -68,6 +69,11 @@ final class ICTECHGiftCard extends Plugin
         }
 
         $this->removeMailTemplateType($connection);
+
+        $connection->executeStatement(
+            'DELETE FROM category WHERE id IN (SELECT DISTINCT category_id FROM category_translation WHERE custom_fields LIKE :search)',
+            ['search' => '%ictech_gift_card_navigation%']
+        );
 
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_audit_log`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_transaction`');
