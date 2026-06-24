@@ -93,7 +93,7 @@ final class GiftCardEmailService
         if (!\is_string($contentPlain) || $contentPlain === '') {
             $contentPlain = $this->getDefaultPlainTemplate();
         }
-        
+
         $subjectFormat = $this->systemConfigService->getString('ICTECHGiftCard.config.emailSubjectRecipient', $salesChannelId) ?: 'Gift card offer from %s';
         $senderNameVal = $voucher->getSenderName() ?? '';
         $subject = \sprintf($subjectFormat, $senderNameVal);
@@ -113,7 +113,8 @@ final class GiftCardEmailService
 
         // Attach Inline Template Image for email
         $customFields = $voucher->getCustomFields() ?? [];
-        $templateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
+        $rawTemplateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
+        $templateId = \is_string($rawTemplateId) ? $rawTemplateId : null;
         if ($templateId !== null && $templateId !== '') {
             $criteria = new Criteria([$templateId]);
             $criteria->addAssociation('media');
@@ -127,10 +128,13 @@ final class GiftCardEmailService
                     $localPath = $publicDir . $relativePath;
                     if (\file_exists($localPath)) {
                         $mimeType = $media->getMimeType() ?: 'image/png';
-                        $part = new \Symfony\Component\Mime\Part\DataPart(fopen($localPath, 'r'), 'giftcard_image', $mimeType);
-                        $part->asInline();
-                        $part->setContentId('giftcard_image@plugin');
-                        $data['attachments'] = [$part];
+                        $fileHandle = fopen($localPath, 'r');
+                        if ($fileHandle !== false) {
+                            $part = new \Symfony\Component\Mime\Part\DataPart($fileHandle, 'giftcard_image', $mimeType);
+                            $part->asInline();
+                            $part->setContentId('giftcard_image@plugin');
+                            $data['attachments'] = [$part];
+                        }
                     }
                 }
             }
@@ -148,7 +152,7 @@ final class GiftCardEmailService
                         'content' => $pdfBinary,
                         'fileName' => $pdfFilename,
                         'mimeType' => 'application/pdf',
-                    ]
+                    ],
                 ];
             } catch (\Throwable $e) {
                 // Fail silently to not block mail sending if PDF generation has issues
@@ -243,7 +247,8 @@ final class GiftCardEmailService
     private function buildCardImageHtml(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode): string
     {
         $customFields = $voucher->getCustomFields() ?? [];
-        $templateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
+        $rawTemplateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
+        $templateId = \is_string($rawTemplateId) ? $rawTemplateId : null;
         if ($templateId === null || $templateId === '') {
             return '';
         }
@@ -261,7 +266,7 @@ final class GiftCardEmailService
         }
 
         $url = $media->getUrl();
-        if ($url === null || $url === '') {
+        if ($url === '') {
             return '';
         }
 
@@ -275,9 +280,9 @@ final class GiftCardEmailService
         $h = (int) ($this->systemConfigService->get(self::CONFIG . $configKeyH, $salesChannelId) ?? 192);
 
         $relativePath = $media->getPath();
-        $projectDir = dirname(__DIR__, 6);
-        $publicDir = \rtrim($projectDir, '/') . '/public/';
-        $localPath = $publicDir . $relativePath;
+        $projectDir   = dirname(__DIR__, 6);
+        $publicDir    = \rtrim($projectDir, '/') . '/public/';
+        $localPath    = $publicDir . $relativePath;
 
         $imgUrl = $url;
         if (\file_exists($localPath)) {
@@ -288,7 +293,84 @@ final class GiftCardEmailService
             }
         }
 
-        return '<img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '" width="' . $w . '" height="' . $h . '" alt="Gift Card" style="max-width:100%">';
+        // ── Read customization overlay stored by the admin template editor ──
+        $templateCustomFields = $template->get('customFields') ?? [];
+        if (!is_array($templateCustomFields)) {
+            $templateCustomFields = [];
+        }
+        $customize = $templateCustomFields['giftCardTemplateCustomize'] ?? [];
+        if (!is_array($customize)) {
+            $customize = [];
+        }
+
+        // Design elements (textOne/textTwo/textThree/colorOne) come from the admin template.
+        // Price and Discount Code are ALWAYS the real purchase values from the voucher entity.
+        $rawTextOne   = $customize['textOne']   ?? '';
+        $rawTextTwo   = $customize['textTwo']   ?? '';
+        $rawTextThree = $customize['textThree'] ?? '';
+        $rawColorOne  = $customize['colorOne']  ?? '#ffffff';
+        $textOne      = \htmlspecialchars(\is_string($rawTextOne)   ? $rawTextOne   : '', \ENT_QUOTES);
+        $textTwo      = \htmlspecialchars(\is_string($rawTextTwo)   ? $rawTextTwo   : '', \ENT_QUOTES);
+        $textThree    = \htmlspecialchars(\is_string($rawTextThree) ? $rawTextThree : '', \ENT_QUOTES);
+        $colorOne     = \htmlspecialchars(\is_string($rawColorOne)  ? $rawColorOne  : '#ffffff', \ENT_QUOTES);
+
+        // Dynamic values from the actual purchase
+        $price        = \htmlspecialchars(\number_format($voucher->getOriginalAmount(), 2), \ENT_QUOTES);
+        $discountCode = \htmlspecialchars($voucher->getCode(), \ENT_QUOTES);
+
+        // Percentage-based font sizes relative to card width
+        $priceFontSize    = (int) \round($w * 0.10);   // ~10% of width
+        $headlineFontSize = (int) \round($w * 0.075);  // ~7.5% of width
+        $brandFontSize    = (int) \round($w * 0.045);  // ~4.5% of width
+        $codeFontSize     = (int) \round($w * 0.038);  // ~3.8% of width
+
+        // Build the overlay — price and discountCode are always shown (they always have real values)
+        $headlineBlock = '';
+        if ($textTwo !== '' || $textThree !== '') {
+            $headlineBlock = '
+                <div style="position:absolute;top:8%;left:6%;max-width:42%;
+                            font-size:' . $headlineFontSize . 'px;line-height:1.08;font-weight:700;
+                            text-transform:uppercase;color:' . $colorOne . ';">
+                    ' . ($textTwo   !== '' ? '<strong style="display:block;">' . $textTwo   . '</strong>' : '') . '
+                    ' . ($textThree !== '' ? '<strong style="display:block;">' . $textThree . '</strong>' : '') . '
+                </div>';
+        }
+
+        $priceBlock = '
+            <b style="position:absolute;top:5%;right:5%;max-width:28%;
+                       font-size:' . $priceFontSize . 'px;line-height:1;font-weight:700;
+                       text-align:right;color:' . $colorOne . ';">
+                ' . $price . '
+            </b>';
+
+        $brandBlock = '';
+        if ($textOne !== '') {
+            $brandBlock = '
+                <span style="position:absolute;bottom:16%;right:6%;max-width:40%;
+                              font-size:' . $brandFontSize . 'px;font-weight:700;
+                              text-align:right;color:' . $colorOne . ';">
+                    ' . $textOne . '
+                </span>';
+        }
+
+        $codeBlock = '
+            <em style="position:absolute;bottom:7%;right:6%;max-width:40%;
+                        font-size:' . $codeFontSize . 'px;font-weight:700;font-style:normal;
+                        text-align:right;color:' . $colorOne . ';">
+                ' . $discountCode . '
+            </em>';
+
+        $overlayHtml = $headlineBlock . $priceBlock . $brandBlock . $codeBlock;
+
+        // Wrap image + overlay in a relative container
+        return '
+            <div style="position:relative;display:inline-block;width:' . $w . 'px;height:' . $h . 'px;overflow:hidden;vertical-align:top;">
+                <img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '"
+                     width="' . $w . '" height="' . $h . '"
+                     alt="Gift Card"
+                     style="display:block;width:100%;height:100%;object-fit:cover;">
+                ' . $overlayHtml . '
+            </div>';
     }
 
     public function sendPurchaserConfirmationEmail(
@@ -412,7 +494,8 @@ final class GiftCardEmailService
 
         // Attach Inline Template Image for email
         $customFields = $voucher->getCustomFields() ?? [];
-        $templateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
+        $rawTemplateId = $customFields['giftCardTemplateId'] ?? $voucher->getTemplateId();
+        $templateId = \is_string($rawTemplateId) ? $rawTemplateId : null;
         if ($templateId !== null && $templateId !== '') {
             $criteria = new Criteria([$templateId]);
             $criteria->addAssociation('media');
@@ -426,10 +509,13 @@ final class GiftCardEmailService
                     $localPath = $publicDir . $relativePath;
                     if (\file_exists($localPath)) {
                         $mimeType = $media->getMimeType() ?: 'image/png';
-                        $part = new \Symfony\Component\Mime\Part\DataPart(fopen($localPath, 'r'), 'giftcard_image', $mimeType);
-                        $part->asInline();
-                        $part->setContentId('giftcard_image@plugin');
-                        $data['attachments'] = [$part];
+                        $fileHandle = fopen($localPath, 'r');
+                        if ($fileHandle !== false) {
+                            $part = new \Symfony\Component\Mime\Part\DataPart($fileHandle, 'giftcard_image', $mimeType);
+                            $part->asInline();
+                            $part->setContentId('giftcard_image@plugin');
+                            $data['attachments'] = [$part];
+                        }
                     }
                 }
             }
@@ -447,7 +533,7 @@ final class GiftCardEmailService
                         'content' => $pdfBinary,
                         'fileName' => $pdfFilename,
                         'mimeType' => 'application/pdf',
-                    ]
+                    ],
                 ];
             } catch (\Throwable $e) {
                 // Fail silently to not block mail sending if PDF generation has issues
@@ -475,10 +561,10 @@ final class GiftCardEmailService
     public function generatePdfForVoucher(GiftCardVoucherEntity $voucher, Context $context): string
     {
         $salesChannelId = $this->getDefaultSalesChannelId($context);
-        
+
         $html = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
-        
-        if (empty($html)) {
+
+        if ($html === '') {
             $html = '<html><body>Gift Card Code: {{card_code}}</body></html>';
         }
 
@@ -486,11 +572,11 @@ final class GiftCardEmailService
 
         $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId) ?: 'Our Shop';
         $expiresAt = $voucher->getExpiresAt();
-        
+
         $currencySymbol = '€';
         $currency = $voucher->get('currency');
         if ($currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
-            $currencySymbol = $currency->getSymbol() ?? '€';
+            $currencySymbol = $currency->getSymbol();
         } else {
             // Reload voucher with currency association to get the symbol
             $voucherCriteria = new Criteria([$voucher->getId()]);
@@ -498,10 +584,10 @@ final class GiftCardEmailService
             $reloaded = $this->voucherRepository->search($voucherCriteria, $context)->first();
             $reloadedCurrency = $reloaded?->get('currency');
             if ($reloadedCurrency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
-                $currencySymbol = $reloadedCurrency->getSymbol() ?? '€';
+                $currencySymbol = $reloadedCurrency->getSymbol();
             }
         }
-        
+
         $priceStr = \number_format($voucher->getOriginalAmount(), 2) . ' ' . $currencySymbol;
 
         $replacements = [

@@ -6,8 +6,6 @@ namespace ICTECHGiftCard\Core\Subscriber;
 
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardDefinition;
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity;
-use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
-use ICTECHGiftCard\Core\Enum\VoucherStatus;
 use Shopware\Core\Content\Product\Aggregate\ProductVisibility\ProductVisibilityDefinition;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
@@ -29,17 +27,18 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $productRepository
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $taxRepository
      * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $salesChannelRepository
-     * @param EntityRepository<GiftCardVoucherCollection> $voucherRepository
      */
     public function __construct(
         private readonly EntityRepository $giftCardRepository,
         private readonly EntityRepository $productRepository,
         private readonly EntityRepository $taxRepository,
         private readonly EntityRepository $salesChannelRepository,
-        private readonly EntityRepository $voucherRepository,
     ) {
     }
 
+    /**
+     * @return array<string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [

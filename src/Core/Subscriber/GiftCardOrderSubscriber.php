@@ -25,7 +25,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 final class GiftCardOrderSubscriber implements EventSubscriberInterface
 {
-
     /**
      * @param EntityRepository<GiftCardVoucherCollection> $voucherRepository
      */
@@ -37,6 +36,9 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
     ) {
     }
 
+    /**
+     * @return array<string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [
@@ -331,10 +333,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             'expiresAt'        => $expiresAt,
         ]], $context);
 
-        /** @var GiftCardVoucherEntity|null $newVoucher */
-        $newVoucher = $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
-
-        return $newVoucher;
+        return $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
     }
 
     /**
@@ -428,4 +427,3 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         return $row !== false ? $row : null;
     }
 }
- 

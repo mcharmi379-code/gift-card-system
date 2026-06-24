@@ -39,7 +39,7 @@ final class GiftCardPageController extends StorefrontController
     public function preview(Request $request, SalesChannelContext $context): Response
     {
         // Support both GET (query params) and POST
-        $get = function (string $key) use ($request): string {
+        $get = static function (string $key) use ($request): string {
             $value = $request->get($key);
             return \is_scalar($value) ? (string) $value : '';
         };

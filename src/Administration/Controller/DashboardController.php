@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Administration\Controller;
 
+use Doctrine\DBAL\Connection;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -98,7 +98,7 @@ final class DashboardController
             $params['dateTo'] = $dateTo . ' 23:59:59';
         }
 
-        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $sql = "SELECT
                     v.code,
@@ -149,7 +149,7 @@ final class DashboardController
             $params['dateTo'] = $dateTo . ' 23:59:59';
         }
 
-        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $sql = "SELECT
                     v.code,
@@ -230,7 +230,7 @@ final class DashboardController
      */
     private function streamCsv(string $filename, array $headers, array $rows, array $keys): StreamedResponse
     {
-        return new StreamedResponse(function () use ($headers, $rows, $keys): void {
+        return new StreamedResponse(static function () use ($headers, $rows, $keys): void {
             $handle = fopen('php://output', 'w');
             if ($handle === false) {
                 return;

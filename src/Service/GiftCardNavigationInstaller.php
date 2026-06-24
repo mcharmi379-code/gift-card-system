@@ -161,18 +161,15 @@ final class GiftCardNavigationInstaller
         }
     }
 
-    /**
-     * @return SalesChannelCollection
-     */
     private function getStorefrontSalesChannels(Context $context): SalesChannelCollection
     {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('typeId', Defaults::SALES_CHANNEL_TYPE_STOREFRONT));
 
-        /** @var SalesChannelCollection $collection */
-        $collection = $this->salesChannelRepository->search($criteria, $context)->getEntities();
+        /** @var SalesChannelCollection $result */
+        $result = $this->salesChannelRepository->search($criteria, $context)->getEntities();
 
-        return $collection;
+        return $result;
     }
 
     private function getLastChildCategoryId(string $parentId, string $ownCategoryId, Context $context): ?string

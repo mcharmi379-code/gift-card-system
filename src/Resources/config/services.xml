@@ -42,7 +42,6 @@
             <argument type="service" id="product.repository" />
             <argument type="service" id="tax.repository" />
             <argument type="service" id="sales_channel.repository" />
-            <argument type="service" id="ictech_gift_card_voucher.repository" />
         </service>
 
         <service id="ICTECHGiftCard\Core\ScheduledTask\GiftCardEmailTaskHandler" public="false">
