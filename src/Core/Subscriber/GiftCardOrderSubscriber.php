@@ -210,80 +210,92 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             $recipientName  = $recipientName !== '' ? $recipientName : $purchaserName;
         }
 
-        // --- Pick or generate a voucher ---
-        $voucher = $this->pickOrGenerateVoucher($giftCardId, $giftCard, $context);
-        if ($voucher === null) {
-            return; // Should not happen but guard against it
-        }
-
-        // --- Compute expiry ---
-        $validityDays = \is_numeric($giftCard['validity_days']) ? (int) $giftCard['validity_days'] : 365;
-        $expiresAt    = (new \DateTimeImmutable())->modify("+{$validityDays} days")->format('Y-m-d');
-
-        // --- Persist personalisation to voucher ---
-        $updateData = [
-            'id'                => $voucher->getId(),
-            'orderId'           => $orderId,
-            'orderVersionId'    => Defaults::LIVE_VERSION,
-            'orderLineItemId'   => $lineItem->getId(),
-            'customerId'        => $customerId !== '' ? $customerId : null,
-            'status'            => VoucherStatus::Unused->value,
-            'expiresAt'         => $expiresAt,
-            'recipientName'     => $recipientName !== '' ? $recipientName : null,
-            'recipientEmail'    => $recipientEmail !== '' ? $recipientEmail : null,
-            'senderName'        => $senderName !== '' ? $senderName : null,
-            'personalMessage'   => $personalMessage !== '' ? $personalMessage : null,
-            'scheduledSendDate' => $scheduledSendDate,
-            'deliveryMethod'    => $deliveryMethod,
-            'templateId'        => $templateId !== '' ? $templateId : null,
-        ];
-
-        // Store templateId in customFields for PDF generation later
-        if ($templateId !== '') {
-            $updateData['customFields'] = ['giftCardTemplateId' => $templateId];
-        }
-
-        $this->voucherRepository->update([$updateData], $context);
-
-        // --- Reload voucher with updated fields ---
-        /** @var GiftCardVoucherEntity|null $updatedVoucher */
-        $updatedVoucher = $this->voucherRepository
-            ->search(new Criteria([$voucher->getId()]), $context)
-            ->first();
-
-        if (!$updatedVoucher instanceof GiftCardVoucherEntity) {
-            return;
-        }
-
-        // --- Send emails based on delivery method ---
-        $today = (new \DateTimeImmutable())->format('Y-m-d');
-
-        try {
-            if ($deliveryMethod === 'print') {
-                // "Buy for Self" → send voucher directly to purchaser
-                $this->emailService->sendPurchaserSelfEmail(
-                    $updatedVoucher,
-                    $purchaserEmail,
-                    $purchaserName,
-                    $context,
-                );
-            } else {
-                // "Send to Someone Else" → send confirmation to purchaser
-                $this->emailService->sendPurchaserConfirmationEmail(
-                    $updatedVoucher,
-                    $purchaserEmail,
-                    $purchaserName,
-                    $context,
-                );
-
-                // If scheduled for today or past, also send to recipient immediately
-                if ($scheduledSendDate <= $today && $recipientEmail !== '') {
-                    $this->emailService->sendRecipientEmail($updatedVoucher, $context);
-                }
-                // Otherwise the scheduled task will pick it up on the right date
+        $quantity = $lineItem->getQuantity();
+        for ($i = 0; $i < $quantity; $i++) {
+            // --- Pick or generate a voucher ---
+            $voucher = $this->pickOrGenerateVoucher($giftCardId, $giftCard, $context);
+            if ($voucher === null) {
+                continue; // Should not happen but guard against it
             }
-        } catch (\Throwable) {
-            // Email failure must not break the order flow
+
+            // --- Compute expiry ---
+            $validityDays = \is_numeric($giftCard['validity_days']) ? (int) $giftCard['validity_days'] : 365;
+            $baseDate = \DateTimeImmutable::createFromFormat('Y-m-d', $scheduledSendDate);
+            if (!$baseDate) {
+                $baseDate = new \DateTimeImmutable();
+            }
+            $expiresAt = $baseDate->modify("+{$validityDays} days")->format('Y-m-d');
+
+            // --- Persist personalisation to voucher ---
+            $updateData = [
+                'id'                => $voucher->getId(),
+                'orderId'           => $orderId,
+                'orderVersionId'    => Defaults::LIVE_VERSION,
+                'orderLineItemId'   => $lineItem->getId(),
+                'customerId'        => $customerId !== '' ? $customerId : null,
+                'status'            => VoucherStatus::Unused->value,
+                'expiresAt'         => $expiresAt,
+                'recipientName'     => $recipientName !== '' ? $recipientName : null,
+                'recipientEmail'    => $recipientEmail !== '' ? $recipientEmail : null,
+                'senderName'        => $senderName !== '' ? $senderName : null,
+                'personalMessage'   => $personalMessage !== '' ? $personalMessage : null,
+                'scheduledSendDate' => $scheduledSendDate,
+            ];
+
+            // Store templateId and deliveryMethod in customFields
+            $customFields = $voucher->getCustomFields() ?? [];
+            if ($templateId !== '') {
+                $customFields['giftCardTemplateId'] = $templateId;
+            }
+            if ($deliveryMethod !== '') {
+                $customFields['deliveryMethod'] = $deliveryMethod;
+            }
+            if (!empty($customFields)) {
+                $updateData['customFields'] = $customFields;
+            }
+
+            $this->voucherRepository->update([$updateData], $context);
+
+            // --- Reload voucher with updated fields ---
+            /** @var GiftCardVoucherEntity|null $updatedVoucher */
+            $updatedVoucher = $this->voucherRepository
+                ->search(new Criteria([$voucher->getId()]), $context)
+                ->first();
+
+            if (!$updatedVoucher instanceof GiftCardVoucherEntity) {
+                continue;
+            }
+
+            // --- Send emails based on delivery method ---
+            $today = (new \DateTimeImmutable())->format('Y-m-d');
+
+            try {
+                if ($deliveryMethod === 'print') {
+                    // "Buy for Self" → send voucher directly to purchaser
+                    $this->emailService->sendPurchaserSelfEmail(
+                        $updatedVoucher,
+                        $purchaserEmail,
+                        $purchaserName,
+                        $context,
+                    );
+                } else {
+                    // "Send to Someone Else" → send confirmation to purchaser
+                    $this->emailService->sendPurchaserConfirmationEmail(
+                        $updatedVoucher,
+                        $purchaserEmail,
+                        $purchaserName,
+                        $context,
+                    );
+
+                    // If scheduled for today or past, also send to recipient immediately
+                    if ($scheduledSendDate <= $today && $recipientEmail !== '') {
+                        $this->emailService->sendRecipientEmail($updatedVoucher, $context);
+                    }
+                    // Otherwise the scheduled task will pick it up on the right date
+                }
+            } catch (\Throwable) {
+                // Email failure must not break the order flow
+            }
         }
     }
 

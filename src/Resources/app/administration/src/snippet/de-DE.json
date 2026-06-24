@@ -67,6 +67,7 @@
             "labelQuantity": "Verf\u00fcgbare Menge (leer lassen f\u00fcr unbegrenzt)",
             "placeholderQuantity": "Unbegrenzt",
             "labelActive": "Aktiv",
+            "labelRestrictCombine": "Kombination mit anderen Geschenkkarten einschränken",
             "labelSalesChannel": "Auf Verkaufskanal beschr\u00e4nken",
             "placeholderSalesChannel": "Alle Verk\u00e4ufskan\u00e4le",
             "cardTitleTemplate": "Vorlage",

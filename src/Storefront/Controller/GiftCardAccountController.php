@@ -9,6 +9,7 @@ use Shopware\Core\Checkout\Customer\CustomerEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\MultiFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Storefront\Controller\StorefrontController;
@@ -20,9 +21,6 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 final class GiftCardAccountController extends StorefrontController
 {
-    /**
-     * @param EntityRepository<GiftCardVoucherCollection> $giftCardVoucherRepository
-     */
     /**
      * @param EntityRepository<GiftCardVoucherCollection> $giftCardVoucherRepository
      */
@@ -42,15 +40,32 @@ final class GiftCardAccountController extends StorefrontController
     {
         $page = $this->genericPageLoader->load($request, $context);
 
+        $p = $request->query->getInt('p', 1);
+        if ($p < 1) {
+            $p = 1;
+        }
+        $limit = 10;
+
         $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('customerId', $customer->getId()));
+        $criteria->addFilter(
+            new MultiFilter(
+                MultiFilter::CONNECTION_OR,
+                [
+                    new EqualsFilter('customerId', $customer->getId()),
+                    new EqualsFilter('recipientEmail', $customer->getEmail()),
+                ]
+            )
+        );
         $criteria->addSorting(new FieldSorting('createdAt', FieldSorting::DESCENDING));
+        $criteria->setLimit($limit);
+        $criteria->setOffset(($p - 1) * $limit);
+        $criteria->setTotalCountMode(Criteria::TOTAL_COUNT_MODE_EXACT);
 
         $vouchers = $this->giftCardVoucherRepository->search($criteria, $context->getContext());
 
         return $this->renderStorefront('@ICTECHGiftCard/storefront/page/account/gift-cards/index.html.twig', [
             'page' => $page,
-            'vouchers' => $vouchers->getElements(),
+            'vouchers' => $vouchers,
         ]);
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Storefront\Controller;
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
@@ -70,6 +72,10 @@ final class GiftCardPageController extends StorefrontController
             $context->getSalesChannelId()
         );
 
+        if (empty($pdfContent)) {
+            return new Response('No PDF content configured.', Response::HTTP_BAD_REQUEST);
+        }
+
         $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $context->getSalesChannelId());
         $cardImage = '';
         if ($template !== null && $template->getMedia() !== null) {
@@ -79,19 +85,37 @@ final class GiftCardPageController extends StorefrontController
             $cardImage = '<img src="' . htmlspecialchars($imgUrl) . '" width="' . $w . '" height="' . $h . '" alt="Gift Card" style="max-width:100%">';
         }
 
+        $currencySymbol = $context->getCurrency()->getSymbol();
+        $priceStr = number_format((float) $amount, 2) . ' ' . $currencySymbol;
+
+        $formattedSendDate = '';
+        if ($sendDate !== '') {
+            $date = \DateTime::createFromFormat('Y-m-d', $sendDate);
+            if ($date) {
+                $formattedSendDate = $date->format('d.m.Y');
+            } else {
+                $formattedSendDate = $sendDate;
+            }
+        }
+
         $pdfContent = str_replace(
-            ['{{card_lastname}}', '{{card_price}}', '{{card_from}}', '{{card_code}}', '{{card_message}}', '{{card_image}}', '{{shop_name}}', '{{validity_date}}'],
-            [htmlspecialchars($recipientName), htmlspecialchars($amount), htmlspecialchars($senderName), '****-****-****', nl2br(htmlspecialchars($message)), $cardImage, htmlspecialchars($shopName), htmlspecialchars($sendDate)],
+            ['{{card_lastname}}', '{{card_firstname}}', '{{card_price}}', '{{card_from}}', '{{card_code}}', '{{card_message}}', '{{card_image}}', '{{shop_name}}', '{{validity_date}}'],
+            [htmlspecialchars($recipientName), '', htmlspecialchars($priceStr), htmlspecialchars($senderName), 'PREVIEW-1234-5678', nl2br(htmlspecialchars($message)), $cardImage, htmlspecialchars($shopName), htmlspecialchars($formattedSendDate)],
             $pdfContent
         );
 
-        return $this->renderStorefront('@ICTECHGiftCard/storefront/page/gift-card/preview.html.twig', [
-            'template'      => $template,
-            'pdfContent'    => $pdfContent,
-            'senderName'    => $senderName,
-            'recipientName' => $recipientName,
-            'delivery'      => $delivery,
-            'giftCardConfig' => $this->loadConfig($context->getSalesChannelId()),
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml('<html><body>' . $pdfContent . '</body></html>');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return new Response($dompdf->output(), Response::HTTP_OK, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
         ]);
     }
 

@@ -331,6 +331,25 @@ final class GiftCardEmailService
             'contentPlain'    => $contentPlain,
         ];
 
+        // Attach PDF if enabled
+        $enablePdf = $this->systemConfigService->getBool('ICTECHGiftCard.config.enablePdf', $salesChannelId);
+        if ($enablePdf) {
+            $pdfPrefix = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfPrefix', $salesChannelId) ?: 'GIFTCARD-';
+            $pdfFilename = $pdfPrefix . $voucher->getCode() . '.pdf';
+            try {
+                $pdfBinary = $this->generatePdfForVoucher($voucher, $context);
+                $data['binAttachments'] = [
+                    [
+                        'content' => $pdfBinary,
+                        'fileName' => $pdfFilename,
+                        'mimeType' => 'application/pdf',
+                    ]
+                ];
+            } catch (\Throwable $e) {
+                // Fail silently to not block mail sending if PDF generation has issues
+            }
+        }
+
         $templateData = [
             'purchaser_name'  => $purchaserName,
             'voucher_code'    => $voucher->getCode(),

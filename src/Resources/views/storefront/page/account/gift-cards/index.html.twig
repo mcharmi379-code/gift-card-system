@@ -10,13 +10,14 @@
     {% endblock %}
 
     {% block page_account_gift_cards_content %}
-        {% if vouchers|length > 0 %}
+        {% if vouchers.total > 0 %}
             <div class="table-responsive">
                 <table class="table gift-card-list">
                     <thead>
                         <tr>
                             <th>{{ 'ictech-gift-card.account.columnCode'|trans|sw_sanitize }}</th>
                             <th>{{ 'ictech-gift-card.account.columnRecipient'|trans|sw_sanitize }}</th>
+                            <th>{{ 'ictech-gift-card.account.columnRecipientEmail'|trans|sw_sanitize }}</th>
                             <th>{{ 'ictech-gift-card.account.columnOriginalAmount'|trans|sw_sanitize }}</th>
                             <th>{{ 'ictech-gift-card.account.columnRemainingBalance'|trans|sw_sanitize }}</th>
                             <th>{{ 'ictech-gift-card.account.columnStatus'|trans|sw_sanitize }}</th>
@@ -31,12 +32,34 @@
                                         <span class="gift-card-code">{{ voucher.code }}</span>
                                     </td>
                                     <td>{{ voucher.recipientName }}</td>
+                                    <td>
+                                        {% if voucher.customFields.deliveryMethod is defined %}
+                                            {% if voucher.customFields.deliveryMethod == 'print' %}
+                                                -
+                                            {% else %}
+                                                {{ voucher.recipientEmail }}
+                                            {% endif %}
+                                        {% else %}
+                                            {{ voucher.recipientEmail }}
+                                        {% endif %}
+                                    </td>
                                     <td>{{ voucher.originalAmount|currency }}</td>
                                     <td>{{ voucher.remainingBalance|currency }}</td>
                                     <td>
-                                        <span class="badge gift-card-status gift-card-status--{{ voucher.status.value }}">
-                                            {{ ('ictech-gift-card.status.' ~ voucher.status.value)|trans|sw_sanitize }}
-                                        </span>
+                                        {% set isExpired = false %}
+                                        {% if voucher.expiresAt and voucher.expiresAt < date() and voucher.status.value == 'unused' %}
+                                            {% set isExpired = true %}
+                                        {% endif %}
+
+                                        {% if isExpired %}
+                                            <span class="badge gift-card-status gift-card-status--expired">
+                                                {{ 'ictech-gift-card.status.expired'|trans|sw_sanitize }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge gift-card-status gift-card-status--{{ voucher.status.value }}">
+                                                {{ ('ictech-gift-card.status.' ~ voucher.status.value)|trans|sw_sanitize }}
+                                            </span>
+                                        {% endif %}
                                     </td>
                                     <td>{{ voucher.expiresAt|format_date('short') }}</td>
                                 </tr>
@@ -45,11 +68,27 @@
                     </tbody>
                 </table>
             </div>
+
+            {% set totalPages = (vouchers.total / (vouchers.limit ?: 1))|round(0, 'ceil') %}
+            {% if totalPages > 1 %}
+                <div class="account-gift-cards-pagination mt-3">
+                    <form class="account-gift-cards-pagination-form"
+                          action="{{ path('frontend.ictech.gift_card.account.page') }}"
+                          method="get"
+                          onchange="this.submit()">
+                        {% sw_include '@Storefront/storefront/component/pagination.html.twig' with {
+                            entities: vouchers,
+                            criteria: vouchers.criteria
+                        } %}
+                    </form>
+                </div>
+            {% endif %}
         {% else %}
             {% block page_account_gift_cards_empty %}
-                <div class="alert alert-info">
-                    {{ 'ictech-gift-card.account.noGiftCards'|trans|sw_sanitize }}
-                </div>
+                {% sw_include '@Storefront/storefront/utilities/alert.html.twig' with {
+                    type: 'warning',
+                    content: 'ictech-gift-card.account.noGiftCards'|trans|sw_sanitize
+                } %}
             {% endblock %}
         {% endif %}
     {% endblock %}

@@ -1,5 +1,25 @@
 const pageSelector = '[data-ictech-gift-card-page]';
 
+function generateUuid() {
+    return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+function updateLineItemKey(page, key) {
+    page.querySelectorAll('[data-gift-card-line-item-input]').forEach((input) => {
+        const type = input.dataset.giftCardLineItemInput;
+        input.name = `lineItems[${key}][${type}]`;
+    });
+
+    // Set the value of the line item ID input to the unique key itself
+    const idInput = page.querySelector('[data-gift-card-product-id]');
+    if (idInput) {
+        idInput.value = key;
+    }
+}
+
 function buildPayload(page) {
     const payload = {};
 
@@ -46,9 +66,11 @@ function updateAmount(page, select) {
     const selected = select.options[select.selectedIndex];
     const productId = selected ? selected.dataset.productId : '';
 
-    page.querySelectorAll('[data-gift-card-product-id], [data-gift-card-referenced-id]').forEach((input) => {
-        input.value = productId;
-    });
+    // Only update the referencedId with the product ID, leaving the line item ID as the unique key
+    const referencedIdInput = page.querySelector('[data-gift-card-referenced-id]');
+    if (referencedIdInput) {
+        referencedIdInput.value = productId;
+    }
 
     updatePayload(page);
 }
@@ -101,15 +123,31 @@ function initDeliveryToggle(page) {
     function toggle() {
         const selected = page.querySelector('input[name="giftCardDeliveryMethod"]:checked');
         const method = selected ? selected.value : 'email';
-        
+
         if (method === 'email') {
             emailFields.hidden = false;
-            if (emailInput) emailInput.required = true;
-            if (dateInput) dateInput.required = true;
+            if (emailInput) {
+                emailInput.required = true;
+                emailInput.disabled = false;
+            }
+            if (dateInput) {
+                dateInput.required = true;
+                dateInput.disabled = false;
+            }
         } else {
             emailFields.hidden = true;
-            if (emailInput) emailInput.required = false;
-            if (dateInput) dateInput.required = false;
+            if (emailInput) {
+                emailInput.required = false;
+                emailInput.disabled = true;
+                emailInput.value = '';
+                emailInput.classList.remove('is-invalid');
+            }
+            if (dateInput) {
+                dateInput.required = false;
+                dateInput.disabled = true;
+                dateInput.value = '';
+                dateInput.classList.remove('is-invalid');
+            }
         }
 
         updatePayload(page);
@@ -124,8 +162,12 @@ function initDeliveryToggle(page) {
 
 function openPreview(page, previewUrl) {
     const form = page.querySelector('form');
-    if (form && !form.reportValidity()) {
-        return; // Block opening the preview if form contains validation errors
+    if (form) {
+        if (!form.reportValidity()) {
+            form.classList.add('was-validated');
+            return; // Block opening the preview if form contains validation errors
+        }
+        form.classList.add('was-validated');
     }
 
     const payload = buildPayload(page);
@@ -154,8 +196,12 @@ function openPreview(page, previewUrl) {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll(pageSelector).forEach((page) => {
+        const form = page.querySelector('form');
         const firstTemplate = page.querySelector('[data-gift-card-template]');
         const amountSelect = page.querySelector('[data-gift-card-amount]');
+
+        // Initialize unique line item key (also sets value of product ID field to the key)
+        updateLineItemKey(page, generateUuid());
 
         if (firstTemplate) selectTemplate(page, firstTemplate);
         if (amountSelect) {
@@ -182,6 +228,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewBtn = page.querySelector('[data-gift-card-preview]');
         if (previewBtn) {
             previewBtn.addEventListener('click', () => openPreview(page, previewBtn.dataset.previewUrl));
+        }
+
+        // Regenerate unique key after submission so next addition gets a new line item
+        if (form) {
+            form.addEventListener('submit', (event) => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    form.classList.add('was-validated');
+                }
+            }, true);
+
+            form.addEventListener('submit', () => {
+                setTimeout(() => {
+                    updateLineItemKey(page, generateUuid());
+                    updatePayload(page);
+                }, 100);
+            });
         }
 
         // Do initial sync

@@ -5,6 +5,7 @@
             "pageTitle": "Meine Geschenkkarten",
             "columnCode": "Code",
             "columnRecipient": "Empfänger",
+            "columnRecipientEmail": "Empfänger-E-Mail",
             "columnOriginalAmount": "Ursprünglicher Betrag",
             "columnRemainingBalance": "Restguthaben",
             "columnStatus": "Status",
@@ -17,7 +18,10 @@
             "partially_used": "Teilweise verwendet",
             "used": "Verwendet",
             "expired": "Abgelaufen",
-            "revoked": "Widerrufen"
+            "revoked": "Widerrufen",
+            "waiting_valid_order": "Warten auf Zahlung",
+            "unused": "Nicht verwendet",
+            "canceled": "Storniert"
         },
         "page": {
             "title": "Geschenkkarten",
@@ -47,7 +51,12 @@
             "addGiftCardPlaceholder": "Geschenkkartencode eingeben",
             "invalidVoucherCode": "Ungültiger oder abgelaufener Geschenkkartencode.",
             "voucherAlreadyInCart": "Dieser Geschenkkartencode befindet sich bereits im Warenkorb.",
+            "voucherCannotBeCombined": "Diese Geschenkkarte kann nicht mit anderen Geschenkkarten kombiniert werden.",
+            "voucherCannotBeCombinedRestricted": "Im Warenkorb befindet sich bereits eine nicht kombinierbare Geschenkkarte.",
             "voucherAddedSuccess": "Geschenkkartencode erfolgreich angewendet."
+        },
+        "error": {
+            "required": "Eingabe darf nicht leer sein."
         }
     }
 }

@@ -45,6 +45,10 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         SalesChannelContext $context,
         CartBehavior $behavior,
     ): void {
+        $runningTotal = $toCalculate->getPrice()->getTotalPrice();
+        $hasRestricted = false;
+        $appliedCount = 0;
+
         foreach ($original->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
             $code = $lineItem->getReferencedId();
             if ($code === null || $code === '') {
@@ -59,12 +63,29 @@ final class GiftCardCartProcessor implements CartProcessorInterface
                 continue;
             }
 
-            $cartTotal    = $toCalculate->getPrice()->getTotalPrice();
-            $deductAmount = \min($voucher->getRemainingBalance(), $cartTotal);
+            $giftCard = $voucher->getGiftCard();
+            $isRestricted = $giftCard !== null && $giftCard->getRestrictCombine();
 
-            if ($deductAmount <= 0.0) {
+            // Combinability check:
+            // If we have already applied a voucher:
+            // - If the previous applied voucher was restricted, OR this new voucher is restricted:
+            //   remove this new voucher as it cannot be combined.
+            if ($appliedCount > 0 && ($hasRestricted || $isRestricted)) {
+                $original->getLineItems()->remove($lineItem->getId());
                 continue;
             }
+
+            $deductAmount = \min($voucher->getRemainingBalance(), $runningTotal);
+
+            if ($deductAmount <= 0.0) {
+                $original->getLineItems()->remove($lineItem->getId());
+                continue;
+            }
+
+            if ($isRestricted) {
+                $hasRestricted = true;
+            }
+            $appliedCount++;
 
             $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
             $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$deductAmount));
@@ -77,6 +98,7 @@ final class GiftCardCartProcessor implements CartProcessorInterface
             );
 
             $toCalculate->add($lineItem);
+            $runningTotal = \max(0.0, $runningTotal - $deductAmount);
         }
     }
 
@@ -149,6 +171,7 @@ final class GiftCardCartProcessor implements CartProcessorInterface
                 new EqualsFilter('status', VoucherStatus::WaitingValidOrder->value),
             ]),
         ]));
+        $criteria->addAssociation('giftCard');
         $criteria->setLimit(1);
 
         /** @var GiftCardVoucherEntity|null $voucher */
