@@ -32,6 +32,8 @@ class GiftCardVoucherEntity extends Entity
 
     protected ?string $orderLineItemId = null;
 
+    protected ?\Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity $orderLineItem = null;
+
     protected ?string $customerId = null;
 
     protected ?CustomerEntity $customer = null;
@@ -61,6 +63,10 @@ class GiftCardVoucherEntity extends Entity
     protected ?\DateTimeInterface $expiresAt = null;
 
     protected ?string $usedInOrderNumber = null;
+
+    protected ?string $deliveryMethod = null;
+
+    protected ?string $templateId = null;
 
     protected VoucherStatus $status = VoucherStatus::WaitingValidOrder;
 
@@ -126,6 +132,16 @@ class GiftCardVoucherEntity extends Entity
     public function setOrderLineItemId(?string $orderLineItemId): void
     {
         $this->orderLineItemId = $orderLineItemId;
+    }
+
+    public function getOrderLineItem(): ?\Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity
+    {
+        return $this->orderLineItem;
+    }
+
+    public function setOrderLineItem(?\Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity $orderLineItem): void
+    {
+        $this->orderLineItem = $orderLineItem;
     }
 
     public function getCustomerId(): ?string
@@ -276,6 +292,26 @@ class GiftCardVoucherEntity extends Entity
     public function setUsedInOrderNumber(?string $usedInOrderNumber): void
     {
         $this->usedInOrderNumber = $usedInOrderNumber;
+    }
+
+    public function getDeliveryMethod(): ?string
+    {
+        return $this->deliveryMethod;
+    }
+
+    public function setDeliveryMethod(?string $deliveryMethod): void
+    {
+        $this->deliveryMethod = $deliveryMethod;
+    }
+
+    public function getTemplateId(): ?string
+    {
+        return $this->templateId;
+    }
+
+    public function setTemplateId(?string $templateId): void
+    {
+        $this->templateId = $templateId;
     }
 
     public function getStatus(): VoucherStatus

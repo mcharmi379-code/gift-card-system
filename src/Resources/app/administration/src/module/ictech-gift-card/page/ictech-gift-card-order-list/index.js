@@ -55,6 +55,7 @@ export default {
             criteria.addAssociation('order');
             criteria.addAssociation('customer');
             criteria.addAssociation('currency');
+            criteria.addAssociation('transactions.order');
 
             return criteria;
         },
@@ -115,6 +116,13 @@ export default {
                     width: '110px',
                 },
                 {
+                    property: 'usedInOrders',
+                    label: 'ictech-gift-card.order.list.columnUsedInOrders',
+                    allowResize: true,
+                    sortable: false,
+                    width: '150px',
+                },
+                {
                     property: 'createdAt',
                     label: 'ictech-gift-card.order.list.columnDate',
                     allowResize: true,
@@ -128,6 +136,7 @@ export default {
                 { value: null, label: this.$tc('ictech-gift-card.order.list.filterAll') },
                 { value: 'waiting_valid_order', label: this.$tc('ictech-gift-card.order.status.waitingValidOrder') },
                 { value: 'unused', label: this.$tc('ictech-gift-card.order.status.unused') },
+                { value: 'partially_used', label: this.$tc('ictech-gift-card.order.status.partiallyUsed') },
                 { value: 'used', label: this.$tc('ictech-gift-card.order.status.used') },
                 { value: 'canceled', label: this.$tc('ictech-gift-card.order.status.canceled') },
             ];
@@ -182,6 +191,7 @@ export default {
             const map = {
                 waiting_valid_order: 'warning',
                 unused: 'success',
+                partially_used: 'info',
                 used: 'info',
                 canceled: 'neutral',
             };
@@ -253,6 +263,26 @@ export default {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit',
             }).format(new Date(date));
+        },
+
+        getUniqueUsedTransactions(voucher) {
+            if (!voucher.transactions || voucher.transactions.length === 0) {
+                return [];
+            }
+
+            const seenOrderNumbers = new Set();
+            const uniqueTransactions = [];
+
+            voucher.transactions.forEach(t => {
+                if (t.order && t.order.orderNumber) {
+                    if (!seenOrderNumbers.has(t.order.orderNumber)) {
+                        seenOrderNumbers.add(t.order.orderNumber);
+                        uniqueTransactions.push(t);
+                    }
+                }
+            });
+
+            return uniqueTransactions;
         },
 
         kebabToCamel(str) {

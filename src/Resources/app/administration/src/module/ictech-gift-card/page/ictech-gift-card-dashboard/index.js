@@ -112,6 +112,7 @@ export default {
                 { value: null, label: this.$tc('ictech-gift-card.order.list.filterAll') },
                 { value: 'waiting_valid_order', label: this.$tc('ictech-gift-card.order.status.waitingValidOrder') },
                 { value: 'unused', label: this.$tc('ictech-gift-card.order.status.unused') },
+                { value: 'partially_used', label: this.$tc('ictech-gift-card.order.status.partiallyUsed') },
                 { value: 'used', label: this.$tc('ictech-gift-card.order.status.used') },
                 { value: 'canceled', label: this.$tc('ictech-gift-card.order.status.canceled') },
             ];
@@ -228,13 +229,14 @@ export default {
         },
 
         getStatusVariant(status) {
-            return { waiting_valid_order: 'warning', unused: 'success', used: 'info', canceled: 'neutral' }[status] ?? 'neutral';
+            return { waiting_valid_order: 'warning', unused: 'success', partially_used: 'info', used: 'info', canceled: 'neutral' }[status] ?? 'neutral';
         },
 
         getStatusLabel(status) {
             const map = {
                 waiting_valid_order: 'waitingValidOrder',
                 unused: 'unused',
+                partially_used: 'partiallyUsed',
                 used: 'used',
                 canceled: 'canceled',
             };
@@ -248,6 +250,17 @@ export default {
         formatDate(date) {
             if (!date) return '—';
             return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(date));
+        },
+
+        openOrder(item) {
+            const orderId = item.orderId || (item.order ? item.order.id : null);
+            if (!orderId) {
+                this.createNotificationInfo({
+                    message: this.$tc('ictech-gift-card.order.list.noOrderLinked'),
+                });
+                return;
+            }
+            this.$router.push({ name: 'sw.order.detail', params: { id: orderId } });
         },
     },
 };

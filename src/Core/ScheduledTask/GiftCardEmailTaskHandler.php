@@ -22,6 +22,11 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler(handles: GiftCardEmailTask::class)]
 final class GiftCardEmailTaskHandler extends ScheduledTaskHandler
 {
+    private LoggerInterface $logger;
+
+    /** @var EntityRepository<GiftCardVoucherCollection> */
+    private readonly EntityRepository $voucherRepository;
+
     /**
      * @param EntityRepository<ScheduledTaskCollection> $scheduledTaskRepository
      * @param EntityRepository<GiftCardVoucherCollection> $voucherRepository
@@ -29,9 +34,11 @@ final class GiftCardEmailTaskHandler extends ScheduledTaskHandler
     public function __construct(
         EntityRepository $scheduledTaskRepository,
         LoggerInterface $logger,
-        private readonly EntityRepository $voucherRepository,
-        private readonly GiftCardEmailService $emailService,
+        EntityRepository $voucherRepository,
+        private readonly GiftCardEmailService $emailService
     ) {
+        $this->logger = $logger;
+        $this->voucherRepository = $voucherRepository;
         parent::__construct($scheduledTaskRepository, $logger);
     }
 
@@ -59,8 +66,8 @@ final class GiftCardEmailTaskHandler extends ScheduledTaskHandler
             try {
                 $this->emailService->sendForVoucher($voucher, $context);
             } catch (\Throwable $e) {
-                $this->exceptionLogger?->error(
-                    \sprintf('GiftCard email failed for voucher %s: %s', $voucher->getId(), $e->getMessage()),
+                $this->logger->error(
+                    sprintf('GiftCard email failed for voucher %s: %s', $voucher->getId(), $e->getMessage()),
                     ['exception' => $e]
                 );
             }

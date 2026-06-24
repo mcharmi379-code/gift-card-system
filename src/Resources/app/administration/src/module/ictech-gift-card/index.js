@@ -73,6 +73,11 @@ Module.register('ictech-gift-card', {
             path: 'settings',
             meta: { privilege: 'ictech_gift_card.viewer' },
         },
+        moderation: {
+            component: 'ictech-gift-card-moderation',
+            path: 'moderation',
+            meta: { privilege: 'ictech_gift_card.viewer' },
+        },
     },
 
     navigation: [
@@ -119,6 +124,14 @@ Module.register('ictech-gift-card', {
             privilege: 'ictech_gift_card.viewer',
         },
         {
+            id: 'ictech-gift-card-moderation',
+            path: 'ictech.gift.card.moderation',
+            label: 'ictech-gift-card.navigation.moderation',
+            parent: 'ictech-gift-card',
+            position: 35,
+            privilege: 'ictech_gift_card.viewer',
+        },
+        {
             id: 'ictech-gift-card-settings',
             path: 'ictech.gift.card.settings',
             label: 'ictech-gift-card.navigation.settings',
@@ -137,3 +150,4 @@ Shopware.Component.register('ictech-gift-card-placeholder', () => import('./page
 Shopware.Component.register('ictech-gift-card-template-list', () => import('./page/ictech-gift-card-template-list'));
 Shopware.Component.register('ictech-gift-card-template-detail', () => import('./page/ictech-gift-card-template-detail'));
 Shopware.Component.register('ictech-gift-card-settings', () => import('./page/ictech-gift-card-settings'));
+Shopware.Component.register('ictech-gift-card-moderation', () => import('./page/ictech-gift-card-moderation'));

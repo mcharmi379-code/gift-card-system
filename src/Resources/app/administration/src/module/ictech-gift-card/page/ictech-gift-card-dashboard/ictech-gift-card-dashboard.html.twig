@@ -148,7 +148,16 @@
                         {{ formatAmount(item.remainingBalance) }}
                     </template>
                     <template #column-order.orderNumber="{ item }">
-                        {{ item.order ? ('#' + item.order.orderNumber) : '—' }}
+                        <sw-button
+                            v-if="item.orderId || (item.order && item.order.id)"
+                            variant="ghost"
+                            size="small"
+                            style="height: auto; padding: 0;"
+                            @click="openOrder(item)"
+                        >
+                            #{{ item.order ? item.order.orderNumber : '—' }}
+                        </sw-button>
+                        <span v-else>—</span>
                     </template>
                     <template #column-createdAt="{ item }">
                         {{ formatDate(item.createdAt) }}
@@ -222,7 +231,16 @@
                         {{ formatAmount(item.balanceAfter) }}
                     </template>
                     <template #column-order.orderNumber="{ item }">
-                        {{ item.order ? ('#' + item.order.orderNumber) : '—' }}
+                        <sw-button
+                            v-if="item.orderId || (item.order && item.order.id)"
+                            variant="ghost"
+                            size="small"
+                            style="height: auto; padding: 0;"
+                            @click="openOrder(item)"
+                        >
+                            #{{ item.order ? item.order.orderNumber : '—' }}
+                        </sw-button>
+                        <span v-else>—</span>
                     </template>
                     <template #column-createdAt="{ item }">
                         {{ formatDate(item.createdAt) }}

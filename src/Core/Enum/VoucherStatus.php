@@ -8,6 +8,7 @@ enum VoucherStatus: string
 {
     case WaitingValidOrder = 'waiting_valid_order';
     case Unused             = 'unused';
+    case PartiallyUsed      = 'partially_used';
     case Used               = 'used';
     case Canceled           = 'canceled';
 
@@ -16,6 +17,7 @@ enum VoucherStatus: string
         return match ($this) {
             self::WaitingValidOrder => 'Waiting valid order',
             self::Unused            => 'Unused',
+            self::PartiallyUsed     => 'Partially used',
             self::Used              => 'Used',
             self::Canceled          => 'Canceled',
         };

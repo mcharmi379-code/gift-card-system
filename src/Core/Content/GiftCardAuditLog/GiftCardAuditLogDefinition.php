@@ -45,7 +45,8 @@ class GiftCardAuditLogDefinition extends EntityDefinition
             (new FkField('voucher_id', 'voucherId', GiftCardVoucherDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('voucher', 'voucher_id', GiftCardVoucherDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
-            (new StringField('admin_user_id', 'adminUserId'))->addFlags(new ApiAware()),
+            (new FkField('admin_user_id', 'adminUserId', \Shopware\Core\System\User\UserDefinition::class))->addFlags(new ApiAware()),
+            (new ManyToOneAssociationField('adminUser', 'admin_user_id', \Shopware\Core\System\User\UserDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new EnumField('action', 'action', AuditLogAction::Revoke))->addFlags(new Required(), new ApiAware()),
 

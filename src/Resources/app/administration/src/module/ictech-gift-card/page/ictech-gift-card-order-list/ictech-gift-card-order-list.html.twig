@@ -134,6 +134,25 @@
                     </template>
                     {% endblock %}
 
+                    {% block ictech_gift_card_order_list_column_used_in_orders %}
+                    <template #column-usedInOrders="{ item }">
+                        <template v-if="item.transactions && getUniqueUsedTransactions(item).length > 0">
+                            <span v-for="(tx, index) in getUniqueUsedTransactions(item)" :key="tx.id">
+                                <router-link
+                                    v-if="tx.orderId && tx.order"
+                                    :to="{ name: 'sw.order.detail', params: { id: tx.orderId } }"
+                                    class="sw-link"
+                                >
+                                    #{{ tx.order.orderNumber }}
+                                </router-link>
+                                <span v-else-if="tx.order">#{{ tx.order.orderNumber }}</span>
+                                <span v-if="index < getUniqueUsedTransactions(item).length - 1">, </span>
+                            </span>
+                        </template>
+                        <span v-else>—</span>
+                    </template>
+                    {% endblock %}
+
                     {% block ictech_gift_card_order_list_column_date %}
                     <template #column-createdAt="{ item }">
                         {{ formatDate(item.createdAt) }}
@@ -142,13 +161,7 @@
 
                     {% block ictech_gift_card_order_list_actions %}
                     <template #actions="{ item }">
-                        <sw-context-menu-item
-                            icon="regular-eye"
-                            :disabled="!item.orderId"
-                            @click="openOrder(item)"
-                        >
-                            {{ $tc('global.default.view') }}
-                        </sw-context-menu-item>
+
                         <sw-context-menu-item
                             variant="danger"
                             icon="regular-trash"

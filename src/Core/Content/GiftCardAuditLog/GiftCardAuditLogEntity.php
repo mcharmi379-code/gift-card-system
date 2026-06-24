@@ -19,6 +19,8 @@ class GiftCardAuditLogEntity extends Entity
 
     protected ?string $adminUserId = null;
 
+    protected ?\Shopware\Core\System\User\UserEntity $adminUser = null;
+
     protected ?AuditLogAction $action = null;
 
     protected ?string $oldValue = null;
@@ -55,6 +57,16 @@ class GiftCardAuditLogEntity extends Entity
     public function setAdminUserId(?string $adminUserId): void
     {
         $this->adminUserId = $adminUserId;
+    }
+
+    public function getAdminUser(): ?\Shopware\Core\System\User\UserEntity
+    {
+        return $this->adminUser;
+    }
+
+    public function setAdminUser(?\Shopware\Core\System\User\UserEntity $adminUser): void
+    {
+        $this->adminUser = $adminUser;
     }
 
     public function getAction(): ?AuditLogAction
