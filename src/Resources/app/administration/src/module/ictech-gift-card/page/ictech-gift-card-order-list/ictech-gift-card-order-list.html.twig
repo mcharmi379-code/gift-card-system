@@ -153,6 +153,18 @@
                     </template>
                     {% endblock %}
 
+                    {% block ictech_gift_card_order_list_column_scheduled_send_date %}
+                    <template #column-scheduledSendDate="{ item }">
+                        {{ formatDateOnly(item.scheduledSendDate) }}
+                    </template>
+                    {% endblock %}
+
+                    {% block ictech_gift_card_order_list_column_sent_at %}
+                    <template #column-sentAt="{ item }">
+                        {{ formatDate(item.sentAt) }}
+                    </template>
+                    {% endblock %}
+
                     {% block ictech_gift_card_order_list_column_date %}
                     <template #column-createdAt="{ item }">
                         {{ formatDate(item.createdAt) }}

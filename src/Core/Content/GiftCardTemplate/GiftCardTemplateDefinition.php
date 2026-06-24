@@ -22,7 +22,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\TranslatedField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\TranslationsAssociationField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
-class GiftCardTemplateDefinition extends EntityDefinition
+final class GiftCardTemplateDefinition extends EntityDefinition
 {
     final public const ENTITY_NAME = 'ictech_gift_card_template';
 

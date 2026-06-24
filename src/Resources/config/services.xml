@@ -16,7 +16,7 @@
             <argument type="service" id="Doctrine\DBAL\Connection" />
         </service>
 
-        <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService" public="false">
+        <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService" public="true">
             <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService" />
             <argument type="service" id="mail_template.repository" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
@@ -52,14 +52,18 @@
             <argument type="service" id="product.repository" />
             <argument type="service" id="tax.repository" />
             <argument type="service" id="sales_channel.repository" />
-            <argument type="service" id="ictech_gift_card_voucher.repository" />
         </service>
 
-        <service id="ICTECHGiftCard\Core\ScheduledTask\GiftCardEmailTaskHandler" public="false">
+        <service id="ICTECHGiftCard\Core\ScheduledTask\ICTECHGiftCardEmailTask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+
+        <service id="ICTECHGiftCard\Core\ScheduledTask\ICTECHGiftCardEmailTaskHandler" public="false">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="logger" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
+            <tag name="messenger.message_handler" />
         </service>
 
         <service id="ICTECHGiftCard\Storefront\Controller\GiftCardPageController" public="true">

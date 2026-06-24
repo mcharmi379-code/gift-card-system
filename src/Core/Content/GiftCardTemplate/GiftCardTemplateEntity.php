@@ -10,9 +10,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCustomFieldsTrait;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 
-use ICTECHGiftCard\Core\Content\GiftCardTemplate\Aggregate\GiftCardTemplateTranslation\GiftCardTemplateTranslationCollection;
-
-class GiftCardTemplateEntity extends Entity
+final class GiftCardTemplateEntity extends Entity
 {
     use EntityCustomFieldsTrait;
     use EntityIdTrait;

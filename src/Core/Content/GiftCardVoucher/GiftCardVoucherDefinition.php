@@ -22,17 +22,17 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\ApiAware;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\CascadeDelete;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\ReferenceVersionField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\LongTextField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\ManyToOneAssociationField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\OneToManyAssociationField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\ReferenceVersionField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 use Shopware\Core\System\Currency\CurrencyDefinition;
 
-class GiftCardVoucherDefinition extends EntityDefinition
+final class GiftCardVoucherDefinition extends EntityDefinition
 {
     final public const ENTITY_NAME = 'ictech_gift_card_voucher';
 
@@ -56,7 +56,7 @@ class GiftCardVoucherDefinition extends EntityDefinition
         return new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
 
-            (new FkField('gift_card_id', 'giftCardId', GiftCardDefinition::class))->addFlags(new Required(), new ApiAware()),
+            (new FkField('gift_card_id', 'giftCardId', GiftCardDefinition::class))->addFlags(new ApiAware()),
             (new ManyToOneAssociationField('giftCard', 'gift_card_id', GiftCardDefinition::class, 'id', false))->addFlags(new ApiAware()),
 
             (new FkField('order_id', 'orderId', OrderDefinition::class))->addFlags(new ApiAware()),

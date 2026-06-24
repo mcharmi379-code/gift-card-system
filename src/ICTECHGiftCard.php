@@ -6,12 +6,12 @@ namespace ICTECHGiftCard;
 
 use Doctrine\DBAL\Connection;
 use ICTECHGiftCard\Service\GiftCardNavigationInstaller;
+use Shopware\Core\Defaults;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Plugin;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Uuid\Uuid;
-use Shopware\Core\Defaults;
 
 final class ICTECHGiftCard extends Plugin
 {

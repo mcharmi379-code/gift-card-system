@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Administration\Controller;
 
+use Doctrine\DBAL\Connection;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Doctrine\DBAL\Connection;
-use Shopware\Core\Framework\Context;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,43 +28,27 @@ final class DashboardController
         name: 'api.ictech_gift_card.dashboard.stats',
         methods: ['GET']
     )]
-    public function stats(Context $context): JsonResponse
+    public function stats(): JsonResponse
     {
+        /** @var array<string, string|int> $rows */
         $rows = $this->connection->fetchAllKeyValue(
             "SELECT status, COUNT(*) FROM ictech_gift_card_voucher GROUP BY status"
         );
 
-        $rawTotal = $this->connection->fetchOne("SELECT COUNT(*) FROM ictech_gift_card_voucher");
-        $total = is_numeric($rawTotal) ? (int) $rawTotal : 0;
-
-        $rawTotalSold = $this->connection->fetchOne(
-            "SELECT COALESCE(SUM(original_amount), 0) FROM ictech_gift_card_voucher WHERE status != 'waiting_valid_order'"
-        );
-        $totalSold = is_numeric($rawTotalSold) ? (float) $rawTotalSold : 0.0;
-
-        $rawTotalRedeemed = $this->connection->fetchOne(
-            "SELECT COALESCE(SUM(amount_used), 0) FROM ictech_gift_card_transaction"
-        );
-        $totalRedeemed = is_numeric($rawTotalRedeemed) ? (float) $rawTotalRedeemed : 0.0;
-
-        $now = (new \DateTimeImmutable())->format('Y-m-d');
-
-        $rawExpired = $this->connection->fetchOne(
-            "SELECT COUNT(*) FROM ictech_gift_card_voucher WHERE expires_at < :now AND status NOT IN ('used','canceled')",
-            ['now' => $now]
-        );
-        $expired = is_numeric($rawExpired) ? (int) $rawExpired : 0;
-
-        $rawPending = $rows['waiting_valid_order'] ?? 0;
-        $pending = is_numeric($rawPending) ? (int) $rawPending : 0;
-
         return new JsonResponse([
-            'total'          => $total,
-            'totalSold'      => $totalSold,
-            'totalRedeemed'  => $totalRedeemed,
-            'byStatus'       => $rows,
-            'expired'        => $expired,
-            'pending'        => $pending,
+            'total' => $this->getStatsCount(
+                "SELECT COUNT(*) FROM ictech_gift_card_voucher"
+            ),
+            'totalSold' => $this->getStatsSum(
+                "SELECT COALESCE(SUM(original_amount), 0) " .
+                "FROM ictech_gift_card_voucher WHERE status != 'waiting_valid_order'"
+            ),
+            'totalRedeemed' => $this->getStatsSum(
+                "SELECT COALESCE(SUM(amount_used), 0) FROM ictech_gift_card_transaction"
+            ),
+            'byStatus' => $rows,
+            'expired' => $this->getExpiredCount(),
+            'pending' => $this->parsePending($rows),
         ]);
     }
 
@@ -74,55 +57,38 @@ final class DashboardController
         name: 'api.ictech_gift_card.dashboard.purchased_export',
         methods: ['GET']
     )]
-    public function purchasedExport(Request $request, Context $context): StreamedResponse
+    public function purchasedExport(Request $request): StreamedResponse
     {
-        $status  = $request->query->get('status');
-        $dateFrom = $request->query->get('dateFrom');
-        $dateTo   = $request->query->get('dateTo');
-
-        $where  = [];
-        $params = [];
-
-        if ($status) {
-            $where[]          = 'v.status = :status';
-            $params['status'] = $status;
-        }
-
-        if ($dateFrom) {
-            $where[]            = 'v.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFrom;
-        }
-
-        if ($dateTo) {
-            $where[]          = 'v.created_at <= :dateTo';
-            $params['dateTo'] = $dateTo . ' 23:59:59';
-        }
-
-        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-
-        $sql = "SELECT
-                    v.code,
-                    v.original_amount,
-                    v.remaining_balance,
-                    v.status,
-                    v.recipient_name,
-                    v.recipient_email,
-                    v.sender_name,
-                    v.expires_at,
-                    v.created_at,
-                    o.order_number
-                FROM ictech_gift_card_voucher v
-                LEFT JOIN `order` o ON o.id = v.order_id AND o.version_id = v.order_version_id
-                {$whereClause}
-                ORDER BY v.created_at DESC";
-
+        [$sql, $params] = $this->buildPurchasedExportQuery($request);
         $rows = $this->connection->fetchAllAssociative($sql, $params);
 
         return $this->streamCsv(
             'gift-cards-purchased.csv',
-            ['Code', 'Original Amount', 'Remaining Balance', 'Status', 'Recipient Name', 'Recipient Email', 'Sender Name', 'Expires At', 'Created At', 'Order Number'],
+            [
+                'Code',
+                'Original Amount',
+                'Remaining Balance',
+                'Status',
+                'Recipient Name',
+                'Recipient Email',
+                'Sender Name',
+                'Expires At',
+                'Created At',
+                'Order Number',
+            ],
             $rows,
-            ['code', 'original_amount', 'remaining_balance', 'status', 'recipient_name', 'recipient_email', 'sender_name', 'expires_at', 'created_at', 'order_number']
+            [
+                'code',
+                'original_amount',
+                'remaining_balance',
+                'status',
+                'recipient_name',
+                'recipient_email',
+                'sender_name',
+                'expires_at',
+                'created_at',
+                'order_number',
+            ]
         );
     }
 
@@ -131,49 +97,34 @@ final class DashboardController
         name: 'api.ictech_gift_card.dashboard.used_export',
         methods: ['GET']
     )]
-    public function usedExport(Request $request, Context $context): StreamedResponse
+    public function usedExport(Request $request): StreamedResponse
     {
-        $dateFrom = $request->query->get('dateFrom');
-        $dateTo   = $request->query->get('dateTo');
-
-        $where  = [];
-        $params = [];
-
-        if ($dateFrom) {
-            $where[]            = 't.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFrom;
-        }
-
-        if ($dateTo) {
-            $where[]          = 't.created_at <= :dateTo';
-            $params['dateTo'] = $dateTo . ' 23:59:59';
-        }
-
-        $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-
-        $sql = "SELECT
-                    v.code,
-                    t.amount_used,
-                    t.balance_before,
-                    t.balance_after,
-                    t.created_at,
-                    o.order_number,
-                    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-                    c.email AS customer_email
-                FROM ictech_gift_card_transaction t
-                INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id
-                LEFT JOIN `order` o ON o.id = t.order_id AND o.version_id = t.order_version_id
-                LEFT JOIN customer c ON c.id = t.customer_id
-                {$whereClause}
-                ORDER BY t.created_at DESC";
-
+        [$sql, $params] = $this->buildUsedExportQuery($request);
         $rows = $this->connection->fetchAllAssociative($sql, $params);
 
         return $this->streamCsv(
             'gift-cards-used.csv',
-            ['Code', 'Amount Used', 'Balance Before', 'Balance After', 'Used At', 'Order Number', 'Customer Name', 'Customer Email'],
+            [
+                'Code',
+                'Amount Used',
+                'Balance Before',
+                'Balance After',
+                'Used At',
+                'Order Number',
+                'Customer Name',
+                'Customer Email',
+            ],
             $rows,
-            ['code', 'amount_used', 'balance_before', 'balance_after', 'created_at', 'order_number', 'customer_name', 'customer_email']
+            [
+                'code',
+                'amount_used',
+                'balance_before',
+                'balance_after',
+                'created_at',
+                'order_number',
+                'customer_name',
+                'customer_email',
+            ]
         );
     }
 
@@ -182,31 +133,178 @@ final class DashboardController
         name: 'api.ictech_gift_card.preview_pdf',
         methods: ['GET']
     )]
-    public function previewPdf(Request $request, Context $context): Response
+    public function previewPdf(Request $request): Response
     {
         $salesChannelId = $request->query->get('salesChannelId');
-        $salesChannelId = \is_string($salesChannelId) && $salesChannelId !== '' ? $salesChannelId : null;
-        $html = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
+        $salesChannelId = \is_string($salesChannelId) && $salesChannelId !== ''
+            ? $salesChannelId
+            : null;
+        $html = $this->systemConfigService->getString(
+            'ICTECHGiftCard.config.pdfContent',
+            $salesChannelId
+        );
 
-        if (empty($html)) {
-            return new Response('No PDF content configured.', Response::HTTP_BAD_REQUEST);
+        if ($html === '') {
+            return new Response(
+                'No PDF content configured.',
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
-        $sampleImageHtml = '<img src="https://placehold.co/300x192/cccccc/333333?text=Gift+Card" style="max-width:300px;height:auto;" />';
+        $pdfOutput = $this->generatePreviewPdfOutput($html);
 
+        return new Response($pdfOutput, Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
+        ]);
+    }
+
+    private function getStatsCount(string $sql): int
+    {
+        $raw = $this->connection->fetchOne($sql);
+        return is_numeric($raw) ? (int) $raw : 0;
+    }
+
+    private function getStatsSum(string $sql): float
+    {
+        $raw = $this->connection->fetchOne($sql);
+        return is_numeric($raw) ? (float) $raw : 0.0;
+    }
+
+    private function getExpiredCount(): int
+    {
+        $now = (new \DateTimeImmutable())->format('Y-m-d');
+        $raw = $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM ictech_gift_card_voucher " .
+            "WHERE expires_at < :now AND status NOT IN ('used','canceled')",
+            ['now' => $now]
+        );
+        return is_numeric($raw) ? (int) $raw : 0;
+    }
+
+    /**
+     * @param array<string, string|int> $rows
+     */
+    private function parsePending(array $rows): int
+    {
+        $raw = $rows['waiting_valid_order'] ?? 0;
+        return is_numeric($raw) ? (int) $raw : 0;
+    }
+
+    /**
+     * @return array{0: array<int, string>, 1: array<string, string>}
+     */
+    private function getPurchasedFilters(Request $request): array
+    {
+        $status = $request->query->get('status');
+        $dateFrom = $request->query->get('dateFrom');
+        $dateTo = $request->query->get('dateTo');
+
+        $where = [];
+        $params = [];
+
+        if ($status) {
+            $where[] = 'v.status = :status';
+            $params['status'] = $status;
+        }
+        if ($dateFrom) {
+            $where[] = 'v.created_at >= :dateFrom';
+            $params['dateFrom'] = $dateFrom;
+        }
+        if ($dateTo) {
+            $where[] = 'v.created_at <= :dateTo';
+            $params['dateTo'] = $dateTo . ' 23:59:59';
+        }
+
+        return [$where, $params];
+    }
+
+    /**
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function buildPurchasedExportQuery(Request $request): array
+    {
+        [$where, $params] = $this->getPurchasedFilters($request);
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $sql = "SELECT v.code, v.original_amount, v.remaining_balance, " .
+            "v.status, v.recipient_name, v.recipient_email, v.sender_name, " .
+            "v.expires_at, v.created_at, o.order_number " .
+            "FROM ictech_gift_card_voucher v " .
+            "LEFT JOIN `order` o ON o.id = v.order_id " .
+            "AND o.version_id = v.order_version_id " .
+            "{$whereClause} " .
+            "ORDER BY v.created_at DESC";
+
+        return [$sql, $params];
+    }
+
+    /**
+     * @return array{0: array<int, string>, 1: array<string, string>}
+     */
+    private function getUsedFilters(Request $request): array
+    {
+        $dateFrom = $request->query->get('dateFrom');
+        $dateTo = $request->query->get('dateTo');
+
+        $where = [];
+        $params = [];
+
+        if ($dateFrom) {
+            $where[] = 't.created_at >= :dateFrom';
+            $params['dateFrom'] = $dateFrom;
+        }
+        if ($dateTo) {
+            $where[] = 't.created_at <= :dateTo';
+            $params['dateTo'] = $dateTo . ' 23:59:59';
+        }
+
+        return [$where, $params];
+    }
+
+    /**
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function buildUsedExportQuery(Request $request): array
+    {
+        [$where, $params] = $this->getUsedFilters($request);
+        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $sql = "SELECT v.code, t.amount_used, t.balance_before, " .
+            "t.balance_after, t.created_at, o.order_number, " .
+            "CONCAT(c.first_name, ' ', c.last_name) AS customer_name, " .
+            "c.email AS customer_email " .
+            "FROM ictech_gift_card_transaction t " .
+            "INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id " .
+            "LEFT JOIN `order` o ON o.id = t.order_id " .
+            "AND o.version_id = t.order_version_id " .
+            "LEFT JOIN customer c ON c.id = t.customer_id " .
+            "{$whereClause} " .
+            "ORDER BY t.created_at DESC";
+
+        return [$sql, $params];
+    }
+
+    private function generatePreviewPdfOutput(string $html): string
+    {
+        $sampleImageHtml = '<img src="' .
+            'https://placehold.co/300x192/cccccc/333333?text=Gift+Card' .
+            '" style="max-width:300px;height:auto;" />';
         $replacements = [
-            '{{card_lastname}}'  => 'Doe',
+            '{{card_lastname}}' => 'Doe',
             '{{card_firstname}}' => 'John',
-            '{{card_price}}'     => '50.00 €',
-            '{{card_from}}'      => 'Jane Doe',
-            '{{card_code}}'      => 'PREVIEW-1234-5678',
-            '{{card_message}}'   => 'Happy Birthday! Enjoy your gift.',
-            '{{card_image}}'     => $sampleImageHtml,
-            '{{shop_name}}'      => 'My Shop',
-            '{{validity_date}}'  => date('d.m.Y', strtotime('+1 year')),
+            '{{card_price}}' => '50.00 €',
+            '{{card_from}}' => 'Jane Doe',
+            '{{card_code}}' => 'PREVIEW-1234-5678',
+            '{{card_message}}' => 'Happy Birthday! Enjoy your gift.',
+            '{{card_image}}' => $sampleImageHtml,
+            '{{shop_name}}' => 'My Shop',
+            '{{validity_date}}' => (new \DateTimeImmutable('+1 year'))->format('d.m.Y'),
         ];
 
-        $html = str_replace(array_keys($replacements), array_values($replacements), $html);
+        $html = \str_replace(
+            \array_keys($replacements),
+            \array_values($replacements),
+            $html
+        );
 
         $options = new Options();
         $options->set('isRemoteEnabled', true);
@@ -217,10 +315,7 @@ final class DashboardController
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        return new Response($dompdf->output(), Response::HTTP_OK, [
-            'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
-        ]);
+        return (string) $dompdf->output();
     }
 
     /**
@@ -228,27 +323,40 @@ final class DashboardController
      * @param list<array<string, mixed>> $rows
      * @param list<string> $keys
      */
-    private function streamCsv(string $filename, array $headers, array $rows, array $keys): StreamedResponse
-    {
-        return new StreamedResponse(function () use ($headers, $rows, $keys): void {
-            $handle = fopen('php://output', 'w');
-            if ($handle === false) {
-                return;
-            }
-            fputcsv($handle, $headers);
-            foreach ($rows as $row) {
-                /** @var list<bool|float|int|string|null> $line */
-                $line = [];
-                foreach ($keys as $key) {
-                    $value = $row[$key] ?? null;
-                    $line[] = is_scalar($value) || $value === null ? $value : null;
+    private function streamCsv(
+        string $filename,
+        array $headers,
+        array $rows,
+        array $keys,
+    ): StreamedResponse {
+        return new StreamedResponse(
+            static function () use ($headers, $rows, $keys): void {
+                $handle = fopen('php://output', 'w');
+                if ($handle === false) {
+                    return;
                 }
-                fputcsv($handle, $line);
-            }
-            fclose($handle);
-        }, Response::HTTP_OK, [
-            'Content-Type'        => 'text/csv; charset=utf-8',
-            'Content-Disposition' => sprintf('attachment; filename="%s"', $filename),
-        ]);
+                fputcsv($handle, $headers);
+                foreach ($rows as $row) {
+                    /** @var list<bool|float|int|string|null> $line */
+                    $line = [];
+                    foreach ($keys as $key) {
+                        $value = $row[$key] ?? null;
+                        $line[] = is_scalar($value) || $value === null
+                            ? $value
+                            : null;
+                    }
+                    fputcsv($handle, $line);
+                }
+                fclose($handle);
+            },
+            Response::HTTP_OK,
+            [
+                'Content-Type' => 'text/csv; charset=utf-8',
+                'Content-Disposition' => sprintf(
+                    'attachment; filename="%s"',
+                    $filename
+                ),
+            ]
+        );
     }
 }

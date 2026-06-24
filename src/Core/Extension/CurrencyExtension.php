@@ -11,7 +11,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\OneToManyAssociationField
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 use Shopware\Core\System\Currency\CurrencyDefinition;
 
-class CurrencyExtension extends EntityExtension
+final class CurrencyExtension extends EntityExtension
 {
     public function extendFields(FieldCollection $collection): void
     {

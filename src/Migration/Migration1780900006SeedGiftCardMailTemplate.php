@@ -9,7 +9,7 @@ use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Migration\MigrationStep;
 use Shopware\Core\Framework\Uuid\Uuid;
 
-class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
+final class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
 {
     private const TECHNICAL_NAME = 'ictech_gift_card';
 
@@ -111,6 +111,9 @@ class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
         {{ message }}
     </blockquote>
     {% endif %}
+    <div style="text-align:center;margin:20px 0;">
+        {{ card_image|raw }}
+    </div>
     <div style="background:#f5f5f5;padding:20px;text-align:center;border-radius:8px;margin:24px 0;">
         <p style="margin:0;font-size:12px;color:#999;">Your voucher code</p>
         <p style="margin:8px 0;font-size:28px;font-weight:bold;letter-spacing:4px;color:#333;">{{ voucher_code }}</p>

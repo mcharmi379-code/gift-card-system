@@ -9,7 +9,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 /**
  * @extends EntityCollection<GiftCardTransactionEntity>
  */
-class GiftCardTransactionCollection extends EntityCollection
+final class GiftCardTransactionCollection extends EntityCollection
 {
     public function getApiAlias(): string
     {

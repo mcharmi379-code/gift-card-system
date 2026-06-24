@@ -19,8 +19,8 @@ use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskCollection;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskHandler;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-#[AsMessageHandler(handles: GiftCardEmailTask::class)]
-final class GiftCardEmailTaskHandler extends ScheduledTaskHandler
+#[AsMessageHandler(handles: ICTECHGiftCardEmailTask::class)]
+final class ICTECHGiftCardEmailTaskHandler extends ScheduledTaskHandler
 {
     private LoggerInterface $logger;
 

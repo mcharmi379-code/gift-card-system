@@ -10,7 +10,7 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 /**
  * @internal
  */
-class Migration1780642301AddOrderVersionId extends MigrationStep
+final class Migration1780642301AddOrderVersionId extends MigrationStep
 {
     public function getCreationTimestamp(): int
     {
@@ -22,7 +22,7 @@ class Migration1780642301AddOrderVersionId extends MigrationStep
         $rows = $connection->fetchAllAssociative(
             "SHOW COLUMNS FROM `ictech_gift_card_voucher` LIKE 'order_version_id'"
         );
-        if (empty($rows)) {
+        if ($rows === []) {
             $connection->executeStatement(
                 'ALTER TABLE `ictech_gift_card_voucher`
                     ADD COLUMN `order_version_id` BINARY(16) NULL AFTER `order_id`'
@@ -32,7 +32,7 @@ class Migration1780642301AddOrderVersionId extends MigrationStep
         $rows = $connection->fetchAllAssociative(
             "SHOW COLUMNS FROM `ictech_gift_card_transaction` LIKE 'order_version_id'"
         );
-        if (empty($rows)) {
+        if ($rows === []) {
             $connection->executeStatement(
                 'ALTER TABLE `ictech_gift_card_transaction`
                     ADD COLUMN `order_version_id` BINARY(16) NULL AFTER `order_id`'

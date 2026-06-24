@@ -25,7 +25,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 final class GiftCardOrderSubscriber implements EventSubscriberInterface
 {
-
     /**
      * @param EntityRepository<GiftCardVoucherCollection> $voucherRepository
      */
@@ -37,6 +36,9 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
     ) {
     }
 
+    /**
+     * @return array<string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [
@@ -88,50 +90,94 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
 
     public function onMailBeforeValidate(MailBeforeValidateEvent $event): void
     {
-        $templateData = $event->getTemplateData();
-        $data         = $event->getData();
-
-        // Only process order-related emails
-        $order = $templateData['order'] ?? null;
-        if ($order === null) {
-            return;
-        }
-
-        // Extract order ID — works with both entity objects and arrays
-        $orderId = null;
-        if (\is_object($order) && \method_exists($order, 'getId')) {
-            $orderId = $order->getId();
-        } elseif (\is_array($order) && isset($order['id'])) {
-            $orderId = $order['id'];
-        }
+        $order = $event->getTemplateData()['order'] ?? null;
+        $orderId = $this->getOrderId($order);
 
         if ($orderId === null || $orderId === '') {
             return;
         }
 
-        // Find vouchers linked to this order
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('orderId', \strtolower($orderId)));
-        $criteria->setLimit(50);
-
-        $vouchers = $this->voucherRepository->search($criteria, $event->getContext());
+        $vouchers = $this->getOrderVouchers($orderId, $event->getContext());
 
         if ($vouchers->getTotal() === 0) {
             return;
         }
 
-        // Build a block listing the gift card codes
+        $mailBlocks = $this->buildMailBlocks($vouchers);
+        $this->appendMailContent($event, $mailBlocks);
+    }
+
+    /**
+     * @return \Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult<\ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection>
+     */
+    private function getOrderVouchers(string $orderId, Context $context): \Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('orderId', \strtolower($orderId)));
+        $criteria->setLimit(50);
+
+        return $this->voucherRepository->search($criteria, $context);
+    }
+
+    /**
+     * @param array{html: string, plain: string, codes: list<string>} $mailBlocks
+     */
+    private function appendMailContent(MailBeforeValidateEvent $event, array $mailBlocks): void
+    {
+        $data = $event->getData();
+        $contentHtml = $data['contentHtml'] ?? '';
+        $contentPlain = $data['contentPlain'] ?? '';
+
+        if (\is_string($contentHtml) && $contentHtml !== '') {
+            $event->addData('contentHtml', $contentHtml . $mailBlocks['html']);
+        }
+        if (\is_string($contentPlain) && $contentPlain !== '') {
+            $event->addData('contentPlain', $contentPlain . $mailBlocks['plain']);
+        }
+
+        $event->addTemplateData('giftCardCodes', \implode(', ', $mailBlocks['codes']));
+    }
+
+    /**
+     * @param mixed $order
+     */
+    private function getOrderId($order): ?string
+    {
+        if (\is_object($order) && \method_exists($order, 'getId')) {
+            return $order->getId();
+        }
+        return $this->getOrderIdFromArray($order);
+    }
+
+    /**
+     * @param mixed $order
+     */
+    private function getOrderIdFromArray($order): ?string
+    {
+        if (\is_array($order) && isset($order['id']) && \is_string($order['id'])) {
+            return $order['id'];
+        }
+        return null;
+    }
+
+    /**
+     * @param \Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult<GiftCardVoucherCollection> $vouchers
+     *
+     * @return array{html: string, plain: string, codes: list<string>}
+     */
+    private function buildMailBlocks($vouchers): array
+    {
         $htmlBlock = '<div style="margin-top:20px;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;">';
         $htmlBlock .= '<h3 style="margin:0 0 12px;font-size:16px;color:#333;">🎁 Gift Card Code(s)</h3>';
         $htmlBlock .= '<table style="width:100%;border-collapse:collapse;font-size:14px;">';
         $htmlBlock .= '<tr style="background:#e9ecef;"><th style="padding:8px;text-align:left;">Code</th><th style="padding:8px;text-align:right;">Value</th></tr>';
 
         $plainBlock = "\n--- Gift Card Code(s) ---\n";
-
         $codesList = [];
+
         foreach ($vouchers->getElements() as $voucher) {
             /** @var GiftCardVoucherEntity $voucher */
-            $code   = $voucher->getCode();
+            $code = $voucher->getCode();
             $amount = \number_format($voucher->getOriginalAmount(), 2);
             $codesList[] = $code;
 
@@ -143,19 +189,11 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
 
         $htmlBlock .= '</table></div>';
 
-        // Append to existing mail content
-        $contentHtml  = $data['contentHtml'] ?? '';
-        $contentPlain = $data['contentPlain'] ?? '';
-
-        if (\is_string($contentHtml) && $contentHtml !== '') {
-            $event->addData('contentHtml', $contentHtml . $htmlBlock);
-        }
-        if (\is_string($contentPlain) && $contentPlain !== '') {
-            $event->addData('contentPlain', $contentPlain . $plainBlock);
-        }
-
-        // Also expose codes in template data for custom templates
-        $event->addTemplateData('giftCardCodes', \implode(', ', $codesList));
+        return [
+            'html' => $htmlBlock,
+            'plain' => $plainBlock,
+            'codes' => $codesList,
+        ];
     }
 
     // -------------------------------------------------------------------------
@@ -185,24 +223,44 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // --- Extract payload from storefront form ---
+        $this->processVoucherPurchase(
+            $lineItem,
+            $giftCardId,
+            $giftCard,
+            $orderId,
+            $customerId,
+            $purchaserEmail,
+            $purchaserName,
+            $context
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $giftCard
+     */
+    private function processVoucherPurchase(
+        OrderLineItemEntity $lineItem,
+        string $giftCardId,
+        array $giftCard,
+        string $orderId,
+        string $customerId,
+        string $purchaserEmail,
+        string $purchaserName,
+        Context $context,
+    ): void {
         $payload = $lineItem->getPayload() ?? [];
-
-        // Support both storefront field names and internal names
-        $deliveryMethod    = $this->extractPayloadString($payload, ['giftCardDeliveryMethod', 'deliveryMethod'], 'email');
-        $recipientEmail    = $this->extractPayloadString($payload, ['giftCardEmail', 'recipientEmail']);
-        $recipientName     = $this->extractPayloadString($payload, ['giftCardRecipientName', 'recipientName']);
-        $senderName        = $this->extractPayloadString($payload, ['giftCardSenderName', 'senderName']);
-        $personalMessage   = $this->extractPayloadString($payload, ['giftCardMessage', 'personalMessage']);
+        $deliveryMethod = $this->extractPayloadString($payload, ['giftCardDeliveryMethod', 'deliveryMethod'], 'email');
+        $recipientEmail = $this->extractPayloadString($payload, ['giftCardEmail', 'recipientEmail']);
+        $recipientName = $this->extractPayloadString($payload, ['giftCardRecipientName', 'recipientName']);
+        $senderName = $this->extractPayloadString($payload, ['giftCardSenderName', 'senderName']);
+        $personalMessage = $this->extractPayloadString($payload, ['giftCardMessage', 'personalMessage']);
         $scheduledSendDate = $this->extractPayloadString($payload, ['giftCardSendDate', 'scheduledSendDate']);
-        $templateId        = $this->extractPayloadString($payload, ['giftCardTemplateId']);
+        $templateId = $this->extractPayloadString($payload, ['giftCardTemplateId']);
 
-        // Default scheduled send date to today
         if ($scheduledSendDate === '') {
             $scheduledSendDate = (new \DateTimeImmutable())->format('Y-m-d');
         }
 
-        // For "Buy for Self" (print delivery), use purchaser details
         if ($deliveryMethod === 'print') {
             $recipientEmail = $purchaserEmail;
             $recipientName  = $recipientName !== '' ? $recipientName : $purchaserName;
@@ -210,90 +268,183 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
 
         $quantity = $lineItem->getQuantity();
         for ($i = 0; $i < $quantity; $i++) {
-            // --- Pick or generate a voucher ---
-            $voucher = $this->pickOrGenerateVoucher($giftCardId, $giftCard, $context);
-            if ($voucher === null) {
-                continue; // Should not happen but guard against it
+            $this->createAndSendVoucher(
+                $giftCardId,
+                $giftCard,
+                $orderId,
+                $lineItem->getId(),
+                $customerId,
+                $scheduledSendDate,
+                $recipientEmail,
+                $recipientName,
+                $senderName,
+                $personalMessage,
+                $templateId,
+                $deliveryMethod,
+                $purchaserEmail,
+                $purchaserName,
+                $context
+            );
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $giftCard
+     */
+    private function createAndSendVoucher(
+        string $giftCardId,
+        array $giftCard,
+        string $orderId,
+        string $lineItemId,
+        string $customerId,
+        string $scheduledSendDate,
+        string $recipientEmail,
+        string $recipientName,
+        string $senderName,
+        string $personalMessage,
+        string $templateId,
+        string $deliveryMethod,
+        string $purchaserEmail,
+        string $purchaserName,
+        Context $context,
+    ): void {
+        $voucher = $this->pickOrGenerateVoucher($giftCardId, $giftCard, $context);
+        if ($voucher === null) {
+            return;
+        }
+
+        $expiresAt = $this->calculateExpiryDate($giftCard, $scheduledSendDate);
+        $this->updateVoucherPersonalisation(
+            $voucher,
+            $orderId,
+            $lineItemId,
+            $customerId,
+            $expiresAt,
+            $recipientEmail,
+            $recipientName,
+            $senderName,
+            $personalMessage,
+            $scheduledSendDate,
+            $templateId,
+            $deliveryMethod,
+            $context
+        );
+
+        $updatedVoucher = $this->reloadVoucher($voucher->getId(), $context);
+        if ($updatedVoucher === null) {
+            return;
+        }
+
+        $this->dispatchVoucherEmails(
+            $updatedVoucher,
+            $deliveryMethod,
+            $purchaserEmail,
+            $purchaserName,
+            $scheduledSendDate,
+            $recipientEmail,
+            $context
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $giftCard
+     */
+    private function calculateExpiryDate(array $giftCard, string $scheduledSendDate): string
+    {
+        $validityDays = \is_numeric($giftCard['validity_days']) ? (int) $giftCard['validity_days'] : 365;
+        $baseDate = \DateTimeImmutable::createFromFormat('Y-m-d', $scheduledSendDate);
+        if (! $baseDate) {
+            $baseDate = new \DateTimeImmutable();
+        }
+        return $baseDate->modify("+{$validityDays} days")->format('Y-m-d');
+    }
+
+    private function getNullableString(string $val): ?string
+    {
+        return $val !== '' ? $val : null;
+    }
+
+    private function updateVoucherPersonalisation(
+        GiftCardVoucherEntity $voucher,
+        string $orderId,
+        string $lineItemId,
+        string $customerId,
+        string $expiresAt,
+        string $recipientEmail,
+        string $recipientName,
+        string $senderName,
+        string $personalMessage,
+        string $scheduledSendDate,
+        string $templateId,
+        string $deliveryMethod,
+        Context $context,
+    ): void {
+        $updateData = [
+            'id'                => $voucher->getId(),
+            'orderId'           => $orderId,
+            'orderVersionId'    => Defaults::LIVE_VERSION,
+            'orderLineItemId'   => $lineItemId,
+            'customerId'        => $this->getNullableString($customerId),
+            'status'            => VoucherStatus::Unused->value,
+            'expiresAt'         => $expiresAt,
+            'recipientName'     => $this->getNullableString($recipientName),
+            'recipientEmail'    => $this->getNullableString($recipientEmail),
+            'senderName'        => $this->getNullableString($senderName),
+            'personalMessage'   => $this->getNullableString($personalMessage),
+            'scheduledSendDate' => $scheduledSendDate,
+        ];
+
+        $updateData['customFields'] = $this->buildPersonalisationCustomFields($voucher, $templateId, $deliveryMethod);
+
+        $this->voucherRepository->update([$updateData], $context);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildPersonalisationCustomFields(
+        GiftCardVoucherEntity $voucher,
+        string $templateId,
+        string $deliveryMethod,
+    ): array {
+        $customFields = $voucher->getCustomFields() ?? [];
+        if ($templateId !== '') {
+            $customFields['giftCardTemplateId'] = $templateId;
+        }
+        if ($deliveryMethod !== '') {
+            $customFields['deliveryMethod'] = $deliveryMethod;
+        }
+        return $customFields;
+    }
+
+    private function reloadVoucher(string $voucherId, Context $context): ?GiftCardVoucherEntity
+    {
+        return $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
+    }
+
+    private function dispatchVoucherEmails(
+        GiftCardVoucherEntity $voucher,
+        string $deliveryMethod,
+        string $purchaserEmail,
+        string $purchaserName,
+        string $scheduledSendDate,
+        string $recipientEmail,
+        Context $context,
+    ): void {
+        $today = (new \DateTimeImmutable())->format('Y-m-d');
+
+        try {
+            if ($deliveryMethod === 'print') {
+                $this->emailService->sendPurchaserSelfEmail($voucher, $purchaserEmail, $purchaserName, $context);
+                return;
             }
 
-            // --- Compute expiry ---
-            $validityDays = \is_numeric($giftCard['validity_days']) ? (int) $giftCard['validity_days'] : 365;
-            $baseDate = \DateTimeImmutable::createFromFormat('Y-m-d', $scheduledSendDate);
-            if (!$baseDate) {
-                $baseDate = new \DateTimeImmutable();
+            $this->emailService->sendPurchaserConfirmationEmail($voucher, $purchaserEmail, $purchaserName, $context);
+            if ($scheduledSendDate <= $today && $recipientEmail !== '') {
+                $this->emailService->sendRecipientEmail($voucher, $context);
             }
-            $expiresAt = $baseDate->modify("+{$validityDays} days")->format('Y-m-d');
-
-            // --- Persist personalisation to voucher ---
-            $updateData = [
-                'id'                => $voucher->getId(),
-                'orderId'           => $orderId,
-                'orderVersionId'    => Defaults::LIVE_VERSION,
-                'orderLineItemId'   => $lineItem->getId(),
-                'customerId'        => $customerId !== '' ? $customerId : null,
-                'status'            => VoucherStatus::Unused->value,
-                'expiresAt'         => $expiresAt,
-                'recipientName'     => $recipientName !== '' ? $recipientName : null,
-                'recipientEmail'    => $recipientEmail !== '' ? $recipientEmail : null,
-                'senderName'        => $senderName !== '' ? $senderName : null,
-                'personalMessage'   => $personalMessage !== '' ? $personalMessage : null,
-                'scheduledSendDate' => $scheduledSendDate,
-            ];
-
-            // Store templateId and deliveryMethod in customFields
-            $customFields = $voucher->getCustomFields() ?? [];
-            if ($templateId !== '') {
-                $customFields['giftCardTemplateId'] = $templateId;
-            }
-            if ($deliveryMethod !== '') {
-                $customFields['deliveryMethod'] = $deliveryMethod;
-            }
-            if (!empty($customFields)) {
-                $updateData['customFields'] = $customFields;
-            }
-
-            $this->voucherRepository->update([$updateData], $context);
-
-            // --- Reload voucher with updated fields ---
-            /** @var GiftCardVoucherEntity|null $updatedVoucher */
-            $updatedVoucher = $this->voucherRepository
-                ->search(new Criteria([$voucher->getId()]), $context)
-                ->first();
-
-            if (!$updatedVoucher instanceof GiftCardVoucherEntity) {
-                continue;
-            }
-
-            // --- Send emails based on delivery method ---
-            $today = (new \DateTimeImmutable())->format('Y-m-d');
-
-            try {
-                if ($deliveryMethod === 'print') {
-                    // "Buy for Self" → send voucher directly to purchaser
-                    $this->emailService->sendPurchaserSelfEmail(
-                        $updatedVoucher,
-                        $purchaserEmail,
-                        $purchaserName,
-                        $context,
-                    );
-                } else {
-                    // "Send to Someone Else" → send confirmation to purchaser
-                    $this->emailService->sendPurchaserConfirmationEmail(
-                        $updatedVoucher,
-                        $purchaserEmail,
-                        $purchaserName,
-                        $context,
-                    );
-
-                    // If scheduled for today or past, also send to recipient immediately
-                    if ($scheduledSendDate <= $today && $recipientEmail !== '') {
-                        $this->emailService->sendRecipientEmail($updatedVoucher, $context);
-                    }
-                    // Otherwise the scheduled task will pick it up on the right date
-                }
-            } catch (\Throwable) {
-                // Email failure must not break the order flow
-            }
+        } catch (\Throwable $e) {
+            error_log($e->getMessage()); // Email failure must not break the order flow
         }
     }
 
@@ -343,10 +494,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             'expiresAt'        => $expiresAt,
         ]], $context);
 
-        /** @var GiftCardVoucherEntity|null $newVoucher */
-        $newVoucher = $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
-
-        return $newVoucher;
+        return $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
     }
 
     /**

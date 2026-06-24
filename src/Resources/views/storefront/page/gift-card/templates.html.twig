@@ -1,0 +1,52 @@
+{% block ictech_gift_card_templates %}
+    <section class="ictech-gift-card-section">
+        <h2>2 &bull; {{ 'ictech-gift-card.page.selectTemplate'|trans }}</h2>
+
+        <div class="ictech-gift-card-tabs" role="tablist" aria-label="{{ 'ictech-gift-card.page.templateCategories'|trans }}">
+            {% for filter in giftCardTagFilters %}
+                <button
+                    type="button"
+                    class="ictech-gift-card-tabs__item{% if loop.first %} is-active{% endif %}"
+                    data-gift-card-filter="{{ filter.key|lower|replace({' ': '-'}) }}"
+                >
+                    {{ filter.label }} <span>({{ filter.count }})</span>
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="ictech-gift-card-template-grid">
+            {% for template in giftCardTemplates %}
+                {% set customize = template.customFields.giftCardTemplateCustomize ?? {} %}
+                {% if not customize.pdfOnly|default(false) %}
+                    {% set media = template.media %}
+                    {% set tag = template.tag ?: 'Various' %}
+                    {% set tagKey = tag|lower|replace({' ': '-'}) %}
+                    <button
+                        type="button"
+                        class="ictech-gift-card-template"
+                        data-gift-card-template="{{ template.id }}"
+                        data-gift-card-template-name="{{ template.name }}"
+                        data-gift-card-tag="{{ tagKey }}"
+                    >
+                        {% if media %}
+                            <img
+                                src="{{ media.url }}"
+                                alt="{{ template.name }}"
+                                width="{{ giftCardConfig.storefrontCardWidth ?: 528 }}"
+                                height="{{ giftCardConfig.storefrontCardHeight ?: 318 }}"
+                                loading="lazy"
+                            >
+                        {% endif %}
+                        <span class="ictech-gift-card-template__overlay" style="color: {{ customize.colorOne|default('#ffffff') }}">
+                            <b>{{ customize.price|default('100') }}</b>
+                            <em>{{ customize.textOne|default('') }}</em>
+                            <small>{{ customize.discountCode|default('XXXXXXXXXX') }}</small>
+                        </span>
+                    </button>
+                {% endif %}
+            {% else %}
+                <p>{{ 'ictech-gift-card.page.noTemplates'|trans }}</p>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

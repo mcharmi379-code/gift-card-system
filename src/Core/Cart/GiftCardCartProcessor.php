@@ -12,7 +12,6 @@ use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
-use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Framework\Context;
@@ -57,59 +56,20 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         }
 
         $runningTotal = $toCalculate->getPrice()->getTotalPrice();
-        $hasRestricted = false;
-        $appliedCount = 0;
+        $state = [
+            'hasRestricted' => false,
+            'appliedCount'  => 0,
+            'runningTotal'  => $runningTotal,
+        ];
 
         foreach ($original->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
-            $code = $lineItem->getReferencedId();
-            if ($code === null || $code === '') {
-                $original->getLineItems()->remove($lineItem->getId());
-                continue;
-            }
-
-            $voucher = $this->findValidVoucher(\strtoupper($code), $context->getContext());
-
-            if ($voucher === null) {
-                $original->getLineItems()->remove($lineItem->getId());
-                continue;
-            }
-
-            $giftCard = $voucher->getGiftCard();
-            $isRestricted = $giftCard !== null && $giftCard->getRestrictCombine();
-
-            // Combinability check:
-            // If we have already applied a voucher:
-            // - If the previous applied voucher was restricted, OR this new voucher is restricted:
-            //   remove this new voucher as it cannot be combined.
-            if ($appliedCount > 0 && ($hasRestricted || $isRestricted)) {
-                $original->getLineItems()->remove($lineItem->getId());
-                continue;
-            }
-
-            $deductAmount = \min($voucher->getRemainingBalance(), $runningTotal);
-
-            if ($deductAmount <= 0.0) {
-                $original->getLineItems()->remove($lineItem->getId());
-                continue;
-            }
-
-            if ($isRestricted) {
-                $hasRestricted = true;
-            }
-            $appliedCount++;
-
-            $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
-            $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$deductAmount));
-            $lineItem->setPrice(
-                $this->priceCalculator->calculate(
-                    -$deductAmount,
-                    $toCalculate->getLineItems()->getPrices(),
-                    $context
-                )
+            $state = $this->processVoucherLineItem(
+                $lineItem,
+                $original,
+                $toCalculate,
+                $context,
+                $state
             );
-
-            $toCalculate->add($lineItem);
-            $runningTotal = \max(0.0, $runningTotal - $deductAmount);
         }
     }
 
@@ -128,14 +88,6 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         $orderId = \strtolower($orderId);
         $customerId = \strtolower($customerId);
 
-        error_log(sprintf(
-            "ICTECH_GC_LOG - persistRedemption: code=%s, amountUsed=%f, orderId=%s, customerId=%s",
-            $voucherCode,
-            $amountUsed,
-            $orderId,
-            $customerId
-        ));
-
         $voucher = $this->findValidVoucher(\strtoupper($voucherCode), $context);
 
         if ($voucher === null) {
@@ -143,25 +95,164 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         }
 
         $balanceBefore = $voucher->getRemainingBalance();
-        $balanceAfter  = \round($balanceBefore - $amountUsed, 2);
-        $newStatus     = $balanceAfter <= 0.0 ? VoucherStatus::Used : VoucherStatus::Unused;
+        $balanceAfter = \round($balanceBefore - $amountUsed, 2);
 
+        $this->createTransaction(
+            $voucher->getId(),
+            $orderId,
+            $customerId,
+            $amountUsed,
+            $balanceBefore,
+            $balanceAfter,
+            $context
+        );
+
+        $this->updateVoucherBalance($voucher, $balanceAfter, $orderNumber, $context);
+    }
+
+    /**
+     * @param array{hasRestricted: bool, appliedCount: int, runningTotal: float} $state
+     * @return array{hasRestricted: bool, appliedCount: int, runningTotal: float}
+     */
+    private function processVoucherLineItem(
+        \Shopware\Core\Checkout\Cart\LineItem\LineItem $lineItem,
+        Cart $original,
+        Cart $toCalculate,
+        SalesChannelContext $context,
+        array $state,
+    ): array {
+        $code = $lineItem->getReferencedId();
+        if ($code === null || $code === '') {
+            $original->getLineItems()->remove($lineItem->getId());
+            return $state;
+        }
+
+        $voucher = $this->findValidVoucher(\strtoupper($code), $context->getContext());
+        if ($voucher === null) {
+            $original->getLineItems()->remove($lineItem->getId());
+            return $state;
+        }
+
+        return $this->evaluateAndApplyVoucher(
+            $lineItem,
+            $voucher,
+            $original,
+            $toCalculate,
+            $context,
+            $state
+        );
+    }
+
+    /**
+     * @param array{hasRestricted: bool, appliedCount: int, runningTotal: float} $state
+     * @return array{hasRestricted: bool, appliedCount: int, runningTotal: float}
+     */
+    private function evaluateAndApplyVoucher(
+        \Shopware\Core\Checkout\Cart\LineItem\LineItem $lineItem,
+        GiftCardVoucherEntity $voucher,
+        Cart $original,
+        Cart $toCalculate,
+        SalesChannelContext $context,
+        array $state,
+    ): array {
+        $giftCard = $voucher->getGiftCard();
+        $isRestricted = $this->isRestrictedGiftCard($giftCard);
+
+        if ($this->hasRestrictionConflict($state, $isRestricted)) {
+            $original->getLineItems()->remove($lineItem->getId());
+            return $state;
+        }
+
+        $deductAmount = \min($voucher->getRemainingBalance(), $state['runningTotal']);
+        if ($deductAmount <= 0.0) {
+            $original->getLineItems()->remove($lineItem->getId());
+            return $state;
+        }
+
+        $this->applyVoucherLineItem($lineItem, $voucher, $deductAmount, $toCalculate, $context);
+
+        return [
+            'hasRestricted' => $state['hasRestricted'] || $isRestricted,
+            'appliedCount'  => $state['appliedCount'] + 1,
+            'runningTotal'  => \max(0.0, $state['runningTotal'] - $deductAmount),
+        ];
+    }
+
+    private function isRestrictedGiftCard(?\ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity $giftCard): bool
+    {
+        return $giftCard !== null && $giftCard->getRestrictCombine();
+    }
+
+    /**
+     * @param array{hasRestricted: bool, appliedCount: int, runningTotal: float} $state
+     */
+    private function hasRestrictionConflict(array $state, bool $isRestricted): bool
+    {
+        if ($state['appliedCount'] <= 0) {
+            return false;
+        }
+        return $state['hasRestricted'] || $isRestricted;
+    }
+
+    private function applyVoucherLineItem(
+        \Shopware\Core\Checkout\Cart\LineItem\LineItem $lineItem,
+        GiftCardVoucherEntity $voucher,
+        float $deductAmount,
+        Cart $toCalculate,
+        SalesChannelContext $context,
+    ): void {
+        $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
+        $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$deductAmount));
+        $lineItem->setPrice(
+            $this->priceCalculator->calculate(
+                -$deductAmount,
+                $toCalculate->getLineItems()->getPrices(),
+                $context
+            )
+        );
+
+        $toCalculate->add($lineItem);
+    }
+
+    private function createTransaction(
+        string $voucherId,
+        string $orderId,
+        string $customerId,
+        float $amountUsed,
+        float $balanceBefore,
+        float $balanceAfter,
+        Context $context,
+    ): void {
         $this->transactionRepository->create([[
-            'id'             => Uuid::randomHex(),
-            'voucherId'      => $voucher->getId(),
-            'orderId'        => $orderId,
+            'id' => Uuid::randomHex(),
+            'voucherId' => $voucherId,
+            'orderId' => $orderId,
             'orderVersionId' => \Shopware\Core\Defaults::LIVE_VERSION,
-            'customerId'     => $customerId !== '' ? $customerId : null,
-            'amountUsed'     => $amountUsed,
-            'balanceBefore'  => $balanceBefore,
-            'balanceAfter'   => \max(0.0, $balanceAfter),
+            'customerId' => $customerId !== '' ? $customerId : null,
+            'amountUsed' => $amountUsed,
+            'balanceBefore' => $balanceBefore,
+            'balanceAfter' => \max(0.0, $balanceAfter),
         ]], $context);
+    }
+
+    private function updateVoucherBalance(
+        GiftCardVoucherEntity $voucher,
+        float $balanceAfter,
+        string $orderNumber,
+        Context $context,
+    ): void {
+        $newStatus = VoucherStatus::Unused;
+        if ($balanceAfter <= 0.0) {
+            $newStatus = VoucherStatus::Used;
+        } elseif ($balanceAfter < $voucher->getOriginalAmount()) {
+            $newStatus = VoucherStatus::PartiallyUsed;
+        }
 
         $this->voucherRepository->update([[
-            'id'                  => $voucher->getId(),
-            'remainingBalance'    => \max(0.0, $balanceAfter),
-            'status'              => $newStatus->value,
-            'usedInOrderNumber'   => $orderNumber,
+            'id' => $voucher->getId(),
+            'remainingBalance' => \max(0.0, $balanceAfter),
+            'status' => $newStatus->value,
+            'usedInOrderNumber' => $orderNumber,
         ]], $context);
     }
 

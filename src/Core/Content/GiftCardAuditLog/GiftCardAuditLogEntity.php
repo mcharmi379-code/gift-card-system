@@ -9,7 +9,7 @@ use ICTECHGiftCard\Core\Enum\AuditLogAction;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 
-class GiftCardAuditLogEntity extends Entity
+final class GiftCardAuditLogEntity extends Entity
 {
     use EntityIdTrait;
 

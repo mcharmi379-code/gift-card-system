@@ -10,7 +10,7 @@ use Shopware\Core\Framework\Migration\MigrationStep;
 /**
  * @internal
  */
-class Migration1780642298AddMediaToGiftCard extends MigrationStep
+final class Migration1780642298AddMediaToGiftCard extends MigrationStep
 {
     public function getCreationTimestamp(): int
     {

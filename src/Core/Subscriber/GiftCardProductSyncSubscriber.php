@@ -6,8 +6,6 @@ namespace ICTECHGiftCard\Core\Subscriber;
 
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardDefinition;
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity;
-use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
-use ICTECHGiftCard\Core\Enum\VoucherStatus;
 use Shopware\Core\Content\Product\Aggregate\ProductVisibility\ProductVisibilityDefinition;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
@@ -25,21 +23,22 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     private const SYNC_FLAG = 'ictech_gift_card_product_sync_running';
 
     /**
-     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<GiftCardEntity>> $giftCardRepository
-     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $productRepository
-     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $taxRepository
-     * @param EntityRepository<\Shopware\Core\Framework\DataAbstractionLayer\EntityCollection<\Shopware\Core\Framework\DataAbstractionLayer\Entity>> $salesChannelRepository
-     * @param EntityRepository<GiftCardVoucherCollection> $voucherRepository
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCard\GiftCardCollection> $giftCardRepository
+     * @param EntityRepository<\Shopware\Core\Content\Product\ProductCollection> $productRepository
+     * @param EntityRepository<\Shopware\Core\System\Tax\TaxCollection> $taxRepository
+     * @param EntityRepository<\Shopware\Core\System\SalesChannel\SalesChannelCollection> $salesChannelRepository
      */
     public function __construct(
         private readonly EntityRepository $giftCardRepository,
         private readonly EntityRepository $productRepository,
         private readonly EntityRepository $taxRepository,
         private readonly EntityRepository $salesChannelRepository,
-        private readonly EntityRepository $voucherRepository,
     ) {
     }
 
+    /**
+     * @return array<string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [
@@ -64,20 +63,25 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         $context->addExtension(self::SYNC_FLAG, new ArrayStruct());
 
         foreach ($giftCardEvent->getWriteResults() as $writeResult) {
-            $primaryKey = $writeResult->getPrimaryKey();
-            /** @var array<string,mixed>|string $primaryKey */
-            $giftCardId = \is_array($primaryKey)
-                ? (\is_string($primaryKey['id'] ?? null) ? $primaryKey['id'] : '')
-                : $primaryKey;
-
-            if ($giftCardId === '') {
-                continue;
-            }
-
-            $isInsert = $writeResult->getOperation() === EntityWriteResult::OPERATION_INSERT;
-
-            $this->syncGiftCard($giftCardId, $isInsert, $context);
+            $this->processWriteResult($writeResult, $context);
         }
+    }
+
+    private function processWriteResult(EntityWriteResult $writeResult, Context $context): void
+    {
+        $primaryKey = $writeResult->getPrimaryKey();
+        /** @var array<string, string>|string $primaryKey */
+        $giftCardId = \is_array($primaryKey)
+            ? (\is_string($primaryKey['id'] ?? null) ? $primaryKey['id'] : '')
+            : $primaryKey;
+
+        if ($giftCardId === '') {
+            return;
+        }
+
+        $isInsert = $writeResult->getOperation() === EntityWriteResult::OPERATION_INSERT;
+
+        $this->syncGiftCard($giftCardId, $isInsert, $context);
     }
 
     private function syncGiftCard(string $giftCardId, bool $isInsert, Context $context): void
@@ -101,6 +105,8 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
             // Existing gift card updated — sync product fields
             $this->updateProduct($giftCard, $taxId, $context);
         }
+
+        $this->updateProduct($giftCard, $taxId, $context);
     }
 
     // -------------------------------------------------------------------------
@@ -126,9 +132,8 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
                 'productId'        => $productId,
                 'productVersionId' => Defaults::LIVE_VERSION,
             ]], $isolatedContext);
-        } catch (\Exception) {
-            // If the update fails (rare), the product is already created and the voucher pool
-            // is functional. The productId link is nice-to-have for lookups, but not critical.
+        } catch (\Exception $e) {
+            error_log($e->getMessage());
         }
     }
 

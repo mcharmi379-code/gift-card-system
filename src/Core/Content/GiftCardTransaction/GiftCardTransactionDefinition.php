@@ -19,7 +19,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\ManyToOneAssociationField
 use Shopware\Core\Framework\DataAbstractionLayer\Field\ReferenceVersionField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
-class GiftCardTransactionDefinition extends EntityDefinition
+final class GiftCardTransactionDefinition extends EntityDefinition
 {
     final public const ENTITY_NAME = 'ictech_gift_card_transaction';
 

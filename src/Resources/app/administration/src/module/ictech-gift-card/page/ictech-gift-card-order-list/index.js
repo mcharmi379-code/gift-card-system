@@ -123,6 +123,18 @@ export default {
                     width: '150px',
                 },
                 {
+                    property: 'scheduledSendDate',
+                    label: 'ictech-gift-card.order.list.columnScheduledSendDate',
+                    allowResize: true,
+                    width: '140px',
+                },
+                {
+                    property: 'sentAt',
+                    label: 'ictech-gift-card.order.list.columnSentAt',
+                    allowResize: true,
+                    width: '140px',
+                },
+                {
                     property: 'createdAt',
                     label: 'ictech-gift-card.order.list.columnDate',
                     allowResize: true,
@@ -262,6 +274,13 @@ export default {
             return new Intl.DateTimeFormat(undefined, {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit',
+            }).format(new Date(date));
+        },
+
+        formatDateOnly(date) {
+            if (!date) return '—';
+            return new Intl.DateTimeFormat(undefined, {
+                year: 'numeric', month: '2-digit', day: '2-digit',
             }).format(new Date(date));
         },
 
