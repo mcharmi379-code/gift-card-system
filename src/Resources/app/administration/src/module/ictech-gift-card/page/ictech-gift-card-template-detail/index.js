@@ -12,7 +12,6 @@ const DEFAULT_CUSTOMIZE_CONFIG = {
     textTwo: 'HAPPY',
     textThree: 'BIRTHDAY',
     colorOne: '#ff6a3d',
-    pdfOnly: false,
 };
 
 export default {

@@ -71,7 +71,6 @@ final class Migration1780900000SeedDefaultSystemConfig extends MigrationStep
             'ICTECHGiftCard.config.pdfPrefix'                 => 'GIFTCARD-',
             'ICTECHGiftCard.config.pdfCardWidth'              => 300,
             'ICTECHGiftCard.config.pdfCardHeight'             => 192,
-            'ICTECHGiftCard.config.pdfImageSourceMode'        => 'http',
         ];
     }
 }

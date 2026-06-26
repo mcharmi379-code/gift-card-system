@@ -76,7 +76,8 @@
             "messageValidationError": "Please fix the highlighted fields and try again.",
             "messageNameRequired": "Name is required.",
             "messageSaveSuccess": "Gift card saved successfully.",
-            "messageSaveError": "An error occurred while saving the gift card."
+            "messageSaveError": "An error occurred while saving the gift card.",
+            "errorTemplateRequired": "A Gift Card Template is required."
         },
         "template": {
             "list": {
@@ -161,7 +162,21 @@
             "messageSaveSuccess": "Settings saved successfully.",
             "messageSaveError": "An error occurred while saving the settings.",
             "previewPdf": "Preview PDF",
-            "messagePdfError": "An error occurred while generating the PDF preview."
+            "messagePdfError": "An error occurred while generating the PDF preview.",
+            "variablesTitle": "PDF Variables",
+            "variablesDescription": "You can use the following placeholder variables in your PDF template content:",
+            "variables": {
+                "cardLastname": "Recipient Name",
+                "cardFirstname": "Firstname (deprecated)",
+                "cardPrice": "Amount / Value of Gift Card",
+                "cardFrom": "Sender Name",
+                "cardCode": "Voucher / Discount Code",
+                "cardMessage": "Personal message from sender",
+                "cardImage": "Gift card template media image",
+                "shopName": "Store Name",
+                "validityDate": "Expiration / Delivery date",
+                "shopUrl": "Storefront URL"
+            }
         },
         "placeholder": {
             "order": {

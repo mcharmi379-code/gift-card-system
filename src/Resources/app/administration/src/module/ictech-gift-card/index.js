@@ -1,5 +1,6 @@
 import './acl';
 import defaultSearchConfiguration from './default-search-configuration';
+import './component/ictech-gift-card-settings-custom';
 
 const { Module } = Shopware;
 
@@ -138,5 +139,5 @@ Shopware.Component.register('ictech-gift-card-detail', () => import('./page/icte
 Shopware.Component.register('ictech-gift-card-placeholder', () => import('./page/ictech-gift-card-placeholder'));
 Shopware.Component.register('ictech-gift-card-template-list', () => import('./page/ictech-gift-card-template-list'));
 Shopware.Component.register('ictech-gift-card-template-detail', () => import('./page/ictech-gift-card-template-detail'));
-Shopware.Component.register('ictech-gift-card-settings', () => import('./page/ictech-gift-card-settings'));
 Shopware.Component.register('ictech-gift-card-moderation', () => import('./page/ictech-gift-card-moderation'));
+Shopware.Component.register('ictech-gift-card-settings', () => import('./page/ictech-gift-card-settings'));

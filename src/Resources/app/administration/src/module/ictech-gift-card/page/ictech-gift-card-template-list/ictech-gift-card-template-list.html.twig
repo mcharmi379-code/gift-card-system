@@ -46,9 +46,14 @@
             :allow-edit="acl.can('ictech_gift_card.editor') || undefined"
             :allow-view="acl.can('ictech_gift_card.viewer') || undefined"
             :allow-delete="acl.can('ictech_gift_card.deleter') || undefined"
+            :sort-by="sortBy"
+            :sort-direction="sortDirection"
+            :disable-data-fetching="true"
             full-page
             @update-records="updateTotal"
             @selection-change="updateSelection"
+            @page-change="onPageChange"
+            @column-sort="onSortColumn"
         >
             <template #column-media="{ item }">
                 <img
@@ -84,6 +89,17 @@
                     v-else
                     name="regular-times-s"
                     class="ictech-gift-card-template-list__icon-active is--inactive"
+                />
+            </template>
+
+            <template #pagination>
+                <sw-pagination
+                    :page="page"
+                    :limit="limit"
+                    :total="total"
+                    :total-visible="7"
+                    :auto-hide="false"
+                    @page-change="onPageChange"
                 />
             </template>
         </sw-entity-listing>

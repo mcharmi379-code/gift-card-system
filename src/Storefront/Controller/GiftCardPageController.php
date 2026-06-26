@@ -107,18 +107,35 @@ final class GiftCardPageController extends StorefrontController
         $priceStr = $this->formatPriceString((float) $params['amount'], $context);
         $formattedSendDate = $this->formatSendDate($params['sendDate']);
 
-        $html = $this->renderView('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
-            'card_lastname' => $params['recipientName'],
-            'card_price'    => $priceStr,
-            'card_from'     => $params['senderName'],
-            'card_code'     => 'PREVIEW-1234-5678',
-            'card_message'  => $params['message'],
-            'card_image'    => $cardImage,
-            'shop_name'     => $shopName,
-            'validity_date' => $formattedSendDate,
-        ]);
+        $shopUrl = $this->resolveShopUrl($context);
 
-        return $this->renderDompdfResponse($html);
+        return str_replace(
+            [
+                '{{card_lastname}}',
+                '{{card_firstname}}',
+                '{{card_price}}',
+                '{{card_from}}',
+                '{{card_code}}',
+                '{{card_message}}',
+                '{{card_image}}',
+                '{{shop_name}}',
+                '{{validity_date}}',
+                '{{shop_url}}',
+            ],
+            [
+                htmlspecialchars($params['recipientName']),
+                '',
+                htmlspecialchars($priceStr),
+                htmlspecialchars($params['senderName']),
+                'PREVIEW-1234-5678',
+                nl2br(htmlspecialchars($params['message'])),
+                $cardImage,
+                htmlspecialchars($shopName),
+                htmlspecialchars($formattedSendDate),
+                htmlspecialchars($shopUrl),
+            ],
+            $pdfContent
+        );
     }
 
     private function buildCardImageHtml(?object $template, string $salesChannelId): string
@@ -332,13 +349,7 @@ final class GiftCardPageController extends StorefrontController
      */
     private function processTemplateTag(object $template, array $filters): array
     {
-        if ($this->isPdfOnlyTemplate($template)) {
-            return $filters;
-        }
-
-        $translated = $template->getTranslated();
-        $tag = isset($translated['tag']) ? \trim((string) $translated['tag']) : \trim($template->getTag());
-        $key = $tag !== '' ? $tag : 'Various';
+        $key = $this->getTemplateTagKey($template);
 
         $filters['all']['count']++;
         $filters[$key] ??= [
@@ -349,15 +360,6 @@ final class GiftCardPageController extends StorefrontController
         $filters[$key]['count']++;
 
         return $filters;
-    }
-
-    private function isPdfOnlyTemplate(object $template): bool
-    {
-        if (! method_exists($template, 'getCustomFields')) {
-            return false;
-        }
-        $customize = $template->getCustomFields()['giftCardTemplateCustomize'] ?? null;
-        return \is_array($customize) && ($customize['pdfOnly'] ?? false);
     }
 
     private function getTemplateTagKey(object $template): string
@@ -403,5 +405,35 @@ final class GiftCardPageController extends StorefrontController
             'storefrontCardLargeWidth' => $getInt('storefrontCardLargeWidth'),
             'storefrontCardLargeHeight' => $getInt('storefrontCardLargeHeight'),
         ];
+    }
+
+    private function resolveShopUrl(SalesChannelContext $context): string
+    {
+        $domainCollection = $context->getSalesChannel()->getDomains();
+        if ($domainCollection !== null && $domainCollection->count() > 0) {
+            $langDomain = $this->findLanguageDomain($domainCollection, $context->getContext()->getLanguageId());
+            if ($langDomain !== null) {
+                return \rtrim((string) $langDomain->getUrl(), '/');
+            }
+            $firstDomain = $domainCollection->first();
+            if ($firstDomain !== null) {
+                return \rtrim((string) $firstDomain->getUrl(), '/');
+            }
+        }
+
+        $fallback = $this->systemConfigService->getString('core.basicInformation.shopUrl', $context->getSalesChannelId());
+        return \rtrim($fallback, '/');
+    }
+
+    private function findLanguageDomain(
+        \Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainCollection $domains,
+        string $languageId,
+    ): ?\Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainEntity {
+        foreach ($domains as $domain) {
+            if ($domain->getLanguageId() === $languageId) {
+                return $domain;
+            }
+        }
+        return null;
     }
 }

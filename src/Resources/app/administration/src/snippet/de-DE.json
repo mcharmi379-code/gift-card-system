@@ -76,7 +76,8 @@
             "messageValidationError": "Bitte korrigieren Sie die markierten Felder und versuchen Sie es erneut.",
             "messageNameRequired": "Name ist erforderlich.",
             "messageSaveSuccess": "Geschenkkarte erfolgreich gespeichert.",
-            "messageSaveError": "Beim Speichern der Geschenkkarte ist ein Fehler aufgetreten."
+            "messageSaveError": "Beim Speichern der Geschenkkarte ist ein Fehler aufgetreten.",
+            "errorTemplateRequired": "Eine Geschenkkarten-Vorlage ist erforderlich."
         },
         "template": {
             "list": {
@@ -161,7 +162,21 @@
             "messageSaveSuccess": "Einstellungen erfolgreich gespeichert.",
             "messageSaveError": "Beim Speichern der Einstellungen ist ein Fehler aufgetreten.",
             "previewPdf": "PDF-Vorschau",
-            "messagePdfError": "Beim Erstellen der PDF-Vorschau ist ein Fehler aufgetreten."
+            "messagePdfError": "Beim Erstellen der PDF-Vorschau ist ein Fehler aufgetreten.",
+            "variablesTitle": "PDF-Variablen",
+            "variablesDescription": "Sie können die folgenden Platzhalter-Variablen in Ihrem PDF-Vorlageninhalt verwenden:",
+            "variables": {
+                "cardLastname": "Name des Empfängers",
+                "cardFirstname": "Vorname (veraltet)",
+                "cardPrice": "Betrag / Wert der Geschenkkarte",
+                "cardFrom": "Name des Absenders",
+                "cardCode": "Gutschein- / Rabattcode",
+                "cardMessage": "Persönliche Nachricht des Absenders",
+                "cardImage": "Geschenkkarten-Vorlagenbild",
+                "shopName": "Name des Shops",
+                "validityDate": "Ablauf- / Lieferdatum",
+                "shopUrl": "Storefront-URL"
+            }
         },
         "placeholder": {
             "order": {

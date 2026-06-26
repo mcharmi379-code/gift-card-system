@@ -110,6 +110,15 @@ export default {
         tooltipCancel() {
             return { message: 'ESC', appearance: 'light' };
         },
+
+        templateError() {
+            if (this.giftCard && !this.giftCard.templateId) {
+                return {
+                    detail: this.$tc('ictech-gift-card.detail.errorTemplateRequired'),
+                };
+            }
+            return null;
+        },
     },
 
     created() {
@@ -144,6 +153,14 @@ export default {
 
         async onSave() {
             this.isLoading = true;
+
+            if (!this.giftCard.templateId) {
+                this.createNotificationError({
+                    message: this.$tc('ictech-gift-card.detail.errorTemplateRequired'),
+                });
+                this.isLoading = false;
+                return;
+            }
 
             try {
                 await this.giftCardRepository.save(this.giftCard);

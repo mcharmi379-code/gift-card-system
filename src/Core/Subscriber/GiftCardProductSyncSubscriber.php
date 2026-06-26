@@ -44,6 +44,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     {
         return [
             EntityWrittenContainerEvent::class => 'onEntityWritten',
+            \Shopware\Core\Framework\DataAbstractionLayer\Event\EntityDeleteEvent::class => 'beforeDeleteTemplate',
         ];
     }
 
@@ -66,6 +67,36 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         foreach ($giftCardEvent->getWriteResults() as $writeResult) {
             $this->processWriteResult($writeResult, $context);
         }
+    }
+
+    public function beforeDeleteTemplate(\Shopware\Core\Framework\DataAbstractionLayer\Event\EntityDeleteEvent $event): void
+    {
+        $templateIds = array_filter(
+            $event->getIds(\ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateDefinition::ENTITY_NAME),
+            'is_string'
+        );
+        if ($templateIds === []) {
+            return;
+        }
+
+        $context = $event->getContext();
+        $criteria = new Criteria();
+        $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsAnyFilter('templateId', $templateIds));
+
+        $giftCardIds = $this->giftCardRepository->searchIds($criteria, $context)->getIds();
+        if ($giftCardIds === []) {
+            return;
+        }
+
+        $updatePayload = [];
+        foreach ($giftCardIds as $id) {
+            $updatePayload[] = [
+                'id' => $id,
+                'active' => false,
+            ];
+        }
+
+        $this->giftCardRepository->update($updatePayload, $context);
     }
 
     private function processWriteResult(EntityWriteResult $writeResult, Context $context): void

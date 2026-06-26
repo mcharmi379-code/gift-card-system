@@ -146,6 +146,8 @@
                         entity="ictech_gift_card_template"
                         :criteria="templateCriteria"
                         name="templateId"
+                        required
+                        :error="templateError"
                         @update:value="onTemplateChange"
                     />
                     {% endblock %}

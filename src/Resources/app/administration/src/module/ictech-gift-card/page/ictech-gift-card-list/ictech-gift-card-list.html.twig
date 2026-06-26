@@ -66,9 +66,14 @@
                 :allow-view="acl.can('ictech_gift_card.viewer') || undefined"
                 :allow-delete="acl.can('ictech_gift_card.deleter') || undefined"
                 :show-actions="true"
+                :sort-by="sortBy"
+                :sort-direction="sortDirection"
+                :disable-data-fetching="true"
                 full-page
                 @update-records="updateTotal"
                 @selection-change="updateSelection"
+                @page-change="onPageChange"
+                @column-sort="onSortColumn"
             >
                 {% block ictech_gift_card_list_column_media %}
                 <template #column-media="{ item }">
@@ -124,6 +129,17 @@
                     </sw-context-menu-item>
                 </template>
                 {% endblock %}
+
+                <template #pagination>
+                    <sw-pagination
+                        :page="page"
+                        :limit="limit"
+                        :total="total"
+                        :total-visible="7"
+                        :auto-hide="false"
+                        @page-change="onPageChange"
+                    />
+                </template>
 
             </sw-entity-listing>
             {% endblock %}

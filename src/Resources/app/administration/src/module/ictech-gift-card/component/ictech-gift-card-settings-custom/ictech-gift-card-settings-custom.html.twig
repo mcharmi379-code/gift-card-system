@@ -1,0 +1,29 @@
+<div class="ictech-gift-card-settings-custom" style="margin-bottom: 30px;">
+    <!-- PDF Preview Button -->
+    <div style="margin-bottom: 20px;">
+        <sw-button
+            :isLoading="isPreviewing"
+            variant="ghost"
+            @click="onPreviewPdf"
+        >
+            {{ $tc('ictech-gift-card.settings.previewPdf') }}
+        </sw-button>
+    </div>
+
+    <!-- PDF Variables -->
+    <div>
+        <h4 style="margin-bottom: 8px;">{{ $tc('ictech-gift-card.settings.variablesTitle') }}</h4>
+        <p style="margin-bottom: 12px; color: #7f8c8d;">{{ $tc('ictech-gift-card.settings.variablesDescription') }}</p>
+        <sw-container columns="repeat(auto-fill, minmax(280px, 1fr))" gap="8px">
+            <sw-label
+                v-for="variable in pdfVariables"
+                :key="variable.key"
+                appearance="pill"
+                size="small"
+                style="margin: 0;"
+            >
+                <strong>{{ variable.key }}</strong>&nbsp;— {{ variable.label }}
+            </sw-label>
+        </sw-container>
+    </div>
+</div>

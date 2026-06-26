@@ -111,6 +111,10 @@
         <title>PDF Configuration</title>
         <title lang="de-DE">PDF-Konfiguration</title>
 
+        <component name="ictech-gift-card-settings-custom">
+            <name>ictechGiftCardSettingsCustom</name>
+        </component>
+
         <input-field type="bool">
             <name>enablePdf</name>
             <label>Enable PDF attachment</label>
@@ -149,27 +153,7 @@
             <required>true</required>
         </input-field>
 
-        <input-field type="single-select">
-            <name>pdfImageSourceMode</name>
-            <label>PDF image source mode</label>
-            <label lang="de-DE">PDF-Bildquelle-Modus</label>
-            <helpText>How the card image is loaded in the PDF. Use "Local file" if HTTP mode causes blank images.</helpText>
-            <helpText lang="de-DE">Wie das Kartenbild im PDF geladen wird.</helpText>
-            <options>
-                <option>
-                    <id>http</id>
-                    <name>HTTP URL (default)</name>
-                    <name lang="de-DE">HTTP URL (Standard)</name>
-                </option>
-                <option>
-                    <id>local</id>
-                    <name>Local file</name>
-                    <name lang="de-DE">Lokale Datei</name>
-                </option>
-            </options>
-            <defaultValue>http</defaultValue>
-            <required>true</required>
-        </input-field>
+
     </card>
 
 </config>
