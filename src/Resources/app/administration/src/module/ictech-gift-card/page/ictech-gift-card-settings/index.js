@@ -28,6 +28,7 @@ export default {
                 { key: '{{card_image}}', label: this.$tc('ictech-gift-card.settings.variables.cardImage') },
                 { key: '{{shop_name}}', label: this.$tc('ictech-gift-card.settings.variables.shopName') },
                 { key: '{{validity_date}}', label: this.$tc('ictech-gift-card.settings.variables.validityDate') },
+                { key: '{{shop_url}}', label: this.$tc('ictech-gift-card.settings.variables.shopUrl') },
             ],
         };
     },

@@ -155,6 +155,8 @@ final class GiftCardPageController extends StorefrontController
         $priceStr = $this->formatPriceString((float) $params['amount'], $context);
         $formattedSendDate = $this->formatSendDate($params['sendDate']);
 
+        $shopUrl = $this->resolveShopUrl($context);
+
         return str_replace(
             [
                 '{{card_lastname}}',
@@ -166,6 +168,7 @@ final class GiftCardPageController extends StorefrontController
                 '{{card_image}}',
                 '{{shop_name}}',
                 '{{validity_date}}',
+                '{{shop_url}}',
             ],
             [
                 htmlspecialchars($params['recipientName']),
@@ -177,6 +180,7 @@ final class GiftCardPageController extends StorefrontController
                 $cardImage,
                 htmlspecialchars($shopName),
                 htmlspecialchars($formattedSendDate),
+                htmlspecialchars($shopUrl),
             ],
             $pdfContent
         );
@@ -358,10 +362,6 @@ final class GiftCardPageController extends StorefrontController
      */
     private function processTemplateTag(object $template, array $filters): array
     {
-        if ($this->isPdfOnlyTemplate($template)) {
-            return $filters;
-        }
-
         $key = $this->getTemplateTagKey($template);
 
         $filters['all']['count']++;
@@ -375,15 +375,6 @@ final class GiftCardPageController extends StorefrontController
         $filters[$key]['count']++;
 
         return $filters;
-    }
-
-    private function isPdfOnlyTemplate(object $template): bool
-    {
-        if (! method_exists($template, 'getCustomFields')) {
-            return false;
-        }
-        $customize = $template->getCustomFields()['giftCardTemplateCustomize'] ?? null;
-        return \is_array($customize) && ($customize['pdfOnly'] ?? false);
     }
 
     private function getTemplateTagKey(object $template): string
@@ -432,5 +423,35 @@ final class GiftCardPageController extends StorefrontController
             'storefrontCardLargeWidth' => $getInt('storefrontCardLargeWidth'),
             'storefrontCardLargeHeight' => $getInt('storefrontCardLargeHeight'),
         ];
+    }
+
+    private function resolveShopUrl(SalesChannelContext $context): string
+    {
+        $domainCollection = $context->getSalesChannel()->getDomains();
+        if ($domainCollection !== null && $domainCollection->count() > 0) {
+            $langDomain = $this->findLanguageDomain($domainCollection, $context->getContext()->getLanguageId());
+            if ($langDomain !== null) {
+                return \rtrim((string) $langDomain->getUrl(), '/');
+            }
+            $firstDomain = $domainCollection->first();
+            if ($firstDomain !== null) {
+                return \rtrim((string) $firstDomain->getUrl(), '/');
+            }
+        }
+
+        $fallback = $this->systemConfigService->getString('core.basicInformation.shopUrl', $context->getSalesChannelId());
+        return \rtrim($fallback, '/');
+    }
+
+    private function findLanguageDomain(
+        \Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainCollection $domains,
+        string $languageId,
+    ): ?\Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainEntity {
+        foreach ($domains as $domain) {
+            if ($domain->getLanguageId() === $languageId) {
+                return $domain;
+            }
+        }
+        return null;
     }
 }

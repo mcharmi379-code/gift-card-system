@@ -61,16 +61,91 @@ final class GiftCardEmailService
     /**
      * Build the pdfContent HTML with all {{variables}} replaced by real values.
      */
-    public function buildPdfContent(GiftCardVoucherEntity $voucher, ?string $salesChannelId): string
+    public function buildPdfContent(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode = 'pdf', ?Context $context = null): string
     {
         $pdfContent = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
         if ($pdfContent === '') {
             return '';
         }
 
-        $replacements = $this->getPdfReplacements($voucher, $salesChannelId);
+        if (\str_contains($pdfContent, 'border-collapse:collapse;') && \str_contains($pdfContent, 'width:25%') && \str_contains($pdfContent, 'width:33%')) {
+            $pdfContent = $this->getCleanDesignerTemplate();
+        }
 
-        return \str_replace(\array_keys($replacements), \array_values($replacements), $pdfContent);
+        $replacements = $this->getPdfReplacements($voucher, $salesChannelId, $mode, $context);
+        $html = \str_replace(\array_keys($replacements), \array_values($replacements), $pdfContent);
+
+        if ($mode === 'email') {
+            return '<div style="background-color:#f8f9fa;padding:20px 0;width:100%;min-height:100%;">'
+                . '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;border:1px solid #dee2e6;border-radius:8px;background:#ffffff;box-shadow:0 4px 12px rgba(0,0,0,0.05);">'
+                . $html
+                . '</div></div>';
+        }
+
+        return $html;
+    }
+
+    private function getCleanDesignerTemplate(): string
+    {
+        return <<<HTML
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-family:Arial,sans-serif;color:#333;background:#ffffff;font-size:14px;border-collapse:collapse;margin:0 auto;text-align:center;">
+  <tbody>
+    <tr>
+      <td align="center" style="padding: 10px 0;">
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border:1px solid #333;text-align:center;">
+          <tr>
+            <td style="font-size:30px;font-weight:bold;text-transform:uppercase;letter-spacing:2px;padding:12px 30px;">Gift Card</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-top:20px;">
+        <p style="text-align:center;margin:5px 0;font-size:16px;">Hi {{card_lastname}},</p>
+        <p style="text-align:center;margin:5px 0;font-size:16px;">You have received a <strong>{{card_price}}</strong> gift card from {{card_from}}!</p>
+        <p style="font-size:18px;margin:10px 0 0 0;text-align:center;color:#555;"><em>Good shopping on {{shop_name}}!</em></p>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding:20px 0;">
+        <div style="text-align:center;display:block;margin:0 auto;width:100%;">{{card_image}}</div>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding:10px 0;">
+        <table cellpadding="0" cellspacing="0" border="0" width="280" style="margin:0 auto;background-color:#333;color:#fff;text-align:center;padding:15px;border-radius:4px;">
+          <tr>
+            <td align="center">
+              <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:5px;">Your code:</span>
+              <strong style="font-size:18px;letter-spacing:1px;display:block;">{{card_code}}</strong>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-top:20px;">
+        <p style="text-align:center;margin:5px 0;font-size:14px;color:#666;"><strong>Message from {{card_from}}</strong></p>
+        <div style="text-align:center;margin:10px auto;max-width:400px;font-style:italic;color:#555;line-height:1.5;">{{card_message}}</div>
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:1px;padding:10px 0;">&nbsp;</td>
+    </tr>
+    <tr>
+      <td align="center" style="padding:10px 0;">
+        <div style="width:100px;border-top:1px solid #ddd;margin:0 auto;"></div>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-top:15px;">
+        <p style="font-size:15px;text-align:center;margin:5px 0;color:#333;"><strong>To take advantage of the gift card</strong></p>
+        <p style="text-align:center;margin:5px 0;color:#777;font-size:13px;">Copy/paste your code <strong>{{card_code}}</strong> into the shopping cart before checking out.</p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+HTML;
     }
 
     public function sendPurchaserConfirmationEmail(
@@ -93,7 +168,7 @@ final class GiftCardEmailService
         ];
 
         $data = $this->attachPdfIfEnabled($data, $voucher, $salesChannelId, $context);
-        $templateData = $this->buildPurchaserConfirmationTemplateData($voucher, $purchaserName, $salesChannelId);
+        $templateData = $this->buildPurchaserConfirmationTemplateData($voucher, $purchaserName, $salesChannelId, $context);
 
         $this->mailService->send($data, $context, $templateData);
     }
@@ -108,7 +183,7 @@ final class GiftCardEmailService
         $subject = $this->getPurchaserSelfSubject($salesChannelId);
         $senderNameValShop = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId);
 
-        $pdfContentHtml = $this->buildPdfContent($voucher, $salesChannelId);
+        $pdfContentHtml = $this->buildPdfContent($voucher, $salesChannelId, 'email', $context);
 
         $data = [
             'salesChannelId'  => $salesChannelId,
@@ -119,8 +194,9 @@ final class GiftCardEmailService
             'contentPlain'    => $this->getDefaultSelfPlain(),
         ];
 
+        $data = $this->attachInlineTemplateImage($data, $voucher, $context);
         $data = $this->attachPdfIfEnabled($data, $voucher, $salesChannelId, $context);
-        $templateData = $this->buildPurchaserSelfTemplateData($voucher, $purchaserName, $salesChannelId);
+        $templateData = $this->buildPurchaserSelfTemplateData($voucher, $purchaserName, $salesChannelId, $context);
 
         $this->mailService->send($data, $context, $templateData);
 
@@ -141,7 +217,7 @@ final class GiftCardEmailService
             $html = '<html><body>Gift Card Code: {{card_code}}</body></html>';
         }
 
-        $cardImage = $this->buildCardImageHtml($voucher, $salesChannelId, 'pdf');
+        $cardImage = $this->buildCardImageHtml($voucher, $salesChannelId, 'pdf', $context);
 
         $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId);
         if ($shopName === '') {
@@ -174,6 +250,7 @@ final class GiftCardEmailService
             '{{card_image}}'     => $cardImage,
             '{{shop_name}}'      => \htmlspecialchars($shopName),
             '{{validity_date}}'  => $expiresAt?->format('d.m.Y') ?? '',
+            '{{shop_url}}'       => \htmlspecialchars($this->getShopUrl($salesChannelId, $context)),
         ];
 
         $html = \str_replace(\array_keys($replacements), \array_values($replacements), $html);
@@ -225,7 +302,7 @@ final class GiftCardEmailService
         $data = $this->attachInlineTemplateImage($data, $voucher, $context);
         $data = $this->attachRecipientPdfIfEnabled($data, $voucher, $salesChannelId, $context);
 
-        $templateData = $this->buildGiftCardTemplateData($voucher, $recipientName, $salesChannelId);
+        $templateData = $this->buildGiftCardTemplateData($voucher, $recipientName, $salesChannelId, $context);
 
         $this->mailService->send($data, $context, $templateData);
     }
@@ -369,10 +446,10 @@ final class GiftCardEmailService
     /**
      * @return array<string, string>
      */
-    private function buildGiftCardTemplateData(GiftCardVoucherEntity $voucher, string $recipientName, ?string $salesChannelId): array
+    private function buildGiftCardTemplateData(GiftCardVoucherEntity $voucher, string $recipientName, ?string $salesChannelId, Context $context): array
     {
         $expiresAt = $voucher->getExpiresAt();
-        $cardImgHtml = $this->buildCardImageHtml($voucher, $salesChannelId, 'email');
+        $cardImgHtml = $this->buildCardImageHtml($voucher, $salesChannelId, 'email', $context);
 
         return [
             'voucher_code'   => $voucher->getCode(),
@@ -381,7 +458,7 @@ final class GiftCardEmailService
             'sender_name'    => $voucher->getSenderName() ?? '',
             'message'        => $voucher->getPersonalMessage() ?? '',
             'validity_date'  => $expiresAt?->format('d.m.Y') ?? '',
-            'shop_url'       => $this->getShopUrl($salesChannelId),
+            'shop_url'       => $this->getShopUrl($salesChannelId, $context),
             'card_image'     => $cardImgHtml,
         ];
     }
@@ -397,7 +474,7 @@ final class GiftCardEmailService
         ?string $salesChannelId,
         Context $context,
     ): void {
-        $pdfContent = $this->buildPdfContent($voucher, $salesChannelId);
+        $pdfContent = $this->buildPdfContent($voucher, $salesChannelId, 'email', $context);
         if ($pdfContent === '') {
             return;
         }
@@ -426,17 +503,21 @@ final class GiftCardEmailService
             ),
         ];
 
+        $data = $this->attachInlineTemplateImage($data, $voucher, $context);
         $this->mailService->send($data, $context, []);
     }
 
     /**
      * @return array<string, string>
      */
-    private function getPdfReplacements(GiftCardVoucherEntity $voucher, ?string $salesChannelId): array
+    /**
+     * @return array<string, string>
+     */
+    private function getPdfReplacements(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode = 'pdf', ?Context $context = null): array
     {
         $expiresAt = $voucher->getExpiresAt();
         $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId);
-        $cardImgHtml = $this->buildCardImageHtml($voucher, $salesChannelId, 'pdf');
+        $cardImgHtml = $this->buildCardImageHtml($voucher, $salesChannelId, $mode, $context);
 
         return [
             '{{card_lastname}}' => \htmlspecialchars($voucher->getRecipientName() ?? '', \ENT_QUOTES),
@@ -447,10 +528,11 @@ final class GiftCardEmailService
             '{{card_image}}'    => $cardImgHtml,
             '{{shop_name}}'     => \htmlspecialchars($shopName, \ENT_QUOTES),
             '{{validity_date}}' => \htmlspecialchars($expiresAt?->format('d.m.Y') ?? '', \ENT_QUOTES),
+            '{{shop_url}}'      => \htmlspecialchars($this->getShopUrl($salesChannelId, $context), \ENT_QUOTES),
         ];
     }
 
-    private function buildCardImageHtml(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode): string
+    private function buildCardImageHtml(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode, ?Context $context = null): string
     {
         $media = $this->getTemplateMedia($voucher);
         if ($media === null) {
@@ -463,13 +545,13 @@ final class GiftCardEmailService
         }
 
         if (\str_starts_with($url, '/')) {
-            $url = \rtrim($this->getShopUrl($salesChannelId), '/') . $url;
+            $url = \rtrim($this->getShopUrl($salesChannelId, $context), '/') . $url;
         }
 
         $dimensions = $this->getCardImageDimensions($salesChannelId, $mode);
         $imgUrl = $this->getCardImageUrl($media, $url, $mode);
 
-        return '<img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '" width="' . $dimensions['width'] . '" height="' . $dimensions['height'] . '" alt="Gift Card" style="max-width:100%">';
+        return '<img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '" width="' . $dimensions['width'] . '" height="' . $dimensions['height'] . '" alt="Gift Card" style="display:block;margin:0 auto;max-width:100%;height:auto;">';
     }
 
     private function getTemplateMedia(GiftCardVoucherEntity $voucher): ?\Shopware\Core\Content\Media\MediaEntity
@@ -580,8 +662,12 @@ final class GiftCardEmailService
     /**
      * @return array<string, string>
      */
-    private function buildPurchaserConfirmationTemplateData(GiftCardVoucherEntity $voucher, string $purchaserName, ?string $salesChannelId): array
-    {
+    private function buildPurchaserConfirmationTemplateData(
+        GiftCardVoucherEntity $voucher,
+        string $purchaserName,
+        ?string $salesChannelId,
+        Context $context,
+    ): array {
         $expiresAt = $voucher->getExpiresAt();
         return [
             'purchaser_name'  => $purchaserName,
@@ -591,7 +677,7 @@ final class GiftCardEmailService
             'recipient_email' => $voucher->getRecipientEmail() ?? '',
             'send_date'       => $voucher->getScheduledSendDate()?->format('d.m.Y') ?? '',
             'validity_date'   => $expiresAt?->format('d.m.Y') ?? '',
-            'shop_url'        => $this->getShopUrl($salesChannelId),
+            'shop_url'        => $this->getShopUrl($salesChannelId, $context),
         ];
     }
 
@@ -628,15 +714,19 @@ final class GiftCardEmailService
     /**
      * @return array<string, string>
      */
-    private function buildPurchaserSelfTemplateData(GiftCardVoucherEntity $voucher, string $purchaserName, ?string $salesChannelId): array
-    {
+    private function buildPurchaserSelfTemplateData(
+        GiftCardVoucherEntity $voucher,
+        string $purchaserName,
+        ?string $salesChannelId,
+        Context $context,
+    ): array {
         $expiresAt = $voucher->getExpiresAt();
         return [
             'purchaser_name'  => $purchaserName,
             'voucher_code'    => $voucher->getCode(),
             'amount'          => number_format($voucher->getOriginalAmount(), 2),
             'validity_date'   => $expiresAt?->format('d.m.Y') ?? '',
-            'shop_url'        => $this->getShopUrl($salesChannelId),
+            'shop_url'        => $this->getShopUrl($salesChannelId, $context),
         ];
     }
 
@@ -658,9 +748,60 @@ final class GiftCardEmailService
         return $this->salesChannelRepository->searchIds($criteria, $context)->firstId();
     }
 
-    private function getShopUrl(?string $salesChannelId): string
+    private function getShopUrl(?string $salesChannelId, ?Context $context = null): string
     {
-        return $this->systemConfigService->getString('core.basicInformation.shopUrl', $salesChannelId);
+        if ($context === null) {
+            $context = Context::createDefaultContext();
+        }
+
+        if (!$salesChannelId) {
+            return $this->getFallbackUrl($salesChannelId);
+        }
+
+        $criteria = new Criteria([$salesChannelId]);
+        $criteria->addAssociation('domains');
+        $salesChannel = $this->salesChannelRepository->search($criteria, $context)->first();
+
+        if ($salesChannel instanceof \Shopware\Core\System\SalesChannel\SalesChannelEntity) {
+            $domainUrl = $this->resolveDomainUrl($salesChannel);
+            if ($domainUrl !== null) {
+                return $domainUrl;
+            }
+        }
+
+        return $this->getFallbackUrl($salesChannelId);
+    }
+
+    private function getFallbackUrl(?string $salesChannelId): string
+    {
+        $url = $this->systemConfigService->getString('core.basicInformation.shopUrl', $salesChannelId);
+        return $url !== '' ? \rtrim($url, '/') : '';
+    }
+
+    private function resolveDomainUrl(\Shopware\Core\System\SalesChannel\SalesChannelEntity $salesChannel): ?string
+    {
+        $domainCollection = $salesChannel->getDomains();
+        if (!$domainCollection || $domainCollection->count() === 0) {
+            return null;
+        }
+
+        $systemDomain = $this->findSystemDomain($domainCollection);
+        if ($systemDomain !== null) {
+            return \rtrim((string) $systemDomain->getUrl(), '/');
+        }
+
+        $firstDomain = $domainCollection->first();
+        return $firstDomain ? \rtrim((string) $firstDomain->getUrl(), '/') : null;
+    }
+
+    private function findSystemDomain(\Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainCollection $domains): ?\Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainEntity
+    {
+        foreach ($domains as $domain) {
+            if ($domain->getLanguageId() === Defaults::LANGUAGE_SYSTEM) {
+                return $domain;
+            }
+        }
+        return null;
     }
 
     private function getDefaultHtmlTemplate(): string
