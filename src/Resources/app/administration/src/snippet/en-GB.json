@@ -76,7 +76,8 @@
             "messageValidationError": "Please fix the highlighted fields and try again.",
             "messageNameRequired": "Name is required.",
             "messageSaveSuccess": "Gift card saved successfully.",
-            "messageSaveError": "An error occurred while saving the gift card."
+            "messageSaveError": "An error occurred while saving the gift card.",
+            "errorTemplateRequired": "A Gift Card Template is required."
         },
         "template": {
             "list": {

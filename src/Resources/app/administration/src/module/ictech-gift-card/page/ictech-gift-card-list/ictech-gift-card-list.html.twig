@@ -130,6 +130,17 @@
                 </template>
                 {% endblock %}
 
+                <template #pagination>
+                    <sw-pagination
+                        :page="page"
+                        :limit="limit"
+                        :total="total"
+                        :total-visible="7"
+                        :auto-hide="false"
+                        @page-change="onPageChange"
+                    />
+                </template>
+
             </sw-entity-listing>
             {% endblock %}
 

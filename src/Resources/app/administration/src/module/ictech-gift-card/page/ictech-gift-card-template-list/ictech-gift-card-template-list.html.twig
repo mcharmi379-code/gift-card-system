@@ -91,6 +91,17 @@
                     class="ictech-gift-card-template-list__icon-active is--inactive"
                 />
             </template>
+
+            <template #pagination>
+                <sw-pagination
+                    :page="page"
+                    :limit="limit"
+                    :total="total"
+                    :total-visible="7"
+                    :auto-hide="false"
+                    @page-change="onPageChange"
+                />
+            </template>
         </sw-entity-listing>
 
         <sw-empty-state

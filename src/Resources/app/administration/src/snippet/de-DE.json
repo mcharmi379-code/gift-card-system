@@ -76,7 +76,8 @@
             "messageValidationError": "Bitte korrigieren Sie die markierten Felder und versuchen Sie es erneut.",
             "messageNameRequired": "Name ist erforderlich.",
             "messageSaveSuccess": "Geschenkkarte erfolgreich gespeichert.",
-            "messageSaveError": "Beim Speichern der Geschenkkarte ist ein Fehler aufgetreten."
+            "messageSaveError": "Beim Speichern der Geschenkkarte ist ein Fehler aufgetreten.",
+            "errorTemplateRequired": "Eine Geschenkkarten-Vorlage ist erforderlich."
         },
         "template": {
             "list": {
