@@ -4,7 +4,7 @@
     {% set defaultAmount = giftCardDefaultAmount %}
 
     <div class="ictech-gift-card-page" data-ictech-gift-card-page>
-        {% if not active or not defaultAmount %}
+        {% if not active or not defaultAmount or giftCardTemplates|length == 0 %}
             <div class="cms-listing-col wishlist-listing-col col-12 text-center py-5">
                 <img src="{{ asset('assets/illustration/wishlist_empty.svg', 'theme') }}"
                      alt="{{ 'ictech-gift-card.page.noGiftCardsAvailableDescription'|trans|striptags }}"
@@ -154,6 +154,7 @@
                                 value="{{ option.amount }}"
                                 data-product-id="{{ option.productId }}"
                                 data-gift-card-id="{{ option.giftCardId }}"
+                                data-template-id="{{ option.templateId }}"
                             >
                                 {{ option.amount|currency }}
                             </option>

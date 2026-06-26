@@ -14,6 +14,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Twig\Environment;
 
 final class GiftCardEmailService
 {
@@ -32,6 +33,7 @@ final class GiftCardEmailService
         private readonly EntityRepository $salesChannelRepository,
         private readonly SystemConfigService $systemConfigService,
         private readonly EntityRepository $templateRepository,
+        private readonly Environment $twig,
     ) {
     }
 
@@ -57,22 +59,48 @@ final class GiftCardEmailService
             'sentAt' => (new \DateTimeImmutable())->format(Defaults::STORAGE_DATE_TIME_FORMAT),
         ]], $context);
     }
-
-    /**
-     * Build the pdfContent HTML with all {{variables}} replaced by real values.
-     */
-    public function buildPdfContent(GiftCardVoucherEntity $voucher, ?string $salesChannelId): string
+    public function buildPdfContent(GiftCardVoucherEntity $voucher, ?string $salesChannelId, bool $isEmail = false): string
     {
-        $pdfContent = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
-        if ($pdfContent === '') {
-            return '';
+        $expiresAt = $voucher->getExpiresAt();
+        $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId);
+        if ($shopName === '') {
+            $shopName = 'Our Shop';
         }
 
-        $replacements = $this->getPdfReplacements($voucher, $salesChannelId);
+        $currency = $voucher->get('currency');
+        if (! $currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
+            $voucherCriteria = new Criteria([$voucher->getId()]);
+            $voucherCriteria->addAssociation('currency');
+            $reloaded = $this->voucherRepository->search($voucherCriteria, Context::createDefaultContext())->first();
+            if ($reloaded instanceof GiftCardVoucherEntity) {
+                $voucher = $reloaded;
+                $currency = $reloaded->get('currency');
+            }
+        }
 
-        return \str_replace(\array_keys($replacements), \array_values($replacements), $pdfContent);
+        $currencySymbol = '€';
+        if ($currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
+            $currencySymbol = $currency->getSymbol();
+        }
+
+        $priceStr = \number_format($voucher->getOriginalAmount(), 2) . ' ' . $currencySymbol;
+        $cardImage = $this->buildCardImageHtml($voucher, $salesChannelId, $isEmail ? 'email_print' : 'pdf');
+
+        try {
+            return $this->twig->render('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
+                'card_lastname' => $voucher->getRecipientName() ?? '',
+                'card_price'    => $priceStr,
+                'card_from'     => $voucher->getSenderName() ?? '',
+                'card_code'     => $voucher->getCode(),
+                'card_message'  => $voucher->getPersonalMessage() ?? '',
+                'card_image'    => $cardImage,
+                'shop_name'     => $shopName,
+                'validity_date' => $expiresAt?->format('d.m.Y') ?? '',
+            ]);
+        } catch (\Throwable $e) {
+            return '<html><body>Gift Card Code: ' . \htmlspecialchars($voucher->getCode()) . '</body></html>';
+        }
     }
-
     public function sendPurchaserConfirmationEmail(
         GiftCardVoucherEntity $voucher,
         string $purchaserEmail,
@@ -135,48 +163,18 @@ final class GiftCardEmailService
     {
         $salesChannelId = $this->getDefaultSalesChannelId($context);
 
-        $html = $this->systemConfigService->getString('ICTECHGiftCard.config.pdfContent', $salesChannelId);
-
-        if ($html === '') {
-            $html = '<html><body>Gift Card Code: {{card_code}}</body></html>';
-        }
-
-        $cardImage = $this->buildCardImageHtml($voucher, $salesChannelId, 'pdf');
-
-        $shopName = $this->systemConfigService->getString('core.basicInformation.shopName', $salesChannelId);
-        if ($shopName === '') {
-            $shopName = 'Our Shop';
-        }
-        $expiresAt = $voucher->getExpiresAt();
-
+        // Fetch currency if not loaded
         $currency = $voucher->get('currency');
         if (! $currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
             $voucherCriteria = new Criteria([$voucher->getId()]);
             $voucherCriteria->addAssociation('currency');
             $reloaded = $this->voucherRepository->search($voucherCriteria, $context)->first();
-            $currency = $reloaded?->get('currency');
+            if ($reloaded instanceof GiftCardVoucherEntity) {
+                $voucher = $reloaded;
+            }
         }
 
-        $currencySymbol = '€';
-        if ($currency instanceof \Shopware\Core\System\Currency\CurrencyEntity) {
-            $currencySymbol = $currency->getSymbol();
-        }
-
-        $priceStr = \number_format($voucher->getOriginalAmount(), 2) . ' ' . $currencySymbol;
-
-        $replacements = [
-            '{{card_lastname}}'  => \htmlspecialchars($voucher->getRecipientName() ?? ''),
-            '{{card_firstname}}' => '',
-            '{{card_price}}'     => \htmlspecialchars($priceStr),
-            '{{card_from}}'      => \htmlspecialchars($voucher->getSenderName() ?? ''),
-            '{{card_code}}'      => \htmlspecialchars($voucher->getCode()),
-            '{{card_message}}'   => \nl2br(\htmlspecialchars($voucher->getPersonalMessage() ?? '')),
-            '{{card_image}}'     => $cardImage,
-            '{{shop_name}}'      => \htmlspecialchars($shopName),
-            '{{validity_date}}'  => $expiresAt?->format('d.m.Y') ?? '',
-        ];
-
-        $html = \str_replace(\array_keys($replacements), \array_values($replacements), $html);
+        $html = $this->buildPdfContent($voucher, $salesChannelId);
 
         $options = new Options();
         $options->set('isRemoteEnabled', true);
@@ -397,7 +395,7 @@ final class GiftCardEmailService
         ?string $salesChannelId,
         Context $context,
     ): void {
-        $pdfContent = $this->buildPdfContent($voucher, $salesChannelId);
+        $pdfContent = $this->buildPdfContent($voucher, $salesChannelId, true);
         if ($pdfContent === '') {
             return;
         }
@@ -513,6 +511,10 @@ final class GiftCardEmailService
 
     private function getCardImageUrl(\Shopware\Core\Content\Media\MediaEntity $media, string $url, string $mode): string
     {
+        if ($mode === 'email_print') {
+            return $url;
+        }
+
         $relativePath = $media->getPath();
         $projectDir = dirname(__DIR__, 6);
         $publicDir = \rtrim($projectDir, '/') . '/public/';

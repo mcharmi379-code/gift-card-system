@@ -8,6 +8,15 @@
         </h2>
     </template>
 
+    <template #language-switch>
+        <sw-language-switch
+            :save-changes-function="saveOnLanguageChange"
+            :abort-change-function="abortOnLanguageChange"
+            :disabled="isCreateMode || isLoading"
+            @on-change="onChangeLanguage"
+        />
+    </template>
+
     <template #smart-bar-actions>
         <sw-button
             v-tooltip.bottom="tooltipCancel"

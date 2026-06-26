@@ -124,6 +124,7 @@ export default {
     methods: {
         createdComponent() {
             if (this.isCreateMode) {
+                Shopware.State.commit('context/resetLanguageToDefault');
                 this.templateEntity = this.templateRepository.create();
                 this.templateEntity.active = true;
                 this.templateEntity.tag = '';
@@ -150,6 +151,18 @@ export default {
             };
 
             this.isLoading = false;
+        },
+
+        abortOnLanguageChange() {
+            return this.templateRepository.hasChanges(this.templateEntity);
+        },
+
+        saveOnLanguageChange() {
+            return this.onSave();
+        },
+
+        onChangeLanguage() {
+            this.loadTemplate();
         },
 
         saveFinish() {

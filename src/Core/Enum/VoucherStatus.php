@@ -11,6 +11,7 @@ enum VoucherStatus: string
     case PartiallyUsed      = 'partially_used';
     case Used               = 'used';
     case Canceled           = 'canceled';
+    case Expired            = 'expired';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum VoucherStatus: string
             self::PartiallyUsed     => 'Partially used',
             self::Used              => 'Used',
             self::Canceled          => 'Canceled',
+            self::Expired           => 'Expired',
         };
     }
 }

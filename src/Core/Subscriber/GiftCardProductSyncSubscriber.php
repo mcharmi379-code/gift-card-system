@@ -33,6 +33,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         private readonly EntityRepository $productRepository,
         private readonly EntityRepository $taxRepository,
         private readonly EntityRepository $salesChannelRepository,
+        private readonly \Doctrine\DBAL\Connection $connection,
     ) {
     }
 
@@ -98,22 +99,24 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
 
         $taxId = $this->getDefaultTaxId($context);
 
-        if ($giftCard->getProductId() === null) {
+        $productId = $giftCard->getProductId();
+
+        if ($productId === null) {
             // Brand new or missing product — create the linked product
-            $this->createProduct($giftCard, $taxId, $context);
+            $productId = $this->createProduct($giftCard, $taxId, $context);
         } else {
             // Existing gift card updated — sync product fields
             $this->updateProduct($giftCard, $taxId, $context);
         }
 
-        $this->updateProduct($giftCard, $taxId, $context);
+        $this->syncProductMediaAndCover($productId, $giftCard);
     }
 
     // -------------------------------------------------------------------------
     // Product sync
     // -------------------------------------------------------------------------
 
-    private function createProduct(GiftCardEntity $giftCard, ?string $taxId, Context $context): void
+    private function createProduct(GiftCardEntity $giftCard, ?string $taxId, Context $context): string
     {
         $productId = Uuid::randomHex();
 
@@ -135,6 +138,8 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         } catch (\Exception $e) {
             error_log($e->getMessage());
         }
+
+        return $productId;
     }
 
     private function updateProduct(GiftCardEntity $giftCard, ?string $taxId, Context $context): void
@@ -149,6 +154,59 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
             [$this->buildProductPayload($productId, $giftCard, $taxId, $context, false)],
             $context
         );
+    }
+
+    private function syncProductMediaAndCover(string $productId, GiftCardEntity $giftCard): void
+    {
+        $mediaId = $giftCard->getMediaId();
+        if ($mediaId === null || $mediaId === '') {
+            return;
+        }
+
+        try {
+            $productIdBin = \hex2bin($productId);
+            $mediaIdBin = \hex2bin($mediaId);
+
+            // Check if this media is already associated with the product
+            $existingProductMediaId = $this->connection->fetchOne(
+                'SELECT id FROM product_media WHERE product_id = :productId AND media_id = :mediaId LIMIT 1',
+                ['productId' => $productIdBin, 'mediaId' => $mediaIdBin]
+            );
+
+            if ($existingProductMediaId === false) {
+                // Delete old media associations to avoid duplicates when image is changed
+                $this->connection->executeStatement(
+                    'DELETE FROM product_media WHERE product_id = :productId',
+                    ['productId' => $productIdBin]
+                );
+
+                // Insert the new media association
+                $productMediaIdBin = Uuid::randomBytes();
+                $productMediaId = Uuid::fromBytesToHex($productMediaIdBin);
+                $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
+
+                $this->connection->insert('product_media', [
+                    'id' => $productMediaIdBin,
+                    'product_id' => $productIdBin,
+                    'media_id' => $mediaIdBin,
+                    'position' => 1,
+                    'created_at' => $now,
+                ]);
+            } else {
+                $productMediaId = Uuid::fromBytesToHex($existingProductMediaId);
+            }
+
+            // Set as product cover
+            $this->connection->executeStatement(
+                'UPDATE product SET cover_id = :coverId WHERE id = :productId',
+                [
+                    'coverId' => \hex2bin($productMediaId),
+                    'productId' => $productIdBin,
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log('Failed to sync product media and cover: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -187,14 +245,6 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         ];
 
         if ($isCreate) {
-            if ($giftCard->getMediaId() !== null) {
-                $payload['media'] = [[
-                    'id'      => Uuid::randomHex(),
-                    'mediaId' => $giftCard->getMediaId(),
-                    'position' => 1,
-                ]];
-            }
-
             $payload['visibilities'] = $this->buildVisibilities($giftCard, $context);
         }
 

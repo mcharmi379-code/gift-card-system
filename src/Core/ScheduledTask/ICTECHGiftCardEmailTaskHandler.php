@@ -35,7 +35,8 @@ final class ICTECHGiftCardEmailTaskHandler extends ScheduledTaskHandler
         EntityRepository $scheduledTaskRepository,
         LoggerInterface $logger,
         EntityRepository $voucherRepository,
-        private readonly GiftCardEmailService $emailService
+        private readonly GiftCardEmailService $emailService,
+        private readonly \Doctrine\DBAL\Connection $connection,
     ) {
         $this->logger = $logger;
         $this->voucherRepository = $voucherRepository;
@@ -47,6 +48,30 @@ final class ICTECHGiftCardEmailTaskHandler extends ScheduledTaskHandler
         $context = Context::createCLIContext();
         $today   = (new \DateTimeImmutable())->format('Y-m-d');
 
+        // 1. Mark expired vouchers as 'expired'
+        try {
+            $this->connection->executeStatement(
+                "UPDATE `ictech_gift_card_voucher`
+                 SET `status` = :expiredStatus, `updated_at` = :now
+                 WHERE `expires_at` < :today
+                   AND `status` NOT IN (:usedStatus, :canceledStatus, :expiredStatus, :waitingValidOrderStatus)",
+                [
+                    'expiredStatus' => VoucherStatus::Expired->value,
+                    'now' => (new \DateTimeImmutable())->format('Y-m-d H:i:s.000'),
+                    'today' => $today,
+                    'usedStatus' => VoucherStatus::Used->value,
+                    'canceledStatus' => VoucherStatus::Canceled->value,
+                    'waitingValidOrderStatus' => VoucherStatus::WaitingValidOrder->value,
+                ]
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                sprintf('Failed to update expired gift card vouchers: %s', $e->getMessage()),
+                ['exception' => $e]
+            );
+        }
+
+        // 2. Process pending scheduled emails
         $criteria = new Criteria();
         $criteria->addFilter(new MultiFilter(MultiFilter::CONNECTION_AND, [
             new EqualsFilter('status', VoucherStatus::Unused->value),

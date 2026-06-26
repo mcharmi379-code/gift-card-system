@@ -52,44 +52,10 @@ final class GiftCardPageController extends StorefrontController
             );
         }
 
-        $pdfContent = $this->systemConfigService->getString(
-            self::CONFIG_DOMAIN . 'pdfContent',
-            $context->getSalesChannelId()
-        );
-
-        if ($pdfContent === '') {
-            return new Response(
-                'No PDF content configured.',
-                Response::HTTP_BAD_REQUEST
-            );
-        }
-
-        return $this->generatePreviewPdf($params, $pdfContent, $context);
+        return $this->generatePreviewPdf($params, $context);
     }
 
-    #[Route(path: '/gift-card', name: 'frontend.ictech.gift_card.page', methods: ['GET'])]
-    public function index(Request $request, SalesChannelContext $context): Response
-    {
-        $page = $this->genericPageLoader->load($request, $context);
-        $salesChannelId = $context->getSalesChannelId();
 
-        $templates = $this->loadTemplates($context);
-        $giftCards = $this->loadGiftCards($context);
-        $amountOptions = $this->buildAmountOptions($giftCards);
-        $tagFilters = $this->buildTagFilters($templates);
-
-        return $this->renderStorefront(
-            '@ICTECHGiftCard/storefront/page/gift-card/index.html.twig',
-            [
-                'page' => $page,
-                'giftCardConfig' => $this->loadConfig($salesChannelId),
-                'giftCardTemplates' => $templates,
-                'giftCardTagFilters' => $tagFilters,
-                'giftCardAmountOptions' => $amountOptions,
-                'giftCardDefaultAmount' => $amountOptions[0] ?? null,
-            ]
-        );
-    }
 
     /**
      * @return array{templateId: string, senderName: string, recipientName: string, message: string, amount: string, sendDate: string}
@@ -116,7 +82,6 @@ final class GiftCardPageController extends StorefrontController
      */
     private function generatePreviewPdf(
         array $params,
-        string $pdfContent,
         SalesChannelContext $context,
     ): Response {
         $criteria = new Criteria();
@@ -130,56 +95,30 @@ final class GiftCardPageController extends StorefrontController
             $context->getContext()
         )->first();
 
-        $html = $this->buildPreviewHtml($params, $template, $pdfContent, $context);
-
-        return $this->renderDompdfResponse($html);
-    }
-
-    /**
-     * @param array{templateId: string, senderName: string, recipientName: string, message: string, amount: string, sendDate: string} $params
-     *
-     * @param \ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateEntity|null $template
-     */
-    private function buildPreviewHtml(
-        array $params,
-        ?object $template,
-        string $pdfContent,
-        SalesChannelContext $context,
-    ): string {
         $shopName = $this->systemConfigService->getString(
             'core.basicInformation.shopName',
             $context->getSalesChannelId()
         );
+        if ($shopName === '') {
+            $shopName = 'Our Shop';
+        }
 
         $cardImage = $this->buildCardImageHtml($template, $context->getSalesChannelId());
         $priceStr = $this->formatPriceString((float) $params['amount'], $context);
         $formattedSendDate = $this->formatSendDate($params['sendDate']);
 
-        return str_replace(
-            [
-                '{{card_lastname}}',
-                '{{card_firstname}}',
-                '{{card_price}}',
-                '{{card_from}}',
-                '{{card_code}}',
-                '{{card_message}}',
-                '{{card_image}}',
-                '{{shop_name}}',
-                '{{validity_date}}',
-            ],
-            [
-                htmlspecialchars($params['recipientName']),
-                '',
-                htmlspecialchars($priceStr),
-                htmlspecialchars($params['senderName']),
-                'PREVIEW-1234-5678',
-                nl2br(htmlspecialchars($params['message'])),
-                $cardImage,
-                htmlspecialchars($shopName),
-                htmlspecialchars($formattedSendDate),
-            ],
-            $pdfContent
-        );
+        $html = $this->renderView('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
+            'card_lastname' => $params['recipientName'],
+            'card_price'    => $priceStr,
+            'card_from'     => $params['senderName'],
+            'card_code'     => 'PREVIEW-1234-5678',
+            'card_message'  => $params['message'],
+            'card_image'    => $cardImage,
+            'shop_name'     => $shopName,
+            'validity_date' => $formattedSendDate,
+        ]);
+
+        return $this->renderDompdfResponse($html);
     }
 
     private function buildCardImageHtml(?object $template, string $salesChannelId): string
@@ -247,6 +186,15 @@ final class GiftCardPageController extends StorefrontController
     #[Route(path: '/gift-card', name: 'frontend.ictech.gift_card.page', methods: ['GET'])]
     public function index(Request $request, SalesChannelContext $context): Response
     {
+        $navigationRootId = $context->getSalesChannel()->getNavigationCategoryId();
+        if ($navigationRootId) {
+            $categoryId = \Shopware\Core\Framework\Uuid\Uuid::fromStringToHex('ictech-gift-card-navigation-' . $navigationRootId);
+            $request->attributes->set('navigationId', $categoryId);
+            $routeParams = $request->attributes->get('_route_params', []);
+            $routeParams['navigationId'] = $categoryId;
+            $request->attributes->set('_route_params', $routeParams);
+        }
+
         $page = $this->genericPageLoader->load($request, $context);
         $salesChannelId = $context->getSalesChannelId();
 
@@ -312,7 +260,7 @@ final class GiftCardPageController extends StorefrontController
     /**
      * @param iterable<\ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity> $giftCards
      *
-     * @return list<array{giftCardId: string, productId: string, amount: float}>
+     * @return list<array{giftCardId: string, productId: string, amount: float, templateId: string|null}>
      */
     private function buildAmountOptions(iterable $giftCards): array
     {
@@ -322,7 +270,8 @@ final class GiftCardPageController extends StorefrontController
         foreach ($giftCards as $giftCard) {
             $productId = $giftCard->getProductId();
             $amount = $giftCard->getAmount();
-            $amountKey = \number_format($amount, 2, '.', '');
+            $templateId = $giftCard->getTemplateId();
+            $amountKey = \number_format($amount, 2, '.', '') . '_' . ($templateId ?? '');
 
             if ($productId === null
                 || $productId === ''
@@ -336,6 +285,7 @@ final class GiftCardPageController extends StorefrontController
                 'giftCardId' => $giftCard->getUniqueIdentifier(),
                 'productId' => $productId,
                 'amount' => $amount,
+                'templateId' => $templateId,
             ];
         }
 
@@ -386,11 +336,17 @@ final class GiftCardPageController extends StorefrontController
             return $filters;
         }
 
-        $key = $this->getTemplateTagKey($template);
+        $translated = $template->getTranslated();
+        $tag = isset($translated['tag']) ? \trim((string) $translated['tag']) : \trim($template->getTag());
+        $key = $tag !== '' ? $tag : 'Various';
 
-            $translated = $template->getTranslated();
-            $tag = isset($translated['tag']) ? \trim((string) $translated['tag']) : \trim($template->getTag());
-            $key = $tag !== '' ? $tag : 'Various';
+        $filters['all']['count']++;
+        $filters[$key] ??= [
+            'key' => $key,
+            'label' => $key,
+            'count' => 0,
+        ];
+        $filters[$key]['count']++;
 
         return $filters;
     }
@@ -431,7 +387,6 @@ final class GiftCardPageController extends StorefrontController
 
     /**
      * @return array{
-     *     storefrontText: string,
      *     storefrontCardWidth: int,
      *     storefrontCardHeight: int,
      *     storefrontCardLargeWidth: int,
@@ -440,11 +395,9 @@ final class GiftCardPageController extends StorefrontController
      */
     private function loadConfig(string $salesChannelId): array
     {
-        $getStr = fn (string $k): string => $this->systemConfigService->getString(self::CONFIG_DOMAIN . $k, $salesChannelId);
         $getInt = fn (string $k): int => $this->systemConfigService->getInt(self::CONFIG_DOMAIN . $k, $salesChannelId);
 
         return [
-            'storefrontText' => $getStr('storefrontText'),
             'storefrontCardWidth' => $getInt('storefrontCardWidth'),
             'storefrontCardHeight' => $getInt('storefrontCardHeight'),
             'storefrontCardLargeWidth' => $getInt('storefrontCardLargeWidth'),

@@ -117,41 +117,24 @@ final class GiftCardNavigationInstaller
             // Fallback if DB query fails during tests
         }
 
-        // Always add system language fallback
-        $defaultUrl = self::CATEGORY_URL;
-        $systemLocale = $languages[Defaults::LANGUAGE_SYSTEM] ?? 'en-GB';
-        $systemName = \str_starts_with($systemLocale, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+        $defaultUrl = $this->getSalesChannelBaseUrl($salesChannel, $context);
+        $translations = [];
 
-        $translations = [
-            Defaults::LANGUAGE_SYSTEM => [
-                'name' => $systemName,
-                'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
-                'externalLink' => $defaultUrl,
-                'linkNewTab' => false,
-            ],
-        ];
-
-        if (! $salesChannelWithDomains instanceof SalesChannelEntity) {
-            return $translations;
-        }
-
-        $domainCollection = $salesChannelWithDomains->getDomains();
-        if ($domainCollection === null) {
-            return $translations;
-        }
-
-        foreach ($domainCollection as $domain) {
-            $languageId = $domain->getLanguageId();
-            $url = \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
-
-            if ($languageId === Defaults::LANGUAGE_SYSTEM) {
-                $defaultUrl = $url;
+        foreach ($languages as $langHexId => $localeCode) {
+            $domainUrl = null;
+            if ($salesChannelWithDomains instanceof SalesChannelEntity && $salesChannelWithDomains->getDomains() !== null) {
+                foreach ($salesChannelWithDomains->getDomains() as $domain) {
+                    if ($domain->getLanguageId() === $langHexId) {
+                        $domainUrl = \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
+                        break;
+                    }
+                }
             }
 
-            $locale = $languages[$languageId] ?? 'en-GB';
-            $name = \str_starts_with($locale, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+            $url = $domainUrl ?? $defaultUrl;
+            $name = \str_starts_with((string)$localeCode, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
 
-            $translations[$languageId] = [
+            $translations[$langHexId] = [
                 'name' => $name,
                 'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
                 'externalLink' => $url,
@@ -159,7 +142,17 @@ final class GiftCardNavigationInstaller
             ];
         }
 
-        $translations[Defaults::LANGUAGE_SYSTEM]['externalLink'] = $defaultUrl;
+        // Always ensure system language fallback is present
+        if (!isset($translations[Defaults::LANGUAGE_SYSTEM])) {
+            $systemLocale = $languages[Defaults::LANGUAGE_SYSTEM] ?? 'en-GB';
+            $systemName = \str_starts_with($systemLocale, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+            $translations[Defaults::LANGUAGE_SYSTEM] = [
+                'name' => $systemName,
+                'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
+                'externalLink' => $defaultUrl,
+                'linkNewTab' => false,
+            ];
+        }
 
         return $translations;
     }

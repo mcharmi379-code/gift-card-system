@@ -19,14 +19,6 @@
         <title>Storefront Configuration</title>
         <title lang="de-DE">Storefront-Konfiguration</title>
 
-        <input-field type="text-editor">
-            <name>storefrontText</name>
-            <label>Text in front Storefront</label>
-            <label lang="de-DE">Text im Frontend</label>
-            <helpText>Displayed on the gift card product page in the storefront.</helpText>
-            <helpText lang="de-DE">Wird auf der Geschenkkarten-Produktseite im Storefront angezeigt.</helpText>
-        </input-field>
-
         <input-field type="int">
             <name>storefrontCardWidth</name>
             <label>Width card image (px)</label>
@@ -134,16 +126,6 @@
             <helpText>Prefix used for gift card name (e.g. GIFTCARD-00001.pdf).</helpText>
             <helpText lang="de-DE">Präfix für den Geschenkkartennamen (z.B. GIFTCARD-00001.pdf).</helpText>
             <defaultValue>GIFTCARD-</defaultValue>
-            <required>true</required>
-        </input-field>
-
-        <input-field type="text-editor">
-            <name>pdfContent</name>
-            <label>PDF content</label>
-            <label lang="de-DE">PDF-Inhalt</label>
-            <helpText>HTML template for the PDF. Available variables: {{card_lastname}}, {{card_price}}, {{card_from}}, {{card_code}}, {{card_message}}, {{card_image}}, {{shop_name}}, {{validity_date}}.</helpText>
-            <helpText lang="de-DE">HTML-Vorlage für das PDF. Verfügbare Variablen: {{card_lastname}}, {{card_price}}, {{card_from}}, {{card_code}}, {{card_message}}, {{card_image}}, {{shop_name}}, {{validity_date}}.</helpText>
-            <defaultValue>&lt;table cellpadding=&quot;10&quot; style=&quot;width:100%;text-align:center;color:#333;background:#ffffff;font-size:14px;&quot;&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td style=&quot;width:25%;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;td style=&quot;width:50%;font-size:30px;border:1px solid #333;&quot;&gt;&lt;strong&gt;Gift Card&lt;/strong&gt;&lt;/td&gt;&lt;td style=&quot;width:25%;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td colspan=&quot;3&quot;&gt;&lt;p&gt;Hi {{card_lastname}},&lt;/p&gt;&lt;p&gt;You have received a &lt;strong&gt;{{card_price}}&lt;/strong&gt; gift card from {{card_from}}!&lt;/p&gt;&lt;p style=&quot;font-size:18px;margin:0;&quot;&gt;&lt;em&gt;Good shopping on {{shop_name}}!&lt;/em&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td colspan=&quot;3&quot;&gt;{{card_image}}&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:25%;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;td style=&quot;width:50%;font-size:16px;background-color:#333;color:#fff;&quot;&gt;Your code:&lt;br&gt;&lt;strong&gt;{{card_code}}&lt;/strong&gt;&lt;/td&gt;&lt;td style=&quot;width:25%;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td colspan=&quot;3&quot;&gt;&lt;p&gt;&lt;strong&gt;Message from {{card_from}}&lt;/strong&gt;&lt;/p&gt;&lt;div&gt;{{card_message}}&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td colspan=&quot;3&quot; style=&quot;font-size:1px;&quot;&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=&quot;width:33%;font-size:1px;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;td style=&quot;width:34%;font-size:1px;border-top:1px solid #777;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;td style=&quot;width:33%;font-size:1px;&quot;&gt;&amp;nbsp;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td colspan=&quot;3&quot;&gt;&lt;p style=&quot;font-size:16px;&quot;&gt;&lt;strong&gt;To take advantage of the gift card&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Copy/paste your code &lt;strong&gt;{{card_code}}&lt;/strong&gt; into the shopping cart before checking out.&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;</defaultValue>
             <required>true</required>
         </input-field>
 

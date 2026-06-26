@@ -56,6 +56,13 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         }
 
         $runningTotal = $toCalculate->getPrice()->getTotalPrice();
+        foreach ($toCalculate->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $voucherItem) {
+            if ($voucherItem->getPrice() !== null) {
+                $runningTotal -= $voucherItem->getPrice()->getTotalPrice();
+            }
+        }
+        $runningTotal = \max(0.0, $runningTotal);
+
         $state = [
             'hasRestricted' => false,
             'appliedCount'  => 0,

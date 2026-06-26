@@ -68,11 +68,7 @@ Module.register('ictech-gift-card', {
             },
             meta: { privilege: 'ictech_gift_card.viewer', parentPath: 'ictech.gift.card.template' },
         },
-        settings: {
-            component: 'ictech-gift-card-settings',
-            path: 'settings',
-            meta: { privilege: 'ictech_gift_card.viewer' },
-        },
+
         moderation: {
             component: 'ictech-gift-card-moderation',
             path: 'moderation',
@@ -131,14 +127,7 @@ Module.register('ictech-gift-card', {
             position: 35,
             privilege: 'ictech_gift_card.viewer',
         },
-        {
-            id: 'ictech-gift-card-settings',
-            path: 'ictech.gift.card.settings',
-            label: 'ictech-gift-card.navigation.settings',
-            parent: 'ictech-gift-card',
-            position: 40,
-            privilege: 'ictech_gift_card.viewer',
-        },
+
     ],
 });
 

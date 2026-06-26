@@ -7,16 +7,38 @@
 }
 
 .gift-card-status {
-    &--pending        { background-color: #6c757d; color: #fff; }
-    &--sent           { background-color: #0d6efd; color: #fff; }
-    &--partially_used { background-color: #fd7e14; color: #fff; }
-    &--used           { background-color: #198754; color: #fff; }
-    &--expired        { background-color: #dc3545; color: #fff; }
-    &--revoked        { background-color: #343a40; color: #fff; }
+    &--pending {
+        background-color: #6c757d;
+        color: #fff;
+    }
+
+    &--sent {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+
+    &--partially_used {
+        background-color: #fd7e14;
+        color: #fff;
+    }
+
+    &--used {
+        background-color: #198754;
+        color: #fff;
+    }
+
+    &--expired {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    &--revoked {
+        background-color: #343a40;
+        color: #fff;
+    }
 }
 
 .ictech-gift-card-page {
-    max-width: 1120px;
     margin: 24px auto;
     padding: 24px;
     background: #fff;
@@ -242,7 +264,9 @@
     align-items: center;
     justify-content: center;
 
-    &[hidden] { display: none; }
+    &[hidden] {
+        display: none;
+    }
 
     &__backdrop {
         position: absolute;
@@ -359,9 +383,12 @@
 }
 
 @keyframes pulse-gift {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.1);
     }
@@ -399,4 +426,3 @@
         color: #991b1b !important;
     }
 }
-

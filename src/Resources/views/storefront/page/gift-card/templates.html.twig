@@ -19,19 +19,19 @@
                 {% set customize = template.customFields.giftCardTemplateCustomize ?? {} %}
                 {% if not customize.pdfOnly|default(false) %}
                     {% set media = template.media %}
-                    {% set tag = template.tag ?: 'Various' %}
+                    {% set tag = template.translated.tag|default(template.tag) ?: 'Various' %}
                     {% set tagKey = tag|lower|replace({' ': '-'}) %}
                     <button
                         type="button"
                         class="ictech-gift-card-template"
                         data-gift-card-template="{{ template.id }}"
-                        data-gift-card-template-name="{{ template.name }}"
+                        data-gift-card-template-name="{{ template.translated.name|default(template.name) }}"
                         data-gift-card-tag="{{ tagKey }}"
                     >
                         {% if media %}
                             <img
                                 src="{{ media.url }}"
-                                alt="{{ template.name }}"
+                                alt="{{ template.translated.name|default(template.name) }}"
                                 width="{{ giftCardConfig.storefrontCardWidth ?: 528 }}"
                                 height="{{ giftCardConfig.storefrontCardHeight ?: 318 }}"
                                 loading="lazy"

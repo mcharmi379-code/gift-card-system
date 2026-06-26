@@ -69,10 +69,46 @@ function updateAmount(page, select) {
     // Only update the referencedId with the product ID, leaving the line item ID as the unique key
     const referencedIdInput = page.querySelector('[data-gift-card-referenced-id]');
     if (referencedIdInput) {
-        referencedIdInput.value = productId;
+        referencedIdInput.value = productId || '';
     }
 
     updatePayload(page);
+}
+
+function filterAmountOptions(page, templateId) {
+    const amountSelect = page.querySelector('[data-gift-card-amount]');
+    if (!amountSelect || !amountSelect.originalOptions) return;
+
+    // Clear existing options
+    amountSelect.innerHTML = '';
+
+    if (!templateId) {
+        // No template selected yet: show placeholder option and disable select
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Please select a template first';
+        amountSelect.appendChild(placeholder);
+        amountSelect.disabled = true;
+    } else {
+        // Filter options by templateId
+        const filtered = amountSelect.originalOptions.filter((option) => {
+            return option.dataset.templateId === templateId;
+        });
+
+        if (filtered.length > 0) {
+            filtered.forEach((option) => amountSelect.appendChild(option.cloneNode(true)));
+            amountSelect.disabled = false;
+            amountSelect.selectedIndex = 0;
+        } else {
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'No amounts available for this template';
+            amountSelect.appendChild(placeholder);
+            amountSelect.disabled = true;
+        }
+    }
+
+    updateAmount(page, amountSelect);
 }
 
 function selectTemplate(page, button) {
@@ -96,6 +132,7 @@ function selectTemplate(page, button) {
         grid.classList.remove('is-invalid');
     }
 
+    filterAmountOptions(page, templateId);
     updatePayload(page);
 }
 
@@ -106,7 +143,26 @@ function filterTemplates(page, filter) {
 
     page.querySelectorAll('[data-gift-card-template]').forEach((template) => {
         template.hidden = filter !== 'all' && template.dataset.giftCardTag !== filter;
+        template.classList.remove('is-selected');
     });
+
+    const templateInput = page.querySelector('[data-gift-card-template-id]');
+    if (templateInput) {
+        templateInput.value = '';
+    }
+
+    const templateError = page.querySelector('[data-gift-card-template-error]');
+    if (templateError) {
+        templateError.classList.remove('d-block');
+        templateError.classList.add('d-none');
+    }
+    const grid = page.querySelector('.ictech-gift-card-template-grid');
+    if (grid) {
+        grid.classList.remove('is-invalid');
+    }
+
+    filterAmountOptions(page, '');
+    updatePayload(page);
 }
 
 function enforceMinDate(page) {
@@ -231,15 +287,20 @@ function openPreview(page, previewUrl) {
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll(pageSelector).forEach((page) => {
         const form = page.querySelector('form');
-        const firstTemplate = page.querySelector('[data-gift-card-template]');
         const amountSelect = page.querySelector('[data-gift-card-amount]');
+
+        // Store original options for filtering
+        if (amountSelect) {
+            amountSelect.originalOptions = Array.from(amountSelect.options);
+        }
 
         // Initialize unique line item key (also sets value of product ID field to the key)
         updateLineItemKey(page, generateUuid());
 
         // Do not automatically select the first template, as template selection is now mandatory
+        filterAmountOptions(page, '');
+
         if (amountSelect) {
-            updateAmount(page, amountSelect);
             amountSelect.addEventListener('change', () => updateAmount(page, amountSelect));
         }
 

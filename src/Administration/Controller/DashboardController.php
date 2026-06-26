@@ -14,12 +14,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
+use Twig\Environment;
+
 #[Route(defaults: ['_routeScope' => ['api']])]
 final class DashboardController
 {
     public function __construct(
         private readonly Connection $connection,
         private readonly SystemConfigService $systemConfigService,
+        private readonly Environment $twig,
     ) {
     }
 
@@ -139,21 +142,36 @@ final class DashboardController
         $salesChannelId = \is_string($salesChannelId) && $salesChannelId !== ''
             ? $salesChannelId
             : null;
-        $html = $this->systemConfigService->getString(
-            'ICTECHGiftCard.config.pdfContent',
-            $salesChannelId
-        );
 
-        if ($html === '') {
-            return new Response(
-                'No PDF content configured.',
-                Response::HTTP_BAD_REQUEST
-            );
+        $sampleImageHtml = '<img src="' .
+            'https://placehold.co/300x192/cccccc/333333?text=Gift+Card' .
+            '" style="max-width:300px;height:auto;" />';
+
+        try {
+            $html = $this->twig->render('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
+                'card_lastname' => 'Doe',
+                'card_price'    => '50.00 €',
+                'card_from'     => 'Jane Doe',
+                'card_code'     => 'PREVIEW-1234-5678',
+                'card_message'  => 'Happy Birthday! Enjoy your gift.',
+                'card_image'    => $sampleImageHtml,
+                'shop_name'     => 'My Shop',
+                'validity_date' => (new \DateTimeImmutable('+1 year'))->format('d.m.Y'),
+            ]);
+        } catch (\Throwable $e) {
+            $html = '<html><body>Gift Card Code: PREVIEW-1234-5678</body></html>';
         }
 
-        $pdfOutput = $this->generatePreviewPdfOutput($html);
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
 
-        return new Response($pdfOutput, Response::HTTP_OK, [
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml('<html><body>' . $html . '</body></html>');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return new Response($dompdf->output(), Response::HTTP_OK, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
         ]);
@@ -283,40 +301,7 @@ final class DashboardController
         return [$sql, $params];
     }
 
-    private function generatePreviewPdfOutput(string $html): string
-    {
-        $sampleImageHtml = '<img src="' .
-            'https://placehold.co/300x192/cccccc/333333?text=Gift+Card' .
-            '" style="max-width:300px;height:auto;" />';
-        $replacements = [
-            '{{card_lastname}}' => 'Doe',
-            '{{card_firstname}}' => 'John',
-            '{{card_price}}' => '50.00 €',
-            '{{card_from}}' => 'Jane Doe',
-            '{{card_code}}' => 'PREVIEW-1234-5678',
-            '{{card_message}}' => 'Happy Birthday! Enjoy your gift.',
-            '{{card_image}}' => $sampleImageHtml,
-            '{{shop_name}}' => 'My Shop',
-            '{{validity_date}}' => (new \DateTimeImmutable('+1 year'))->format('d.m.Y'),
-        ];
 
-        $html = \str_replace(
-            \array_keys($replacements),
-            \array_values($replacements),
-            $html
-        );
-
-        $options = new Options();
-        $options->set('isRemoteEnabled', true);
-        $options->set('isHtml5ParserEnabled', true);
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml('<html><body>' . $html . '</body></html>');
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        return (string) $dompdf->output();
-    }
 
     /**
      * @param list<string> $headers

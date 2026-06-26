@@ -23,6 +23,7 @@
             <argument type="service" id="sales_channel.repository" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
             <argument type="service" id="ictech_gift_card_template.repository" />
+            <argument type="service" id="twig" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" public="false">
@@ -30,6 +31,12 @@
             <argument type="service" id="ictech_gift_card_transaction.repository" />
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+        </service>
+
+        <service id="ICTECHGiftCard\Core\Cart\GiftCardCartValidator">
+            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+            <tag name="shopware.cart.validator" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateDefinition">
@@ -45,6 +52,7 @@
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" />
             <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
+            <argument type="service" id="Symfony\Component\Messenger\MessageBusInterface" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardProductSyncSubscriber" public="false">
@@ -52,6 +60,13 @@
             <argument type="service" id="product.repository" />
             <argument type="service" id="tax.repository" />
             <argument type="service" id="sales_channel.repository" />
+            <argument type="service" id="Doctrine\DBAL\Connection" />
+        </service>
+
+        <service id="ICTECHGiftCard\Core\Subscriber\ProductDetailRedirectSubscriber" public="true">
+            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="Symfony\Component\Routing\RouterInterface" />
+            <tag name="kernel.event_subscriber" />
         </service>
 
         <service id="ICTECHGiftCard\Core\ScheduledTask\ICTECHGiftCardEmailTask">
@@ -61,6 +76,13 @@
         <service id="ICTECHGiftCard\Core\ScheduledTask\ICTECHGiftCardEmailTaskHandler" public="false">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="logger" />
+            <argument type="service" id="ictech_gift_card_voucher.repository" />
+            <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
+            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <tag name="messenger.message_handler" />
+        </service>
+
+        <service id="ICTECHGiftCard\Core\MessageHandler\SendGiftCardMailHandler" public="false">
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
             <tag name="messenger.message_handler" />
@@ -91,6 +113,7 @@
             <tag name="controller.service_arguments" />
             <argument type="service" id="Doctrine\DBAL\Connection" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+            <argument type="service" id="twig" />
         </service>
 
         <service id="ICTECHGiftCard\Administration\Controller\ModerationController" public="true">

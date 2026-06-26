@@ -9,6 +9,7 @@ use ICTECHGiftCard\Service\GiftCardNavigationInstaller;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Plugin;
+use Shopware\Core\Framework\Plugin\Context\ActivateContext;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Uuid\Uuid;
@@ -55,25 +56,53 @@ final class ICTECHGiftCard extends Plugin
         }
     }
 
+    public function activate(ActivateContext $activateContext): void
+    {
+        parent::activate($activateContext);
+
+        $categoryRepository = $this->container?->get('category.repository');
+        $salesChannelRepository = $this->container?->get('sales_channel.repository');
+        $connection = $this->container?->get(Connection::class);
+
+        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository && $connection instanceof Connection) {
+            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository, $connection);
+            $installer->install($activateContext->getContext());
+        }
+    }
+
     public function uninstall(UninstallContext $uninstallContext): void
     {
         parent::uninstall($uninstallContext);
+
+        $connection = $this->container?->get(Connection::class);
+        if ($connection instanceof Connection) {
+            try {
+                $categoryRepository = $this->container?->get('category.repository');
+                if ($categoryRepository instanceof EntityRepository) {
+                    $criteria = new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria();
+                    $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter('customFields.ictech_gift_card_navigation', true));
+                    $ids = $categoryRepository->searchIds($criteria, $uninstallContext->getContext())->getIds();
+                    if (\count($ids) > 0) {
+                        $categoryRepository->delete(\array_map(static fn($id) => ['id' => $id], $ids), $uninstallContext->getContext());
+                    }
+                }
+            } catch (\Throwable) {
+                $connection->executeStatement(
+                    'DELETE FROM category WHERE id IN (SELECT DISTINCT category_id FROM category_translation WHERE custom_fields LIKE :search)',
+                    ['search' => '%ictech_gift_card_navigation%']
+                );
+            }
+
+            $this->removeMailTemplateType($connection);
+        }
 
         if ($uninstallContext->keepUserData()) {
             return;
         }
 
-        $connection = $this->container?->get(Connection::class);
         if (!$connection instanceof Connection) {
             return;
         }
-
-        $this->removeMailTemplateType($connection);
-
-        $connection->executeStatement(
-            'DELETE FROM category WHERE id IN (SELECT DISTINCT category_id FROM category_translation WHERE custom_fields LIKE :search)',
-            ['search' => '%ictech_gift_card_navigation%']
-        );
 
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_audit_log`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_transaction`');

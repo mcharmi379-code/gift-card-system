@@ -33,6 +33,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         private readonly EntityRepository $voucherRepository,
         private readonly GiftCardCartProcessor $cartProcessor,
         private readonly GiftCardEmailService $emailService,
+        private readonly \Symfony\Component\Messenger\MessageBusInterface $messageBus,
     ) {
     }
 
@@ -335,15 +336,16 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $this->dispatchVoucherEmails(
-            $updatedVoucher,
+        $this->messageBus->dispatch(new \ICTECHGiftCard\Core\Message\SendGiftCardMailMessage(
+            $updatedVoucher->getId(),
             $deliveryMethod,
             $purchaserEmail,
             $purchaserName,
             $scheduledSendDate,
             $recipientEmail,
-            $context
-        );
+            $context->getLanguageId(),
+            $context->getCurrencyId(),
+        ));
     }
 
     /**
@@ -422,31 +424,6 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         return $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
     }
 
-    private function dispatchVoucherEmails(
-        GiftCardVoucherEntity $voucher,
-        string $deliveryMethod,
-        string $purchaserEmail,
-        string $purchaserName,
-        string $scheduledSendDate,
-        string $recipientEmail,
-        Context $context,
-    ): void {
-        $today = (new \DateTimeImmutable())->format('Y-m-d');
-
-        try {
-            if ($deliveryMethod === 'print') {
-                $this->emailService->sendPurchaserSelfEmail($voucher, $purchaserEmail, $purchaserName, $context);
-                return;
-            }
-
-            $this->emailService->sendPurchaserConfirmationEmail($voucher, $purchaserEmail, $purchaserName, $context);
-            if ($scheduledSendDate <= $today && $recipientEmail !== '') {
-                $this->emailService->sendRecipientEmail($voucher, $context);
-            }
-        } catch (\Throwable $e) {
-            error_log($e->getMessage()); // Email failure must not break the order flow
-        }
-    }
 
     // -------------------------------------------------------------------------
     // Pick an existing pool voucher or generate one on-the-fly

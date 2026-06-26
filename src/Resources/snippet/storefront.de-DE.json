@@ -60,6 +60,17 @@
         "error": {
             "required": "Eingabe darf nicht leer sein.",
             "templateRequired": "Bitte wählen Sie eine Geschenkkartenvorlage aus."
+        },
+        "pdf": {
+            "title": "Geschenkkarte",
+            "greeting": "Hallo %name%,",
+            "receivedText": "Sie haben eine Geschenkkarte im Wert von %price% von %from% erhalten!",
+            "goodShopping": "Viel Spaß beim Shoppen auf %shopName%!",
+            "yourCode": "Ihr Code:",
+            "validUntil": "Gültig bis: %date%",
+            "messageFrom": "Nachricht von %from%:",
+            "howToRedeemHeader": "So lösen Sie die Geschenkkarte ein",
+            "howToRedeemText": "Kopieren Sie Ihren Code %code% und fügen Sie ihn vor dem Bezahlen in den Warenkorb ein."
         }
     }
 }
