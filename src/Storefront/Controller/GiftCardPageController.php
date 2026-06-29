@@ -19,6 +19,7 @@ use Shopware\Storefront\Page\GenericPageLoader;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Twig\Environment;
 
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 final class GiftCardPageController extends StorefrontController
@@ -34,7 +35,44 @@ final class GiftCardPageController extends StorefrontController
         private readonly EntityRepository $giftCardRepository,
         private readonly EntityRepository $templateRepository,
         private readonly SystemConfigService $systemConfigService,
+        private readonly Environment $twig,
     ) {
+    }
+
+    #[Route(path: '/gift-card', name: 'frontend.ictech.gift_card.page', methods: ['GET'])]
+    public function index(Request $request, SalesChannelContext $context): Response
+    {
+        $navigationRootId = $context->getSalesChannel()->getNavigationCategoryId();
+        if ($navigationRootId) {
+            $categoryId = \Shopware\Core\Framework\Uuid\Uuid::fromStringToHex('ictech-gift-card-navigation-' . $navigationRootId);
+            $request->attributes->set('navigationId', $categoryId);
+            $routeParams = $request->attributes->get('_route_params');
+            if (! \is_array($routeParams)) {
+                $routeParams = [];
+            }
+            $routeParams['navigationId'] = $categoryId;
+            $request->attributes->set('_route_params', $routeParams);
+        }
+
+        $page = $this->genericPageLoader->load($request, $context);
+        $salesChannelId = $context->getSalesChannelId();
+
+        $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $salesChannelId);
+
+        $templates = $this->loadTemplates($context);
+        $giftCards = $this->loadGiftCards($context);
+        $amountOptions = $this->buildAmountOptions($giftCards);
+        $tagFilters = $this->buildTagFilters($templates);
+
+        return $this->renderStorefront('@ICTECHGiftCard/storefront/page/gift-card/index.html.twig', [
+            'page' => $page,
+            'giftCardConfig' => $this->loadConfig($salesChannelId),
+            'giftCardTemplates' => $templates,
+            'giftCardTagFilters' => $tagFilters,
+            'giftCardAmountOptions' => $amountOptions,
+            'giftCardDefaultAmount' => $amountOptions[0] ?? null,
+            'active' => $active,
+        ]);
     }
 
     #[Route(path: '/gift-card/preview', name: 'frontend.ictech.gift_card.preview', methods: ['GET', 'POST'])]
@@ -107,35 +145,22 @@ final class GiftCardPageController extends StorefrontController
         $priceStr = $this->formatPriceString((float) $params['amount'], $context);
         $formattedSendDate = $this->formatSendDate($params['sendDate']);
 
-        $shopUrl = $this->resolveShopUrl($context);
+        try {
+            $html = $this->twig->render('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
+                'card_lastname' => $params['recipientName'],
+                'card_price'    => $priceStr,
+                'card_from'     => $params['senderName'],
+                'card_code'     => 'PREVIEW-1234-5678',
+                'card_message'  => $params['message'],
+                'card_image'    => $cardImage,
+                'shop_name'     => $shopName,
+                'validity_date' => $formattedSendDate,
+            ]);
+        } catch (\Throwable $e) {
+            $html = '<html><body>Gift Card Code: PREVIEW-1234-5678</body></html>';
+        }
 
-        return str_replace(
-            [
-                '{{card_lastname}}',
-                '{{card_firstname}}',
-                '{{card_price}}',
-                '{{card_from}}',
-                '{{card_code}}',
-                '{{card_message}}',
-                '{{card_image}}',
-                '{{shop_name}}',
-                '{{validity_date}}',
-                '{{shop_url}}',
-            ],
-            [
-                htmlspecialchars($params['recipientName']),
-                '',
-                htmlspecialchars($priceStr),
-                htmlspecialchars($params['senderName']),
-                'PREVIEW-1234-5678',
-                nl2br(htmlspecialchars($params['message'])),
-                $cardImage,
-                htmlspecialchars($shopName),
-                htmlspecialchars($formattedSendDate),
-                htmlspecialchars($shopUrl),
-            ],
-            $pdfContent
-        );
+        return $this->renderDompdfResponse($html);
     }
 
     private function buildCardImageHtml(?object $template, string $salesChannelId): string
@@ -197,39 +222,6 @@ final class GiftCardPageController extends StorefrontController
         return new Response($dompdf->output(), Response::HTTP_OK, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
-        ]);
-    }
-
-    #[Route(path: '/gift-card', name: 'frontend.ictech.gift_card.page', methods: ['GET'])]
-    public function index(Request $request, SalesChannelContext $context): Response
-    {
-        $navigationRootId = $context->getSalesChannel()->getNavigationCategoryId();
-        if ($navigationRootId) {
-            $categoryId = \Shopware\Core\Framework\Uuid\Uuid::fromStringToHex('ictech-gift-card-navigation-' . $navigationRootId);
-            $request->attributes->set('navigationId', $categoryId);
-            $routeParams = $request->attributes->get('_route_params', []);
-            $routeParams['navigationId'] = $categoryId;
-            $request->attributes->set('_route_params', $routeParams);
-        }
-
-        $page = $this->genericPageLoader->load($request, $context);
-        $salesChannelId = $context->getSalesChannelId();
-
-        $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $salesChannelId);
-
-        $templates = $this->loadTemplates($context);
-        $giftCards = $this->loadGiftCards($context);
-        $amountOptions = $this->buildAmountOptions($giftCards);
-        $tagFilters = $this->buildTagFilters($templates);
-
-        return $this->renderStorefront('@ICTECHGiftCard/storefront/page/gift-card/index.html.twig', [
-            'page' => $page,
-            'giftCardConfig' => $this->loadConfig($salesChannelId),
-            'giftCardTemplates' => $templates,
-            'giftCardTagFilters' => $tagFilters,
-            'giftCardAmountOptions' => $amountOptions,
-            'giftCardDefaultAmount' => $amountOptions[0] ?? null,
-            'active' => $active,
         ]);
     }
 
@@ -351,13 +343,21 @@ final class GiftCardPageController extends StorefrontController
     {
         $key = $this->getTemplateTagKey($template);
 
+        if (! isset($filters['all'])) {
+            $filters['all'] = [
+                'key' => 'all',
+                'label' => 'All',
+                'count' => 0,
+            ];
+        }
         $filters['all']['count']++;
-        $filters[$key] ??= [
+
+        $count = isset($filters[$key]) ? $filters[$key]['count'] : 0;
+        $filters[$key] = [
             'key' => $key,
             'label' => $key,
-            'count' => 0,
+            'count' => $count + 1,
         ];
-        $filters[$key]['count']++;
 
         return $filters;
     }
@@ -407,33 +407,4 @@ final class GiftCardPageController extends StorefrontController
         ];
     }
 
-    private function resolveShopUrl(SalesChannelContext $context): string
-    {
-        $domainCollection = $context->getSalesChannel()->getDomains();
-        if ($domainCollection !== null && $domainCollection->count() > 0) {
-            $langDomain = $this->findLanguageDomain($domainCollection, $context->getContext()->getLanguageId());
-            if ($langDomain !== null) {
-                return \rtrim((string) $langDomain->getUrl(), '/');
-            }
-            $firstDomain = $domainCollection->first();
-            if ($firstDomain !== null) {
-                return \rtrim((string) $firstDomain->getUrl(), '/');
-            }
-        }
-
-        $fallback = $this->systemConfigService->getString('core.basicInformation.shopUrl', $context->getSalesChannelId());
-        return \rtrim($fallback, '/');
-    }
-
-    private function findLanguageDomain(
-        \Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainCollection $domains,
-        string $languageId,
-    ): ?\Shopware\Core\System\SalesChannel\Aggregate\SalesChannelDomain\SalesChannelDomainEntity {
-        foreach ($domains as $domain) {
-            if ($domain->getLanguageId() === $languageId) {
-                return $domain;
-            }
-        }
-        return null;
-    }
 }

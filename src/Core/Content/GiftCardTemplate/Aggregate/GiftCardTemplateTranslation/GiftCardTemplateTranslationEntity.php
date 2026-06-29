@@ -7,7 +7,7 @@ namespace ICTECHGiftCard\Core\Content\GiftCardTemplate\Aggregate\GiftCardTemplat
 use ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\TranslationEntity;
 
-class GiftCardTemplateTranslationEntity extends TranslationEntity
+final class GiftCardTemplateTranslationEntity extends TranslationEntity
 {
     protected ?string $ictechGiftCardTemplateId = null;
 

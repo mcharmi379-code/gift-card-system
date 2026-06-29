@@ -19,6 +19,9 @@ final class ProductDetailRedirectSubscriber implements EventSubscriberInterface
     ) {
     }
 
+    /**
+     * @return array<string, string>
+     */
     public static function getSubscribedEvents(): array
     {
         return [
@@ -28,7 +31,7 @@ final class ProductDetailRedirectSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (! $event->isMainRequest()) {
             return;
         }
 
@@ -40,25 +43,27 @@ final class ProductDetailRedirectSubscriber implements EventSubscriberInterface
         }
 
         $productIdHex = $request->attributes->get('productId');
-        if (!\is_string($productIdHex) || $productIdHex === '') {
+        if (! \is_string($productIdHex) || $productIdHex === '') {
             return;
         }
 
-        try {
-            $productIdBin = \hex2bin($productIdHex);
-        } catch (\Throwable) {
-            return;
-        }
-
-        // Check if this product is associated with a gift card
-        $giftCardExists = $this->connection->fetchOne(
-            'SELECT 1 FROM `ictech_gift_card` WHERE `product_id` = :productId LIMIT 1',
-            ['productId' => $productIdBin]
-        );
-
-        if ($giftCardExists) {
+        if ($this->isGiftCardProduct($productIdHex)) {
             $redirectUrl = $this->router->generate('frontend.ictech.gift_card.page');
             $event->setResponse(new RedirectResponse($redirectUrl));
         }
+    }
+
+    private function isGiftCardProduct(string $productIdHex): bool
+    {
+        try {
+            $productIdBin = \hex2bin($productIdHex);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return (bool) $this->connection->fetchOne(
+            'SELECT 1 FROM `ictech_gift_card` WHERE `product_id` = :productId LIMIT 1',
+            ['productId' => $productIdBin]
+        );
     }
 }

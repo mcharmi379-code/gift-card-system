@@ -9,7 +9,6 @@ use ICTECHGiftCard\Core\Cart\GiftCardCartProcessor;
 use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
 use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherEntity;
 use ICTECHGiftCard\Core\Enum\VoucherStatus;
-use ICTECHGiftCard\Core\Service\GiftCardEmailService;
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
@@ -32,7 +31,6 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         private readonly Connection $connection,
         private readonly EntityRepository $voucherRepository,
         private readonly GiftCardCartProcessor $cartProcessor,
-        private readonly GiftCardEmailService $emailService,
         private readonly \Symfony\Component\Messenger\MessageBusInterface $messageBus,
     ) {
     }

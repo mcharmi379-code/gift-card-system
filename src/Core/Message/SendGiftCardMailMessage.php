@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Core\Message;
 
-class SendGiftCardMailMessage
+final class SendGiftCardMailMessage
 {
     public function __construct(
         private readonly string $voucherId,

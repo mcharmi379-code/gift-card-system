@@ -51,7 +51,6 @@
             <argument type="service" id="Doctrine\DBAL\Connection" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" />
-            <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
             <argument type="service" id="Symfony\Component\Messenger\MessageBusInterface" />
         </service>
 
@@ -94,6 +93,7 @@
             <argument type="service" id="ictech_gift_card.repository" />
             <argument type="service" id="ictech_gift_card_template.repository" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+            <argument type="service" id="twig" />
         </service>
 
         <service id="ICTECHGiftCard\Storefront\Controller\GiftCardCartController" public="true">
@@ -112,7 +112,6 @@
         <service id="ICTECHGiftCard\Administration\Controller\DashboardController" public="true">
             <tag name="controller.service_arguments" />
             <argument type="service" id="Doctrine\DBAL\Connection" />
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
             <argument type="service" id="twig" />
         </service>
 

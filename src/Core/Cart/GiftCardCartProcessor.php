@@ -48,20 +48,12 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         CartBehavior $behavior,
     ): void {
         $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
-        if (!$active) {
-            foreach ($original->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
-                $original->getLineItems()->remove($lineItem->getId());
-            }
+        if (! $active) {
+            $this->removeGiftCardLineItems($original);
             return;
         }
 
-        $runningTotal = $toCalculate->getPrice()->getTotalPrice();
-        foreach ($toCalculate->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $voucherItem) {
-            if ($voucherItem->getPrice() !== null) {
-                $runningTotal -= $voucherItem->getPrice()->getTotalPrice();
-            }
-        }
-        $runningTotal = \max(0.0, $runningTotal);
+        $runningTotal = $this->calculateRunningTotal($toCalculate);
 
         $state = [
             'hasRestricted' => false,
@@ -78,6 +70,24 @@ final class GiftCardCartProcessor implements CartProcessorInterface
                 $state
             );
         }
+    }
+
+    private function removeGiftCardLineItems(Cart $cart): void
+    {
+        foreach ($cart->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
+            $cart->getLineItems()->remove($lineItem->getId());
+        }
+    }
+
+    private function calculateRunningTotal(Cart $cart): float
+    {
+        $runningTotal = 0.0;
+        foreach ($cart->getLineItems() as $item) {
+            if ($item->getType() !== self::LINE_ITEM_TYPE && $item->getPrice() !== null) {
+                $runningTotal += $item->getPrice()->getTotalPrice();
+            }
+        }
+        return \max(0.0, $runningTotal);
     }
 
     /**
@@ -210,10 +220,18 @@ final class GiftCardCartProcessor implements CartProcessorInterface
     ): void {
         $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
         $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$deductAmount));
+
+        $prices = new \Shopware\Core\Checkout\Cart\Price\Struct\PriceCollection();
+        foreach ($toCalculate->getLineItems() as $item) {
+            if ($item->getType() !== self::LINE_ITEM_TYPE && $item->getPrice() !== null) {
+                $prices->add($item->getPrice());
+            }
+        }
+
         $lineItem->setPrice(
             $this->priceCalculator->calculate(
                 -$deductAmount,
-                $toCalculate->getLineItems()->getPrices(),
+                $prices,
                 $context
             )
         );

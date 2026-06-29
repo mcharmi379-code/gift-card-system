@@ -6,7 +6,7 @@ namespace ICTECHGiftCard\Core\Cart\Error;
 
 use Shopware\Core\Checkout\Cart\Error\Error;
 
-class GiftCardTemplateRequiredError extends Error
+final class GiftCardTemplateRequiredError extends Error
 {
     private const KEY = 'ictech-gift-card-template-required';
 
@@ -35,6 +35,9 @@ class GiftCardTemplateRequiredError extends Error
         return true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getParameters(): array
     {
         return [];

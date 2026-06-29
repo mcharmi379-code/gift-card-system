@@ -108,31 +108,17 @@ final class GiftCardNavigationInstaller
         $salesChannelWithDomains = $this->getSalesChannelWithDomains($salesChannel->getId(), $context);
 
         // Query all languages and their locale codes to support German translation
-        $languages = [];
-        try {
-            $languages = $this->connection->fetchAllKeyValue(
-                'SELECT LOWER(HEX(l.id)) as id, lo.code FROM language l INNER JOIN locale lo ON l.locale_id = lo.id'
-            );
-        } catch (\Exception) {
-            // Fallback if DB query fails during tests
-        }
+        $languages = $this->getLanguageLocaleMapping();
 
         $defaultUrl = $this->getSalesChannelBaseUrl($salesChannel, $context);
         $translations = [];
 
         foreach ($languages as $langHexId => $localeCode) {
-            $domainUrl = null;
-            if ($salesChannelWithDomains instanceof SalesChannelEntity && $salesChannelWithDomains->getDomains() !== null) {
-                foreach ($salesChannelWithDomains->getDomains() as $domain) {
-                    if ($domain->getLanguageId() === $langHexId) {
-                        $domainUrl = \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
-                        break;
-                    }
-                }
-            }
+            $domainUrl = $this->findDomainUrl($salesChannelWithDomains, $langHexId);
 
             $url = $domainUrl ?? $defaultUrl;
-            $name = \str_starts_with((string)$localeCode, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+            $localeCodeStr = (string) $localeCode;
+            $name = \str_starts_with($localeCodeStr, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
 
             $translations[$langHexId] = [
                 'name' => $name,
@@ -143,9 +129,10 @@ final class GiftCardNavigationInstaller
         }
 
         // Always ensure system language fallback is present
-        if (!isset($translations[Defaults::LANGUAGE_SYSTEM])) {
-            $systemLocale = $languages[Defaults::LANGUAGE_SYSTEM] ?? 'en-GB';
-            $systemName = \str_starts_with($systemLocale, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+        if (! isset($translations[Defaults::LANGUAGE_SYSTEM])) {
+            $systemLocale = $languages[Defaults::LANGUAGE_SYSTEM] ?? null;
+            $systemLocaleStr = (string) $systemLocale;
+            $systemName = \str_starts_with($systemLocaleStr, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
             $translations[Defaults::LANGUAGE_SYSTEM] = [
                 'name' => $systemName,
                 'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
@@ -155,6 +142,47 @@ final class GiftCardNavigationInstaller
         }
 
         return $translations;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getLanguageLocaleMapping(): array
+    {
+        try {
+            $result = $this->connection->fetchAllKeyValue(
+                'SELECT LOWER(HEX(l.id)) as id, lo.code FROM language l INNER JOIN locale lo ON l.locale_id = lo.id'
+            );
+            $mapped = [];
+            foreach ($result as $k => $v) {
+                if (\is_scalar($v)) {
+                    $mapped[(string) $k] = (string) $v;
+                }
+            }
+            return $mapped;
+        } catch (\Exception) {
+            return [];
+        }
+    }
+
+    private function findDomainUrl(?SalesChannelEntity $salesChannelWithDomains, string $langHexId): ?string
+    {
+        if (! $salesChannelWithDomains instanceof SalesChannelEntity) {
+            return null;
+        }
+
+        $domains = $salesChannelWithDomains->getDomains();
+        if ($domains === null) {
+            return null;
+        }
+
+        foreach ($domains as $domain) {
+            if ($domain->getLanguageId() === $langHexId) {
+                return \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
+            }
+        }
+
+        return null;
     }
 
     private function upsertCategoryForSalesChannel(SalesChannelEntity $salesChannel, Context $context): void

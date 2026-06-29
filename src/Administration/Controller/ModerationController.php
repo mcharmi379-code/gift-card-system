@@ -80,21 +80,6 @@ final class ModerationController
         return new JsonResponse(['success' => true]);
     }
 
-    private function validateRevokeRequest(Request $request): ?JsonResponse
-    {
-        $voucherId = $request->request->get('voucherId');
-        if (! \is_string($voucherId) || $voucherId === '') {
-            return new JsonResponse(['error' => 'voucherId is required'], 400);
-        }
-
-        $reason = $request->request->get('reason');
-        if (! \is_string($reason) || \trim($reason) === '') {
-            return new JsonResponse(['error' => 'reason is required'], 400);
-        }
-
-        return null;
-    }
-
     #[Route(
         path: '/api/ictech-gift-card/moderation/adjust-balance',
         name: 'api.ictech_gift_card.moderation.adjust_balance',
@@ -124,6 +109,21 @@ final class ModerationController
         $this->logBalanceAdjustment($voucher->getId(), $oldBalance, $newBalance, $request->request->get('reason'), $context);
 
         return new JsonResponse(['success' => true]);
+    }
+
+    private function validateRevokeRequest(Request $request): ?JsonResponse
+    {
+        $voucherId = $request->request->get('voucherId');
+        if (! \is_string($voucherId) || $voucherId === '') {
+            return new JsonResponse(['error' => 'voucherId is required'], 400);
+        }
+
+        $reason = $request->request->get('reason');
+        if (! \is_string($reason) || \trim($reason) === '') {
+            return new JsonResponse(['error' => 'reason is required'], 400);
+        }
+
+        return null;
     }
 
     private function validateAdjustBalanceRequest(Request $request): ?JsonResponse

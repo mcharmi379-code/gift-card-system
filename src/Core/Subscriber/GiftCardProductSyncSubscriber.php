@@ -204,7 +204,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
                 ['productId' => $productIdBin, 'mediaId' => $mediaIdBin]
             );
 
-            if ($existingProductMediaId === false) {
+            if (!\is_string($existingProductMediaId)) {
                 // Delete old media associations to avoid duplicates when image is changed
                 $this->connection->executeStatement(
                     'DELETE FROM product_media WHERE product_id = :productId',

@@ -74,36 +74,51 @@ final class ICTECHGiftCard extends Plugin
     {
         parent::uninstall($uninstallContext);
 
-        $connection = $this->container?->get(Connection::class);
-        if ($connection instanceof Connection) {
-            try {
-                $categoryRepository = $this->container?->get('category.repository');
-                if ($categoryRepository instanceof EntityRepository) {
-                    $criteria = new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria();
-                    $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter('customFields.ictech_gift_card_navigation', true));
-                    $ids = $categoryRepository->searchIds($criteria, $uninstallContext->getContext())->getIds();
-                    if (\count($ids) > 0) {
-                        $categoryRepository->delete(\array_map(static fn($id) => ['id' => $id], $ids), $uninstallContext->getContext());
-                    }
-                }
-            } catch (\Throwable) {
-                $connection->executeStatement(
-                    'DELETE FROM category WHERE id IN (SELECT DISTINCT category_id FROM category_translation WHERE custom_fields LIKE :search)',
-                    ['search' => '%ictech_gift_card_navigation%']
-                );
-            }
-
-            $this->removeMailTemplateType($connection);
+        $container = $this->container;
+        if ($container === null) {
+            return;
         }
+
+        $connection = $container->get(Connection::class);
+        if (! $connection instanceof Connection) {
+            return;
+        }
+
+        $this->uninstallCategories($container, $connection, $uninstallContext->getContext());
+        $this->removeMailTemplateType($connection);
 
         if ($uninstallContext->keepUserData()) {
             return;
         }
 
-        if (!$connection instanceof Connection) {
-            return;
-        }
+        $this->dropTables($connection);
+    }
 
+    private function uninstallCategories(
+        \Symfony\Component\DependencyInjection\ContainerInterface $container,
+        Connection $connection,
+        \Shopware\Core\Framework\Context $context,
+    ): void {
+        try {
+            $categoryRepository = $container->get('category.repository');
+            if ($categoryRepository instanceof EntityRepository) {
+                $criteria = new \Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria();
+                $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter('customFields.ictech_gift_card_navigation', true));
+                $ids = $categoryRepository->searchIds($criteria, $context)->getIds();
+                if (\count($ids) > 0) {
+                    $categoryRepository->delete(\array_map(static fn ($id) => ['id' => $id], $ids), $context);
+                }
+            }
+        } catch (\Throwable) {
+            $connection->executeStatement(
+                'DELETE FROM category WHERE id IN (SELECT DISTINCT category_id FROM category_translation WHERE custom_fields LIKE :search)',
+                ['search' => '%ictech_gift_card_navigation%']
+            );
+        }
+    }
+
+    private function dropTables(Connection $connection): void
+    {
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_audit_log`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_transaction`');
         $connection->executeStatement('DROP TABLE IF EXISTS `ictech_gift_card_voucher`');

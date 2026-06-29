@@ -7,13 +7,11 @@ namespace ICTECHGiftCard\Administration\Controller;
 use Doctrine\DBAL\Connection;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
-
 use Twig\Environment;
 
 #[Route(defaults: ['_routeScope' => ['api']])]
@@ -21,7 +19,6 @@ final class DashboardController
 {
     public function __construct(
         private readonly Connection $connection,
-        private readonly SystemConfigService $systemConfigService,
         private readonly Environment $twig,
     ) {
     }
@@ -215,23 +212,26 @@ final class DashboardController
     private function getPurchasedFilters(Request $request): array
     {
         $status = $request->query->get('status');
+        $statusStr = \is_string($status) && $status !== '' ? $status : '';
         $dateFrom = $request->query->get('dateFrom');
+        $dateFromStr = \is_string($dateFrom) && $dateFrom !== '' ? $dateFrom : '';
         $dateTo = $request->query->get('dateTo');
+        $dateToStr = \is_string($dateTo) && $dateTo !== '' ? $dateTo : '';
 
         $where = [];
         $params = [];
 
-        if ($status) {
+        if ($statusStr !== '') {
             $where[] = 'v.status = :status';
-            $params['status'] = $status;
+            $params['status'] = $statusStr;
         }
-        if ($dateFrom) {
+        if ($dateFromStr !== '') {
             $where[] = 'v.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFrom;
+            $params['dateFrom'] = $dateFromStr;
         }
-        if ($dateTo) {
+        if ($dateToStr !== '') {
             $where[] = 'v.created_at <= :dateTo';
-            $params['dateTo'] = $dateTo . ' 23:59:59';
+            $params['dateTo'] = $dateToStr . ' 23:59:59';
         }
 
         return [$where, $params];
@@ -244,14 +244,14 @@ final class DashboardController
     {
         [$where, $params] = $this->getPurchasedFilters($request);
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $sql = "SELECT v.code, v.original_amount, v.remaining_balance, " .
-            "v.status, v.recipient_name, v.recipient_email, v.sender_name, " .
-            "v.expires_at, v.created_at, o.order_number " .
-            "FROM ictech_gift_card_voucher v " .
-            "LEFT JOIN `order` o ON o.id = v.order_id " .
-            "AND o.version_id = v.order_version_id " .
-            "{$whereClause} " .
-            "ORDER BY v.created_at DESC";
+        $sql = "SELECT v.code, v.original_amount, v.remaining_balance,
+            v.status, v.recipient_name, v.recipient_email, v.sender_name,
+            v.expires_at, v.created_at, o.order_number
+            FROM ictech_gift_card_voucher v
+            LEFT JOIN `order` o ON o.id = v.order_id
+            AND o.version_id = v.order_version_id
+            {$whereClause}
+            ORDER BY v.created_at DESC";
 
         return [$sql, $params];
     }
@@ -262,18 +262,20 @@ final class DashboardController
     private function getUsedFilters(Request $request): array
     {
         $dateFrom = $request->query->get('dateFrom');
+        $dateFromStr = \is_string($dateFrom) && $dateFrom !== '' ? $dateFrom : '';
         $dateTo = $request->query->get('dateTo');
+        $dateToStr = \is_string($dateTo) && $dateTo !== '' ? $dateTo : '';
 
         $where = [];
         $params = [];
 
-        if ($dateFrom) {
+        if ($dateFromStr !== '') {
             $where[] = 't.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFrom;
+            $params['dateFrom'] = $dateFromStr;
         }
-        if ($dateTo) {
+        if ($dateToStr !== '') {
             $where[] = 't.created_at <= :dateTo';
-            $params['dateTo'] = $dateTo . ' 23:59:59';
+            $params['dateTo'] = $dateToStr . ' 23:59:59';
         }
 
         return [$where, $params];
@@ -286,17 +288,17 @@ final class DashboardController
     {
         [$where, $params] = $this->getUsedFilters($request);
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $sql = "SELECT v.code, t.amount_used, t.balance_before, " .
-            "t.balance_after, t.created_at, o.order_number, " .
-            "CONCAT(c.first_name, ' ', c.last_name) AS customer_name, " .
-            "c.email AS customer_email " .
-            "FROM ictech_gift_card_transaction t " .
-            "INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id " .
-            "LEFT JOIN `order` o ON o.id = t.order_id " .
-            "AND o.version_id = t.order_version_id " .
-            "LEFT JOIN customer c ON c.id = t.customer_id " .
-            "{$whereClause} " .
-            "ORDER BY t.created_at DESC";
+        $sql = "SELECT v.code, t.amount_used, t.balance_before,
+            t.balance_after, t.created_at, o.order_number,
+            CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+            c.email AS customer_email
+            FROM ictech_gift_card_transaction t
+            INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id
+            LEFT JOIN `order` o ON o.id = t.order_id
+            AND o.version_id = t.order_version_id
+            LEFT JOIN customer c ON c.id = t.customer_id
+            {$whereClause}
+            ORDER BY t.created_at DESC";
 
         return [$sql, $params];
     }

@@ -28,7 +28,7 @@ use Shopware\Core\System\SalesChannel\SalesChannelDefinition;
 
 final class GiftCardDefinition extends EntityDefinition
 {
-    final public const ENTITY_NAME = 'ictech_gift_card';
+    public const ENTITY_NAME = 'ictech_gift_card';
 
     public function getEntityName(): string
     {

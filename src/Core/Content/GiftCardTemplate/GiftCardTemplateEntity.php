@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ICTECHGiftCard\Core\Content\GiftCardTemplate;
 
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardCollection;
+use ICTECHGiftCard\Core\Content\GiftCardTemplate\Aggregate\GiftCardTemplateTranslation\GiftCardTemplateTranslationCollection;
 use Shopware\Core\Content\Media\MediaEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCustomFieldsTrait;

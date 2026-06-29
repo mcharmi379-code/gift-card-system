@@ -42,7 +42,7 @@ final class GiftCardCartController extends StorefrontController
     {
         try {
             $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
-            if (!$active) {
+            if (! $active) {
                 $this->addFlash(self::DANGER, $this->trans('ictech-gift-card.checkout.invalidVoucherCode'));
                 return $this->createActionResponse($request);
             }

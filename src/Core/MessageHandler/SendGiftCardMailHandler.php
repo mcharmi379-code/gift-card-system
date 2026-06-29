@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Core\MessageHandler;
 
+use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
 use ICTECHGiftCard\Core\Message\SendGiftCardMailMessage;
 use ICTECHGiftCard\Core\Service\GiftCardEmailService;
-use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
 use Shopware\Core\Framework\Api\Context\SystemSource;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;

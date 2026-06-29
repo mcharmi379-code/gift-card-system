@@ -29,43 +29,68 @@ final class GiftCardCartValidator implements CartValidatorInterface
         $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
 
         foreach ($cart->getLineItems() as $lineItem) {
-            if ($lineItem->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE) {
-                continue;
-            }
-
-            $productId = $lineItem->getReferencedId();
-            if ($productId === null) {
-                continue;
-            }
-
-            // Check if this product is a gift card product
-            $giftCard = $this->findGiftCardByProductId($productId);
-            if ($giftCard === null) {
-                continue;
-            }
-
-            // 1. If plugin is not active for this sales channel, remove line item
-            if (!$active) {
-                $cart->getLineItems()->remove($lineItem->getId());
-                continue;
-            }
-
-            // 2. If gift card template is not selected, remove the line item and add an error
-            $payload = $lineItem->getPayload();
-            $templateId = $payload['giftCardTemplateId'] ?? null;
-            if (!$templateId || !\is_string($templateId) || \trim($templateId) === '') {
-                $cart->getLineItems()->remove($lineItem->getId());
-                $errors->add(new GiftCardTemplateRequiredError($lineItem->getId()));
-            }
+            $this->validateLineItem($lineItem, $cart, $errors, $active);
         }
     }
 
+    private function validateLineItem(
+        LineItem $lineItem,
+        Cart $cart,
+        ErrorCollection $errors,
+        bool $active,
+    ): void {
+        if ($lineItem->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE) {
+            return;
+        }
+
+        $productId = $lineItem->getReferencedId();
+        if ($productId === null) {
+            return;
+        }
+
+        $this->checkGiftCardLineItem($lineItem, $productId, $cart, $errors, $active);
+    }
+
+    private function checkGiftCardLineItem(
+        LineItem $lineItem,
+        string $productId,
+        Cart $cart,
+        ErrorCollection $errors,
+        bool $active,
+    ): void {
+        $giftCard = $this->findGiftCardByProductId($productId);
+        if ($giftCard === null) {
+            return;
+        }
+
+        if (! $active) {
+            $cart->getLineItems()->remove($lineItem->getId());
+            return;
+        }
+
+        $payload = $lineItem->getPayload();
+        $templateId = $payload['giftCardTemplateId'] ?? null;
+        if (! \is_string($templateId) || \trim($templateId) === '') {
+            $cart->getLineItems()->remove($lineItem->getId());
+            $errors->add(new GiftCardTemplateRequiredError($lineItem->getId()));
+        }
+    }
+
+    /**
+     * @return array{id: string}|null
+     */
     private function findGiftCardByProductId(string $productId): ?array
     {
         $row = $this->connection->fetchAssociative(
             'SELECT LOWER(HEX(id)) AS id FROM ictech_gift_card WHERE product_id = UNHEX(:productId) LIMIT 1',
             ['productId' => $productId]
         );
-        return $row !== false ? $row : null;
+        if ($row === false) {
+            return null;
+        }
+        $id = $row['id'] ?? '';
+        return [
+            'id' => \is_scalar($id) ? (string) $id : '',
+        ];
     }
 }

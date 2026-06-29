@@ -11,9 +11,9 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
-class GiftCardTemplateTranslationDefinition extends EntityTranslationDefinition
+final class GiftCardTemplateTranslationDefinition extends EntityTranslationDefinition
 {
-    final public const ENTITY_NAME = 'ictech_gift_card_template_translation';
+    public const ENTITY_NAME = 'ictech_gift_card_template_translation';
 
     public function getEntityName(): string
     {

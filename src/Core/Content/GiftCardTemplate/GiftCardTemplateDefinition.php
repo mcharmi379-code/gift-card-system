@@ -24,7 +24,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
 final class GiftCardTemplateDefinition extends EntityDefinition
 {
-    final public const ENTITY_NAME = 'ictech_gift_card_template';
+    public const ENTITY_NAME = 'ictech_gift_card_template';
 
     public function getEntityName(): string
     {

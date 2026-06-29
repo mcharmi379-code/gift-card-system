@@ -9,7 +9,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 /**
  * @extends EntityCollection<GiftCardTemplateTranslationEntity>
  */
-class GiftCardTemplateTranslationCollection extends EntityCollection
+final class GiftCardTemplateTranslationCollection extends EntityCollection
 {
     protected function getExpectedClass(): string
     {
