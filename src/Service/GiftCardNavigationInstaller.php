@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Service;
 
+use Doctrine\DBAL\Connection;
 use Shopware\Core\Content\Category\CategoryDefinition;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
@@ -27,6 +28,7 @@ final class GiftCardNavigationInstaller
     public function __construct(
         private readonly EntityRepository $categoryRepository,
         private readonly EntityRepository $salesChannelRepository,
+        private readonly Connection $connection,
     ) {
     }
 
@@ -105,44 +107,82 @@ final class GiftCardNavigationInstaller
     {
         $salesChannelWithDomains = $this->getSalesChannelWithDomains($salesChannel->getId(), $context);
 
-        $defaultUrl = self::CATEGORY_URL;
-        $translations = [
-            Defaults::LANGUAGE_SYSTEM => [
-                'name' => self::CATEGORY_NAME,
-                'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
-                'externalLink' => $defaultUrl,
-                'linkNewTab' => false,
-            ],
-        ];
+        // Query all languages and their locale codes to support German translation
+        $languages = $this->getLanguageLocaleMapping();
 
-        if (! $salesChannelWithDomains instanceof SalesChannelEntity) {
-            return $translations;
-        }
+        $defaultUrl = $this->getSalesChannelBaseUrl($salesChannel, $context);
+        $translations = [];
 
-        $domainCollection = $salesChannelWithDomains->getDomains();
-        if ($domainCollection === null) {
-            return $translations;
-        }
+        foreach ($languages as $langHexId => $localeCode) {
+            $domainUrl = $this->findDomainUrl($salesChannelWithDomains, $langHexId);
 
-        foreach ($domainCollection as $domain) {
-            $languageId = $domain->getLanguageId();
-            $url = \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
+            $url = $domainUrl ?? $defaultUrl;
+            $localeCodeStr = (string) $localeCode;
+            $name = \str_starts_with($localeCodeStr, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
 
-            if ($languageId === Defaults::LANGUAGE_SYSTEM) {
-                $defaultUrl = $url;
-            }
-
-            $translations[$languageId] = [
-                'name' => self::CATEGORY_NAME,
+            $translations[$langHexId] = [
+                'name' => $name,
                 'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
                 'externalLink' => $url,
                 'linkNewTab' => false,
             ];
         }
 
-        $translations[Defaults::LANGUAGE_SYSTEM]['externalLink'] = $defaultUrl;
+        // Always ensure system language fallback is present
+        if (! isset($translations[Defaults::LANGUAGE_SYSTEM])) {
+            $systemLocale = $languages[Defaults::LANGUAGE_SYSTEM] ?? null;
+            $systemLocaleStr = (string) $systemLocale;
+            $systemName = \str_starts_with($systemLocaleStr, 'de') ? 'Geschenkkarten' : self::CATEGORY_NAME;
+            $translations[Defaults::LANGUAGE_SYSTEM] = [
+                'name' => $systemName,
+                'linkType' => CategoryDefinition::LINK_TYPE_EXTERNAL,
+                'externalLink' => $defaultUrl,
+                'linkNewTab' => false,
+            ];
+        }
 
         return $translations;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getLanguageLocaleMapping(): array
+    {
+        try {
+            $result = $this->connection->fetchAllKeyValue(
+                'SELECT LOWER(HEX(l.id)) as id, lo.code FROM language l INNER JOIN locale lo ON l.locale_id = lo.id'
+            );
+            $mapped = [];
+            foreach ($result as $k => $v) {
+                if (\is_scalar($v)) {
+                    $mapped[(string) $k] = (string) $v;
+                }
+            }
+            return $mapped;
+        } catch (\Exception) {
+            return [];
+        }
+    }
+
+    private function findDomainUrl(?SalesChannelEntity $salesChannelWithDomains, string $langHexId): ?string
+    {
+        if (! $salesChannelWithDomains instanceof SalesChannelEntity) {
+            return null;
+        }
+
+        $domains = $salesChannelWithDomains->getDomains();
+        if ($domains === null) {
+            return null;
+        }
+
+        foreach ($domains as $domain) {
+            if ($domain->getLanguageId() === $langHexId) {
+                return \rtrim((string) $domain->getUrl(), '/') . self::CATEGORY_URL;
+            }
+        }
+
+        return null;
     }
 
     private function upsertCategoryForSalesChannel(SalesChannelEntity $salesChannel, Context $context): void

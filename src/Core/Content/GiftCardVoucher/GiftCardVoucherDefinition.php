@@ -34,7 +34,7 @@ use Shopware\Core\System\Currency\CurrencyDefinition;
 
 final class GiftCardVoucherDefinition extends EntityDefinition
 {
-    final public const ENTITY_NAME = 'ictech_gift_card_voucher';
+    public const ENTITY_NAME = 'ictech_gift_card_voucher';
 
     public function getEntityName(): string
     {

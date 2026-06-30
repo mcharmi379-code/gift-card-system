@@ -152,7 +152,9 @@
                 "partiallyUsed": "Partially used",
                 "partiallyUsedDesc": "The gift card has been partially used.",
                 "canceled": "Canceled",
-                "canceledDesc": "The gift card has been canceled, for example related to an order cancellation or refund."
+                "canceledDesc": "The gift card has been canceled, for example related to an order cancellation or refund.",
+                "expired": "Expired",
+                "expiredDesc": "The gift card has expired."
             }
         },
         "settings": {

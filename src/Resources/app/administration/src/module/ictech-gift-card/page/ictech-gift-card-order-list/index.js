@@ -151,6 +151,7 @@ export default {
                 { value: 'partially_used', label: this.$tc('ictech-gift-card.order.status.partiallyUsed') },
                 { value: 'used', label: this.$tc('ictech-gift-card.order.status.used') },
                 { value: 'canceled', label: this.$tc('ictech-gift-card.order.status.canceled') },
+                { value: 'expired', label: this.$tc('ictech-gift-card.order.status.expired') },
             ];
         },
     },
@@ -206,6 +207,7 @@ export default {
                 partially_used: 'info',
                 used: 'info',
                 canceled: 'neutral',
+                expired: 'danger',
             };
             return map[status] ?? 'neutral';
         },

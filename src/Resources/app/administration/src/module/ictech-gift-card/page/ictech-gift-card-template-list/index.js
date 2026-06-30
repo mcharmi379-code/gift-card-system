@@ -96,5 +96,9 @@ export default {
         updateTotal({ total }) {
             this.total = total;
         },
+
+        onChangeLanguage() {
+            this.getList();
+        },
     },
 };

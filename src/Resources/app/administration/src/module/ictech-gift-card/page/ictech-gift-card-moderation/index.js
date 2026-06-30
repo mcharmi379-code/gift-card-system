@@ -277,6 +277,7 @@ export default {
                 partially_used: 'info',
                 used: 'info',
                 canceled: 'neutral',
+                expired: 'danger',
             };
             return map[status] ?? 'neutral';
         },

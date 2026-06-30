@@ -22,6 +22,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\MultiFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\NotFilter;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 final class GiftCardCartProcessor implements CartProcessorInterface
 {
@@ -35,6 +36,7 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         private readonly EntityRepository $voucherRepository,
         private readonly EntityRepository $transactionRepository,
         private readonly AbsolutePriceCalculator $priceCalculator,
+        private readonly SystemConfigService $systemConfigService,
     ) {
     }
 
@@ -45,7 +47,14 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         SalesChannelContext $context,
         CartBehavior $behavior,
     ): void {
-        $runningTotal = $toCalculate->getPrice()->getTotalPrice();
+        $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
+        if (! $active) {
+            $this->removeGiftCardLineItems($original);
+            return;
+        }
+
+        $runningTotal = $this->calculateRunningTotal($toCalculate);
+
         $state = [
             'hasRestricted' => false,
             'appliedCount'  => 0,
@@ -61,6 +70,24 @@ final class GiftCardCartProcessor implements CartProcessorInterface
                 $state
             );
         }
+    }
+
+    private function removeGiftCardLineItems(Cart $cart): void
+    {
+        foreach ($cart->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
+            $cart->getLineItems()->remove($lineItem->getId());
+        }
+    }
+
+    private function calculateRunningTotal(Cart $cart): float
+    {
+        $runningTotal = 0.0;
+        foreach ($cart->getLineItems() as $item) {
+            if ($item->getType() !== self::LINE_ITEM_TYPE && $item->getPrice() !== null) {
+                $runningTotal += $item->getPrice()->getTotalPrice();
+            }
+        }
+        return \max(0.0, $runningTotal);
     }
 
     /**
@@ -193,10 +220,18 @@ final class GiftCardCartProcessor implements CartProcessorInterface
     ): void {
         $lineItem->setLabel(\sprintf('Gift Card: %s', $voucher->getCode()));
         $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$deductAmount));
+
+        $prices = new \Shopware\Core\Checkout\Cart\Price\Struct\PriceCollection();
+        foreach ($toCalculate->getLineItems() as $item) {
+            if ($item->getType() !== self::LINE_ITEM_TYPE && $item->getPrice() !== null) {
+                $prices->add($item->getPrice());
+            }
+        }
+
         $lineItem->setPrice(
             $this->priceCalculator->calculate(
                 -$deductAmount,
-                $toCalculate->getLineItems()->getPrices(),
+                $prices,
                 $context
             )
         );

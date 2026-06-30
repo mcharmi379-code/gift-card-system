@@ -7,19 +7,19 @@ namespace ICTECHGiftCard\Administration\Controller;
 use Doctrine\DBAL\Connection;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Twig\Environment;
 
 #[Route(defaults: ['_routeScope' => ['api']])]
 final class DashboardController
 {
     public function __construct(
         private readonly Connection $connection,
-        private readonly SystemConfigService $systemConfigService,
+        private readonly Environment $twig,
     ) {
     }
 
@@ -139,21 +139,36 @@ final class DashboardController
         $salesChannelId = \is_string($salesChannelId) && $salesChannelId !== ''
             ? $salesChannelId
             : null;
-        $html = $this->systemConfigService->getString(
-            'ICTECHGiftCard.config.pdfContent',
-            $salesChannelId
-        );
 
-        if ($html === '') {
-            return new Response(
-                'No PDF content configured.',
-                Response::HTTP_BAD_REQUEST
-            );
+        $sampleImageHtml = '<img src="' .
+            'https://placehold.co/300x192/cccccc/333333?text=Gift+Card' .
+            '" style="max-width:300px;height:auto;" />';
+
+        try {
+            $html = $this->twig->render('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
+                'card_lastname' => 'Doe',
+                'card_price'    => '50.00 €',
+                'card_from'     => 'Jane Doe',
+                'card_code'     => 'PREVIEW-1234-5678',
+                'card_message'  => 'Happy Birthday! Enjoy your gift.',
+                'card_image'    => $sampleImageHtml,
+                'shop_name'     => 'My Shop',
+                'validity_date' => (new \DateTimeImmutable('+1 year'))->format('d.m.Y'),
+            ]);
+        } catch (\Throwable $e) {
+            $html = '<html><body>Gift Card Code: PREVIEW-1234-5678</body></html>';
         }
 
-        $pdfOutput = $this->generatePreviewPdfOutput($html);
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('isHtml5ParserEnabled', true);
 
-        return new Response($pdfOutput, Response::HTTP_OK, [
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml('<html><body>' . $html . '</body></html>');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return new Response($dompdf->output(), Response::HTTP_OK, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="gift-card-preview.pdf"',
         ]);
@@ -191,29 +206,36 @@ final class DashboardController
         return is_numeric($raw) ? (int) $raw : 0;
     }
 
+    private function getQueryString(Request $request, string $key): string
+    {
+        $val = $request->query->get($key);
+
+        return \is_string($val) ? $val : '';
+    }
+
     /**
      * @return array{0: array<int, string>, 1: array<string, string>}
      */
     private function getPurchasedFilters(Request $request): array
     {
-        $status = $request->query->get('status');
-        $dateFrom = $request->query->get('dateFrom');
-        $dateTo = $request->query->get('dateTo');
+        $statusStr = $this->getQueryString($request, 'status');
+        $dateFromStr = $this->getQueryString($request, 'dateFrom');
+        $dateToStr = $this->getQueryString($request, 'dateTo');
 
         $where = [];
         $params = [];
 
-        if ($status) {
+        if ($statusStr !== '') {
             $where[] = 'v.status = :status';
-            $params['status'] = $status;
+            $params['status'] = $statusStr;
         }
-        if ($dateFrom) {
+        if ($dateFromStr !== '') {
             $where[] = 'v.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFrom;
+            $params['dateFrom'] = $dateFromStr;
         }
-        if ($dateTo) {
+        if ($dateToStr !== '') {
             $where[] = 'v.created_at <= :dateTo';
-            $params['dateTo'] = $dateTo . ' 23:59:59';
+            $params['dateTo'] = $dateToStr . ' 23:59:59';
         }
 
         return [$where, $params];
@@ -226,14 +248,14 @@ final class DashboardController
     {
         [$where, $params] = $this->getPurchasedFilters($request);
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $sql = "SELECT v.code, v.original_amount, v.remaining_balance, " .
-            "v.status, v.recipient_name, v.recipient_email, v.sender_name, " .
-            "v.expires_at, v.created_at, o.order_number " .
-            "FROM ictech_gift_card_voucher v " .
-            "LEFT JOIN `order` o ON o.id = v.order_id " .
-            "AND o.version_id = v.order_version_id " .
-            "{$whereClause} " .
-            "ORDER BY v.created_at DESC";
+        $sql = "SELECT v.code, v.original_amount, v.remaining_balance,
+            v.status, v.recipient_name, v.recipient_email, v.sender_name,
+            v.expires_at, v.created_at, o.order_number
+            FROM ictech_gift_card_voucher v
+            LEFT JOIN `order` o ON o.id = v.order_id
+            AND o.version_id = v.order_version_id
+            {$whereClause}
+            ORDER BY v.created_at DESC";
 
         return [$sql, $params];
     }
@@ -243,19 +265,19 @@ final class DashboardController
      */
     private function getUsedFilters(Request $request): array
     {
-        $dateFrom = $request->query->get('dateFrom');
-        $dateTo = $request->query->get('dateTo');
+        $dateFromStr = $this->getQueryString($request, 'dateFrom');
+        $dateToStr = $this->getQueryString($request, 'dateTo');
 
         $where = [];
         $params = [];
 
-        if ($dateFrom) {
+        if ($dateFromStr !== '') {
             $where[] = 't.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFrom;
+            $params['dateFrom'] = $dateFromStr;
         }
-        if ($dateTo) {
+        if ($dateToStr !== '') {
             $where[] = 't.created_at <= :dateTo';
-            $params['dateTo'] = $dateTo . ' 23:59:59';
+            $params['dateTo'] = $dateToStr . ' 23:59:59';
         }
 
         return [$where, $params];
@@ -268,21 +290,22 @@ final class DashboardController
     {
         [$where, $params] = $this->getUsedFilters($request);
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $sql = "SELECT v.code, t.amount_used, t.balance_before, " .
-            "t.balance_after, t.created_at, o.order_number, " .
-            "CONCAT(c.first_name, ' ', c.last_name) AS customer_name, " .
-            "c.email AS customer_email " .
-            "FROM ictech_gift_card_transaction t " .
-            "INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id " .
-            "LEFT JOIN `order` o ON o.id = t.order_id " .
-            "AND o.version_id = t.order_version_id " .
-            "LEFT JOIN customer c ON c.id = t.customer_id " .
-            "{$whereClause} " .
-            "ORDER BY t.created_at DESC";
+        $sql = "SELECT v.code, t.amount_used, t.balance_before,
+            t.balance_after, t.created_at, o.order_number,
+            CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
+            c.email AS customer_email
+            FROM ictech_gift_card_transaction t
+            INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id
+            LEFT JOIN `order` o ON o.id = t.order_id
+            AND o.version_id = t.order_version_id
+            LEFT JOIN customer c ON c.id = t.customer_id
+            {$whereClause}
+            ORDER BY t.created_at DESC";
 
         return [$sql, $params];
     }
 
+<<<<<<< HEAD
     private function generatePreviewPdfOutput(string $html): string
     {
         $sampleImageHtml = '<img src="' .
@@ -316,6 +339,9 @@ final class DashboardController
 
         return (string) $dompdf->output();
     }
+=======
+
+>>>>>>> 3a3d49b39548f8ee4288cf63f36fa4676fe419e1
 
     /**
      * @param list<string> $headers

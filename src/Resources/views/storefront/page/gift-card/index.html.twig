@@ -4,12 +4,22 @@
     {% set defaultAmount = giftCardDefaultAmount %}
 
     <div class="ictech-gift-card-page" data-ictech-gift-card-page>
-        {% block ictech_gift_card_page_header %}
+        {% if not active or not defaultAmount or giftCardTemplates|length == 0 %}
+            <div class="cms-listing-col wishlist-listing-col col-12 text-center py-5">
+                <img src="{{ asset('assets/illustration/wishlist_empty.svg', 'theme') }}"
+                     alt="{{ 'ictech-gift-card.page.noGiftCardsAvailableDescription'|trans|striptags }}"
+                     class="wishlist-listing-empty"
+                     style="max-width: 300px; margin: 0 auto 24px; display: block;">
+
+                <h1 class="text-center wishlist-listing-header">{{ 'ictech-gift-card.page.noGiftCardsAvailableHeader'|trans }}</h1>
+                <p class="text-center wishlist-listing-description text-muted">{{ 'ictech-gift-card.page.noGiftCardsAvailableDescription'|trans }}</p>
+            </div>
+        {% else %}
             <h1 class="ictech-gift-card-page__title">{{ 'ictech-gift-card.page.title'|trans }}</h1>
+
             <div class="ictech-gift-card-page__intro">
                 {{ 'ictech-gift-card.page.intro'|trans }}
             </div>
-        {% endblock %}
 
         <form
             action="{{ path('frontend.checkout.line-item.add') }}"
@@ -18,30 +28,186 @@
             data-add-to-cart="true"
             data-form-validation="true"
         >
-            {% block ictech_gift_card_form_hidden_inputs %}
-                <input type="hidden" name="redirectTo" value="frontend.cart.offcanvas">
-                <input type="hidden" name="lineItems[gift-card][id]" value="{{ defaultAmount.productId ?? '' }}" data-gift-card-line-item-input="id" data-gift-card-product-id>
-                <input type="hidden" name="lineItems[gift-card][referencedId]" value="{{ defaultAmount.productId ?? '' }}" data-gift-card-line-item-input="referencedId" data-gift-card-referenced-id>
-                <input type="hidden" name="lineItems[gift-card][type]" value="product" data-gift-card-line-item-input="type">
-                <input type="hidden" name="lineItems[gift-card][stackable]" value="1" data-gift-card-line-item-input="stackable">
-                <input type="hidden" name="lineItems[gift-card][removable]" value="1" data-gift-card-line-item-input="removable">
-                <input type="hidden" name="lineItems[gift-card][quantity]" value="1" data-gift-card-line-item-input="quantity">
+            <input type="hidden" name="redirectTo" value="frontend.cart.offcanvas">
+            <input type="hidden" name="lineItems[gift-card][id]" value="{{ defaultAmount.productId ?? '' }}" data-gift-card-line-item-input="id" data-gift-card-product-id>
+            <input type="hidden" name="lineItems[gift-card][referencedId]" value="{{ defaultAmount.productId ?? '' }}" data-gift-card-line-item-input="referencedId" data-gift-card-referenced-id>
+            <input type="hidden" name="lineItems[gift-card][type]" value="product" data-gift-card-line-item-input="type">
+            <input type="hidden" name="lineItems[gift-card][stackable]" value="1" data-gift-card-line-item-input="stackable">
+            <input type="hidden" name="lineItems[gift-card][removable]" value="1" data-gift-card-line-item-input="removable">
+            <input type="hidden" name="lineItems[gift-card][quantity]" value="1" data-gift-card-line-item-input="quantity">
 
-                <input type="hidden" name="lineItems[gift-card][payload]" data-gift-card-line-item-input="payload" data-gift-card-payload value="{}">
-                <input type="hidden" name="giftCardTemplateId" data-gift-card-template-id value="">
-            {% endblock %}
+            <input type="hidden" name="lineItems[gift-card][payload]" data-gift-card-line-item-input="payload" data-gift-card-payload value="{}">
+            <input type="hidden" name="giftCardTemplateId" data-gift-card-template-id value="">
 
-            {% block ictech_gift_card_form_delivery %}
-                {% sw_include '@ICTECHGiftCard/storefront/page/gift-card/delivery.html.twig' %}
-            {% endblock %}
+            <section class="ictech-gift-card-section">
+                <h2>1 &bull; {{ 'ictech-gift-card.page.deliveryMethod'|trans }}</h2>
 
-            {% block ictech_gift_card_form_templates %}
-                {% sw_include '@ICTECHGiftCard/storefront/page/gift-card/templates.html.twig' %}
-            {% endblock %}
+                <div class="ictech-gift-card-delivery" role="group" aria-label="{{ 'ictech-gift-card.page.deliveryMethodLabel'|trans }}">
+                    <label>
+                        <input type="radio" name="giftCardDeliveryMethod" value="print" checked data-gift-card-payload-field>
+                        <span>{{ 'ictech-gift-card.page.deliveryPrint'|trans }}</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="giftCardDeliveryMethod" value="email" data-gift-card-payload-field>
+                        <span>{{ 'ictech-gift-card.page.deliveryEmail'|trans }}</span>
+                    </label>
+                </div>
 
-            {% block ictech_gift_card_form_info %}
-                {% sw_include '@ICTECHGiftCard/storefront/page/gift-card/info.html.twig' %}
-            {% endblock %}
+                {# Shown only when "Send by email" is selected #}
+                <div data-gift-card-email-fields>
+                    <div class="form-group ictech-gift-card-field">
+                        <label for="gift-card-email">
+                            {{ 'ictech-gift-card.page.mailRecipientLabel'|trans }} <span class="text-danger">*</span>
+                        </label>
+                        <input id="gift-card-email" type="email" name="giftCardEmail" placeholder="{{ 'ictech-gift-card.page.mailRecipientLabel'|trans }}" class="form-control" data-gift-card-payload-field required="required">
+                        <div class="invalid-feedback">
+                            {{ 'ictech-gift-card.error.required'|trans }}
+                        </div>
+                    </div>
+
+                    <p class="ictech-gift-card-help">
+                        {{ 'ictech-gift-card.page.emailHelp'|trans }}
+                    </p>
+
+                    <div class="form-group ictech-gift-card-field ictech-gift-card-date">
+                        <label for="gift-card-send-date">
+                            {{ 'ictech-gift-card.page.dateSendLabel'|trans }} <span class="text-danger">*</span>
+                        </label>
+                        <input
+                            id="gift-card-send-date"
+                            type="date"
+                            name="giftCardSendDate"
+                            class="form-control"
+                            min="{{ 'now'|date('Y-m-d') }}"
+                            data-gift-card-payload-field
+                            required="required"
+                        >
+                        <div class="invalid-feedback">
+                            {{ 'ictech-gift-card.error.required'|trans }}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="ictech-gift-card-section">
+                <h2>2 &bull; {{ 'ictech-gift-card.page.selectTemplate'|trans }}</h2>
+
+                <div class="ictech-gift-card-tabs" role="tablist" aria-label="{{ 'ictech-gift-card.page.templateCategories'|trans }}">
+                    {% for filter in giftCardTagFilters %}
+                        <button
+                            type="button"
+                            class="ictech-gift-card-tabs__item{% if loop.first %} is-active{% endif %}"
+                            data-gift-card-filter="{{ filter.key|lower|replace({' ': '-'}) }}"
+                        >
+                            {{ filter.label }} <span>({{ filter.count }})</span>
+                        </button>
+                    {% endfor %}
+                </div>
+
+                <div class="ictech-gift-card-template-grid">
+                    {% for template in giftCardTemplates %}
+                        {% set customize = template.customFields.giftCardTemplateCustomize ?? {} %}
+                        {% if not customize.pdfOnly|default(false) %}
+                            {% set media = template.media %}
+                            {% set tag = template.translated.tag|default(template.tag) ?: 'Various' %}
+                            {% set tagKey = tag|lower|replace({' ': '-'}) %}
+                            <button
+                                type="button"
+                                class="ictech-gift-card-template"
+                                data-gift-card-template="{{ template.id }}"
+                                data-gift-card-template-name="{{ template.translated.name|default(template.name) }}"
+                                data-gift-card-tag="{{ tagKey }}"
+                            >
+                                {% if media %}
+                                    <img
+                                        src="{{ media.url }}"
+                                        alt="{{ template.translated.name|default(template.name) }}"
+                                        width="{{ giftCardConfig.storefrontCardWidth ?: 528 }}"
+                                        height="{{ giftCardConfig.storefrontCardHeight ?: 318 }}"
+                                        loading="lazy"
+                                    >
+                                {% endif %}
+                                <span class="ictech-gift-card-template__overlay" style="color: {{ customize.colorOne|default('#ffffff') }}">
+                                    <b>{{ customize.price|default('100') }}</b>
+                                    <em>{{ customize.textOne|default('') }}</em>
+                                    <small>{{ customize.discountCode|default('XXXXXXXXXX') }}</small>
+                                </span>
+                            </button>
+                        {% endif %}
+                    {% else %}
+                        <p>{{ 'ictech-gift-card.page.noTemplates'|trans }}</p>
+                    {% endfor %}
+                </div>
+                <div class="invalid-feedback d-none mt-2" data-gift-card-template-error style="font-size: 0.875rem; color: #dc3545;">
+                    {{ 'ictech-gift-card.error.templateRequired'|trans }}
+                </div>
+            </section>
+
+            <section class="ictech-gift-card-section">
+                <h2>3 &bull; {{ 'ictech-gift-card.page.giftCardInfo'|trans }}</h2>
+
+                <div class="form-group ictech-gift-card-field ictech-gift-card-field--amount">
+                    <label for="gift-card-amount">{{ 'ictech-gift-card.page.amountLabel'|trans }}</label>
+                    <select id="gift-card-amount" class="form-select" name="giftCardAmount" data-gift-card-amount data-gift-card-payload-field{% if not giftCardAmountOptions %} disabled{% endif %}>
+                        {% for option in giftCardAmountOptions %}
+                            <option
+                                value="{{ option.amount }}"
+                                data-product-id="{{ option.productId }}"
+                                data-gift-card-id="{{ option.giftCardId }}"
+                                data-template-id="{{ option.templateId }}"
+                            >
+                                {{ option.amount|currency }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group ictech-gift-card-field">
+                    <label for="gift-card-from">
+                        {{ 'ictech-gift-card.page.senderNameLabel'|trans }} <span class="text-danger">*</span>
+                    </label>
+                    <input id="gift-card-from" type="text" name="giftCardSenderName" value="{% if context.customer %}{{ context.customer.firstName }} {{ context.customer.lastName }}{% endif %}" placeholder="{{ 'ictech-gift-card.page.senderNameLabel'|trans }}" class="form-control" data-gift-card-payload-field required="required">
+                    <div class="invalid-feedback">
+                        {{ 'ictech-gift-card.error.required'|trans }}
+                    </div>
+                </div>
+
+                <div class="form-group ictech-gift-card-field">
+                    <label for="gift-card-recipient">
+                        {{ 'ictech-gift-card.page.recipientNameLabel'|trans }} <span class="text-danger">*</span>
+                    </label>
+                    <input id="gift-card-recipient" type="text" name="giftCardRecipientName" placeholder="{{ 'ictech-gift-card.page.recipientNameLabel'|trans }}" class="form-control" data-gift-card-payload-field required="required">
+                    <div class="invalid-feedback">
+                        {{ 'ictech-gift-card.error.required'|trans }}
+                    </div>
+                </div>
+
+                <div class="form-group ictech-gift-card-field">
+                    <label for="gift-card-message">
+                        {{ 'ictech-gift-card.page.messageLabel'|trans }} <span class="text-danger">*</span>
+                    </label>
+                    <textarea id="gift-card-message" name="giftCardMessage" class="form-control" maxlength="200" rows="5" placeholder="{{ 'ictech-gift-card.page.messageLabel'|trans }}" data-gift-card-payload-field required="required"></textarea>
+                    <div class="invalid-feedback">
+                        {{ 'ictech-gift-card.error.required'|trans }}
+                    </div>
+                </div>
+
+                <div class="ictech-gift-card-actions">
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary"
+                        data-gift-card-preview
+                        data-preview-url="{{ path('frontend.ictech.gift_card.preview') }}"
+                    >
+                        {{ 'ictech-gift-card.page.previewButton'|trans }}
+                    </button>
+                    <button type="submit" class="btn btn-primary"{% if not defaultAmount %} disabled{% endif %}>
+                        {{ 'ictech-gift-card.page.addToCart'|trans }}
+                    </button>
+                </div>
+            </section>
         </form>
+        {% endif %}
+
     </div>
 {% endblock %}

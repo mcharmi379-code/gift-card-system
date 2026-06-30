@@ -152,7 +152,9 @@
                 "partiallyUsed": "Teilweise verwendet",
                 "partiallyUsedDesc": "Die Geschenkkarte wurde teilweise verwendet.",
                 "canceled": "Storniert",
-                "canceledDesc": "Die Geschenkkarte wurde storniert, z.B. aufgrund einer Bestellstornierung oder R\u00fcckerstattung."
+                "canceledDesc": "Die Geschenkkarte wurde storniert, z.B. aufgrund einer Bestellstornierung oder R\u00fcckerstattung.",
+                "expired": "Abgelaufen",
+                "expiredDesc": "Die Geschenkkarte ist abgelaufen."
             }
         },
         "settings": {

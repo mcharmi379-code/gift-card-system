@@ -33,6 +33,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         private readonly EntityRepository $productRepository,
         private readonly EntityRepository $taxRepository,
         private readonly EntityRepository $salesChannelRepository,
+        private readonly \Doctrine\DBAL\Connection $connection,
     ) {
     }
 
@@ -54,17 +55,20 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $context = $event->getContext();
         $giftCardEvent = $event->getEventByEntityName(GiftCardDefinition::ENTITY_NAME);
 
-        if ($giftCardEvent === null) {
-            return;
+        if ($giftCardEvent !== null) {
+            $context->addExtension(self::SYNC_FLAG, new ArrayStruct());
+            foreach ($giftCardEvent->getWriteResults() as $writeResult) {
+                $this->processWriteResult($writeResult, $context);
+            }
         }
 
-        $context = $event->getContext();
-        $context->addExtension(self::SYNC_FLAG, new ArrayStruct());
-
-        foreach ($giftCardEvent->getWriteResults() as $writeResult) {
-            $this->processWriteResult($writeResult, $context);
+        $templateEvent = $event->getEventByEntityName(\ICTECHGiftCard\Core\Content\GiftCardTemplate\GiftCardTemplateDefinition::ENTITY_NAME);
+        if ($templateEvent !== null) {
+            $context->addExtension(self::SYNC_FLAG, new ArrayStruct());
+            $this->processTemplateWriteResults($templateEvent->getWriteResults(), $context);
         }
     }
 
@@ -119,6 +123,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     {
         $criteria = new Criteria([$giftCardId]);
         $criteria->addAssociation('media');
+        $criteria->addAssociation('template');
 
         /** @var GiftCardEntity|null $giftCard */
         $giftCard = $this->giftCardRepository->search($criteria, $context)->first();
@@ -129,19 +134,24 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
 
         $taxId = $this->getDefaultTaxId($context);
 
-        if ($isInsert) {
-            $this->createProduct($giftCard, $taxId, $context);
-            return;
+        $productId = $giftCard->getProductId();
+
+        if ($productId === null) {
+            // Brand new or missing product — create the linked product
+            $productId = $this->createProduct($giftCard, $taxId, $context);
+        } else {
+            // Existing gift card updated — sync product fields
+            $this->updateProduct($giftCard, $taxId, $context);
         }
 
-        $this->updateProduct($giftCard, $taxId, $context);
+        $this->syncProductMediaAndCover($productId, $giftCard, $context);
     }
 
     // -------------------------------------------------------------------------
     // Product sync
     // -------------------------------------------------------------------------
 
-    private function createProduct(GiftCardEntity $giftCard, ?string $taxId, Context $context): void
+    private function createProduct(GiftCardEntity $giftCard, ?string $taxId, Context $context): string
     {
         $productId = Uuid::randomHex();
 
@@ -161,6 +171,8 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         } catch (\Exception $e) {
             error_log($e->getMessage());
         }
+
+        return $productId;
     }
 
     private function updateProduct(GiftCardEntity $giftCard, ?string $taxId, Context $context): void
@@ -177,6 +189,96 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         );
     }
 
+    private function syncProductMediaAndCover(string $productId, GiftCardEntity $giftCard, Context $context): void
+    {
+        $mediaId = $this->getMediaIdForSync($giftCard);
+        if ($mediaId === null || $mediaId === '') {
+            return;
+        }
+
+        $this->executeMediaSync($productId, $mediaId, $context);
+    }
+
+    private function executeMediaSync(string $productId, string $mediaId, Context $context): void
+    {
+        try {
+            $productIdBin = \hex2bin($productId);
+            $mediaIdBin = \hex2bin($mediaId);
+            if (! \is_string($productIdBin) || ! \is_string($mediaIdBin)) {
+                return;
+            }
+
+            $productMediaId = $this->upsertProductMediaRelation($productIdBin, $mediaIdBin);
+            $this->productRepository->update([
+                [
+                    'id' => $productId,
+                    'coverId' => $productMediaId,
+                ]
+            ], $context);
+        } catch (\Throwable $e) {
+            error_log('Failed to sync product media and cover: ' . $e->getMessage());
+        }
+    }
+
+    private function getMediaIdForSync(GiftCardEntity $giftCard): ?string
+    {
+        $mediaId = $giftCard->getMediaId();
+        if ($mediaId !== null && $mediaId !== '') {
+            return $mediaId;
+        }
+
+        $template = $giftCard->getTemplate();
+        if ($template !== null) {
+            return $template->getMediaId();
+        }
+
+        return null;
+    }
+
+    private function upsertProductMediaRelation(string $productIdBin, string $mediaIdBin): string
+    {
+        $liveVersionIdBin = \hex2bin(Defaults::LIVE_VERSION);
+        if (! \is_string($liveVersionIdBin)) {
+            return '';
+        }
+
+        $existingProductMediaId = $this->connection->fetchOne(
+            'SELECT id FROM product_media WHERE product_id = :productId AND media_id = :mediaId AND product_version_id = :productVersionId LIMIT 1',
+            [
+                'productId' => $productIdBin,
+                'mediaId' => $mediaIdBin,
+                'productVersionId' => $liveVersionIdBin,
+            ]
+        );
+
+        if (\is_string($existingProductMediaId)) {
+            return Uuid::fromBytesToHex($existingProductMediaId);
+        }
+
+        $this->connection->executeStatement(
+            'DELETE FROM product_media WHERE product_id = :productId AND product_version_id = :productVersionId',
+            [
+                'productId' => $productIdBin,
+                'productVersionId' => $liveVersionIdBin,
+            ]
+        );
+
+        $productMediaIdBin = Uuid::randomBytes();
+        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
+
+        $this->connection->insert('product_media', [
+            'id' => $productMediaIdBin,
+            'version_id' => $liveVersionIdBin,
+            'product_id' => $productIdBin,
+            'product_version_id' => $liveVersionIdBin,
+            'media_id' => $mediaIdBin,
+            'position' => 1,
+            'created_at' => $now,
+        ]);
+
+        return Uuid::fromBytesToHex($productMediaIdBin);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -189,7 +291,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     ): array {
         $payload = [
             'id'             => $productId,
-            'productNumber'  => 'GIFTCARD-' . \strtoupper(\substr($giftCard->getId(), 0, 8)),
+            'productNumber'  => 'GIFTCARD-' . \strtoupper(\substr($giftCard->getId(), -8)),
             'name'           => $giftCard->getName(),
             'stock'          => 999999,
             'price'          => [[
@@ -213,14 +315,6 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         ];
 
         if ($isCreate) {
-            if ($giftCard->getMediaId() !== null) {
-                $payload['media'] = [[
-                    'id'      => Uuid::randomHex(),
-                    'mediaId' => $giftCard->getMediaId(),
-                    'position' => 1,
-                ]];
-            }
-
             $payload['visibilities'] = $this->buildVisibilities($giftCard, $context);
         }
 
@@ -266,5 +360,45 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         $criteria->setLimit(1);
 
         return $this->taxRepository->searchIds($criteria, $context)->firstId();
+    }
+
+    /**
+     * @param array<EntityWriteResult> $writeResults
+     */
+    private function processTemplateWriteResults(array $writeResults, Context $context): void
+    {
+        $templateIds = [];
+        foreach ($writeResults as $writeResult) {
+            $primaryKey = $writeResult->getPrimaryKey();
+            $templateId = \is_array($primaryKey) ? ($primaryKey['id'] ?? '') : $primaryKey;
+            if ($templateId !== '') {
+                $templateIds[] = $templateId;
+            }
+        }
+
+        if ($templateIds === []) {
+            return;
+        }
+
+        $this->syncGiftCardsForTemplates($templateIds, $context);
+    }
+
+    /**
+     * @param list<string> $templateIds
+     */
+    private function syncGiftCardsForTemplates(array $templateIds, Context $context): void
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new \Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsAnyFilter('templateId', $templateIds));
+        $criteria->addAssociation('media');
+        $criteria->addAssociation('template');
+
+        $giftCards = $this->giftCardRepository->search($criteria, $context)->getEntities();
+        foreach ($giftCards as $giftCard) {
+            $productId = $giftCard->getProductId();
+            if ($productId !== null) {
+                $this->syncProductMediaAndCover($productId, $giftCard, $context);
+            }
+        }
     }
 }

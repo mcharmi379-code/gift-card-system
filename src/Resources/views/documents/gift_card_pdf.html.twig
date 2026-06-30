@@ -1,0 +1,53 @@
+<table cellpadding="10" style="width:100%;max-width:600px;margin:0 auto;text-align:center;color:#333;background:#ffffff;font-size:14px;font-family:Arial, sans-serif;">
+  <tbody>
+    <tr>
+      <td style="width:25%;">&nbsp;</td>
+      <td style="width:50%;font-size:30px;border:1px solid #333;text-align:center;"><strong>{{ 'ictech-gift-card.pdf.title'|trans }}</strong></td>
+      <td style="width:25%;">&nbsp;</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:center;">
+        <p style="text-align:center;margin:10px 0;">{{ 'ictech-gift-card.pdf.greeting'|trans({'%name%': card_lastname}) }}</p>
+        <p style="text-align:center;margin:10px 0;">{{ 'ictech-gift-card.pdf.receivedText'|trans({'%price%': card_price, '%from%': card_from})|raw }}</p>
+        <p style="font-size:18px;margin:10px 0;text-align:center;"><em>{{ 'ictech-gift-card.pdf.goodShopping'|trans({'%shopName%': shop_name}) }}</em></p>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:center;padding:15px 0;">{{ card_image|raw }}</td>
+    </tr>
+    <tr>
+      <td style="width:25%;">&nbsp;</td>
+      <td style="width:50%;font-size:16px;background-color:#333;color:#fff;text-align:center;padding:15px;border-radius:4px;">{{ 'ictech-gift-card.pdf.yourCode'|trans }}<br><strong>{{ card_code }}</strong></td>
+      <td style="width:25%;">&nbsp;</td>
+    </tr>
+    {% if validity_date is not empty %}
+    <tr>
+      <td colspan="3" style="text-align:center;">
+        <p style="text-align:center;margin:10px 0;"><small>{{ 'ictech-gift-card.pdf.validUntil'|trans({'%date%': validity_date}) }}</small></p>
+      </td>
+    </tr>
+    {% endif %}
+    {% if card_message is not empty %}
+    <tr>
+      <td colspan="3" style="text-align:center;padding:15px 0;">
+        <p style="text-align:center;margin:5px 0;"><strong>{{ 'ictech-gift-card.pdf.messageFrom'|trans({'%from%': card_from}) }}</strong></p>
+        <div style="text-align:center;margin:0 auto;max-width:400px;line-height:1.5;white-space:pre-line;">{{ card_message|nl2br }}</div>
+      </td>
+    </tr>
+    {% endif %}
+    <tr>
+      <td colspan="3" style="font-size:1px;padding:0;">&nbsp;</td>
+    </tr>
+    <tr>
+      <td style="width:33%;font-size:1px;padding:0;">&nbsp;</td>
+      <td style="width:34%;font-size:1px;border-top:1px solid #777;padding:0;">&nbsp;</td>
+      <td style="width:33%;font-size:1px;padding:0;">&nbsp;</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:center;padding-top:15px;">
+        <p style="font-size:16px;text-align:center;margin:5px 0;"><strong>{{ 'ictech-gift-card.pdf.howToRedeemHeader'|trans }}</strong></p>
+        <p style="text-align:center;margin:5px 0;">{{ 'ictech-gift-card.pdf.howToRedeemText'|trans({'%code%': card_code})|raw }}</p>
+      </td>
+    </tr>
+  </tbody>
+</table>
