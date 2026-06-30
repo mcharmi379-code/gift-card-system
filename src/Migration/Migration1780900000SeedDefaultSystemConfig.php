@@ -55,8 +55,6 @@ final class Migration1780900000SeedDefaultSystemConfig extends MigrationStep
         return [
             'ICTECHGiftCard.config.storefrontCardWidth'       => 528,
             'ICTECHGiftCard.config.storefrontCardHeight'      => 318,
-            'ICTECHGiftCard.config.storefrontCardLargeWidth'  => 800,
-            'ICTECHGiftCard.config.storefrontCardLargeHeight' => 518,
             'ICTECHGiftCard.config.storefrontTemplateLabel'   => 'Template',
             'ICTECHGiftCard.config.storefrontPictureLabel'    => 'Picture',
             'ICTECHGiftCard.config.storefrontSenderNameLabel'    => 'Sender name',
@@ -64,8 +62,6 @@ final class Migration1780900000SeedDefaultSystemConfig extends MigrationStep
             'ICTECHGiftCard.config.storefrontMailRecipientLabel' => 'Email recipient',
             'ICTECHGiftCard.config.storefrontMessageLabel'    => 'Message',
             'ICTECHGiftCard.config.storefrontDateSendLabel'   => 'Date send',
-            'ICTECHGiftCard.config.emailSubjectPurchaser'     => 'Your gift card',
-            'ICTECHGiftCard.config.emailSubjectRecipient'     => 'Gift card offer from %s',
             'ICTECHGiftCard.config.emailCardWidth'            => 300,
             'ICTECHGiftCard.config.emailCardHeight'           => 194,
             'ICTECHGiftCard.config.pdfPrefix'                 => 'GIFTCARD-',

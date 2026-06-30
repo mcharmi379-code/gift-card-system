@@ -206,17 +206,21 @@ final class DashboardController
         return is_numeric($raw) ? (int) $raw : 0;
     }
 
+    private function getQueryString(Request $request, string $key): string
+    {
+        $val = $request->query->get($key);
+
+        return \is_string($val) ? $val : '';
+    }
+
     /**
      * @return array{0: array<int, string>, 1: array<string, string>}
      */
     private function getPurchasedFilters(Request $request): array
     {
-        $status = $request->query->get('status');
-        $statusStr = \is_string($status) && $status !== '' ? $status : '';
-        $dateFrom = $request->query->get('dateFrom');
-        $dateFromStr = \is_string($dateFrom) && $dateFrom !== '' ? $dateFrom : '';
-        $dateTo = $request->query->get('dateTo');
-        $dateToStr = \is_string($dateTo) && $dateTo !== '' ? $dateTo : '';
+        $statusStr = $this->getQueryString($request, 'status');
+        $dateFromStr = $this->getQueryString($request, 'dateFrom');
+        $dateToStr = $this->getQueryString($request, 'dateTo');
 
         $where = [];
         $params = [];
@@ -261,10 +265,8 @@ final class DashboardController
      */
     private function getUsedFilters(Request $request): array
     {
-        $dateFrom = $request->query->get('dateFrom');
-        $dateFromStr = \is_string($dateFrom) && $dateFrom !== '' ? $dateFrom : '';
-        $dateTo = $request->query->get('dateTo');
-        $dateToStr = \is_string($dateTo) && $dateTo !== '' ? $dateTo : '';
+        $dateFromStr = $this->getQueryString($request, 'dateFrom');
+        $dateToStr = $this->getQueryString($request, 'dateTo');
 
         $where = [];
         $params = [];

@@ -39,25 +39,7 @@
             <required>true</required>
         </input-field>
 
-        <input-field type="int">
-            <name>storefrontCardLargeWidth</name>
-            <label>Width large card image (px)</label>
-            <label lang="de-DE">Breite großes Kartenbild (px)</label>
-            <helpText>Width large card image in front office.</helpText>
-            <helpText lang="de-DE">Breite des großen Kartenbildes im Frontend.</helpText>
-            <defaultValue>800</defaultValue>
-            <required>true</required>
-        </input-field>
 
-        <input-field type="int">
-            <name>storefrontCardLargeHeight</name>
-            <label>Height large card image (px)</label>
-            <label lang="de-DE">Höhe großes Kartenbild (px)</label>
-            <helpText>Height large card image in front office.</helpText>
-            <helpText lang="de-DE">Höhe des großen Kartenbildes im Frontend.</helpText>
-            <defaultValue>518</defaultValue>
-            <required>true</required>
-        </input-field>
     </card>
 
     <!-- Email Configuration -->
@@ -65,25 +47,7 @@
         <title>Email Configuration</title>
         <title lang="de-DE">E-Mail-Konfiguration</title>
 
-        <input-field type="text">
-            <name>emailSubjectPurchaser</name>
-            <label>Mail subject (purchaser)</label>
-            <label lang="de-DE">Betreff (Käufer)</label>
-            <helpText>Received by the customer who purchased the gift card.</helpText>
-            <helpText lang="de-DE">Wird vom Käufer der Geschenkkarte empfangen.</helpText>
-            <defaultValue>Your gift card</defaultValue>
-            <required>true</required>
-        </input-field>
 
-        <input-field type="text">
-            <name>emailSubjectRecipient</name>
-            <label>Mail subject (recipient)</label>
-            <label lang="de-DE">Betreff (Empfänger)</label>
-            <helpText>Received by the recipient of the gift card.</helpText>
-            <helpText lang="de-DE">Wird vom Empfänger der Geschenkkarte empfangen.</helpText>
-            <defaultValue>Gift card offer from %s</defaultValue>
-            <required>true</required>
-        </input-field>
 
         <input-field type="int">
             <name>emailCardWidth</name>

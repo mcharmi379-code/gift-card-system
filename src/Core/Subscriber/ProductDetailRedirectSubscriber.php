@@ -42,6 +42,12 @@ final class ProductDetailRedirectSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $this->handleDetailRedirect($event);
+    }
+
+    private function handleDetailRedirect(RequestEvent $event): void
+    {
+        $request = $event->getRequest();
         $productIdHex = $request->attributes->get('productId');
         if (! \is_string($productIdHex) || $productIdHex === '') {
             return;

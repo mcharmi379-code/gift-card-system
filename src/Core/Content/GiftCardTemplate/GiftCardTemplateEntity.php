@@ -32,7 +32,22 @@ final class GiftCardTemplateEntity extends Entity
 
     public function getName(): string
     {
-        return $this->name;
+        $name = \trim($this->name);
+        if ($name !== '') {
+            return $name;
+        }
+
+        $translations = $this->getTranslations();
+        if ($translations !== null) {
+            foreach ($translations as $translation) {
+                $tName = \trim($translation->getName());
+                if ($tName !== '') {
+                    return $tName;
+                }
+            }
+        }
+
+        return '';
     }
 
     public function setName(string $name): void
@@ -42,7 +57,22 @@ final class GiftCardTemplateEntity extends Entity
 
     public function getTag(): string
     {
-        return $this->tag;
+        $tag = \trim($this->tag);
+        if ($tag !== '') {
+            return $tag;
+        }
+
+        $translations = $this->getTranslations();
+        if ($translations !== null) {
+            foreach ($translations as $translation) {
+                $tTag = \trim($translation->getTag());
+                if ($tTag !== '') {
+                    return $tTag;
+                }
+            }
+        }
+
+        return 'Various';
     }
 
     public function setTag(string $tag): void
@@ -98,5 +128,37 @@ final class GiftCardTemplateEntity extends Entity
     public function setTranslations(GiftCardTemplateTranslationCollection $translations): void
     {
         $this->translations = $translations;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getTranslated(): array
+    {
+        $translated = parent::getTranslated();
+
+        if ($this->isFieldEmpty($translated, 'name')) {
+            $translated['name'] = $this->getName();
+        }
+
+        if ($this->isFieldEmpty($translated, 'tag')) {
+            $translated['tag'] = $this->getTag();
+        }
+
+        return $translated;
+    }
+
+    /**
+     * @param array<string, mixed> $translated
+     */
+    private function isFieldEmpty(array $translated, string $field): bool
+    {
+        if (! isset($translated[$field])) {
+            return true;
+        }
+
+        $val = $translated[$field];
+
+        return ! \is_string($val) || \trim($val) === '';
     }
 }

@@ -21,6 +21,13 @@
         </h2>
     </template>
 
+    <template #language-switch>
+        <sw-language-switch
+            :disabled="isLoading"
+            @on-change="onChangeLanguage"
+        />
+    </template>
+
     <template #smart-bar-actions>
         <sw-button
             v-tooltip="addButtonTooltip"

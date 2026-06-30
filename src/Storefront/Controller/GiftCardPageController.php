@@ -232,6 +232,7 @@ final class GiftCardPageController extends StorefrontController
     {
         $criteria = new Criteria();
         $criteria->addAssociation('media');
+        $criteria->addAssociation('translations');
         $criteria->addFilter(new EqualsFilter('active', true));
         $criteria->addSorting(new FieldSorting('tag', FieldSorting::ASCENDING));
         $criteria->addSorting(new FieldSorting('name', FieldSorting::ASCENDING));
@@ -250,6 +251,7 @@ final class GiftCardPageController extends StorefrontController
         $criteria = new Criteria();
         $criteria->addAssociation('media');
         $criteria->addAssociation('template.media');
+        $criteria->addAssociation('template.translations');
         $criteria->addFilter(new EqualsFilter('active', true));
         $criteria->addFilter(new NotFilter(NotFilter::CONNECTION_AND, [
             new EqualsFilter('productId', null),
@@ -390,9 +392,7 @@ final class GiftCardPageController extends StorefrontController
     /**
      * @return array{
      *     storefrontCardWidth: int,
-     *     storefrontCardHeight: int,
-     *     storefrontCardLargeWidth: int,
-     *     storefrontCardLargeHeight: int
+     *     storefrontCardHeight: int
      * }
      */
     private function loadConfig(string $salesChannelId): array
@@ -402,9 +402,6 @@ final class GiftCardPageController extends StorefrontController
         return [
             'storefrontCardWidth' => $getInt('storefrontCardWidth'),
             'storefrontCardHeight' => $getInt('storefrontCardHeight'),
-            'storefrontCardLargeWidth' => $getInt('storefrontCardLargeWidth'),
-            'storefrontCardLargeHeight' => $getInt('storefrontCardLargeHeight'),
         ];
     }
-
 }
