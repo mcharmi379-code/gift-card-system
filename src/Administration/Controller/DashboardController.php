@@ -286,7 +286,7 @@ final class DashboardController
     private function generatePreviewPdfOutput(string $html): string
     {
         $sampleImageHtml = '<img src="' .
-            'https://placehold.co/300x192/cccccc/333333?text=Gift+Card' .
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQoAAADBCAYAAADN98fWAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gYREg4Zg2W8vAAAADtJREFUeN7t1AEBAAAAwiD7p7bGDlgYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJgbN2kAAWFAmboAAAAASUVORK5CYII=' .
             '" style="max-width:300px;height:auto;" />';
         $replacements = [
             '{{card_lastname}}' => 'Doe',
@@ -307,7 +307,6 @@ final class DashboardController
         );
 
         $options = new Options();
-        $options->set('isRemoteEnabled', true);
         $options->set('isHtml5ParserEnabled', true);
 
         $dompdf = new Dompdf($options);

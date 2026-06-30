@@ -8,6 +8,7 @@ use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherDefinition;
 use ICTECHGiftCard\Core\Enum\AuditLogAction;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\EnumField;
+
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\ApiAware;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;

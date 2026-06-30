@@ -153,13 +153,11 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         // Update via a completely isolated context to avoid DAL batching with the insert.
         // This creates a separate write transaction, bypassing the conflict.
         try {
-            $isolatedContext = Context::createDefaultContext();
-
             $this->giftCardRepository->update([[
                 'id'               => $giftCard->getId(),
                 'productId'        => $productId,
                 'productVersionId' => Defaults::LIVE_VERSION,
-            ]], $isolatedContext);
+            ]], $context);
         } catch (\Exception $e) {
             error_log($e->getMessage());
         }

@@ -32,6 +32,7 @@ final class GiftCardEmailService
         private readonly EntityRepository $salesChannelRepository,
         private readonly SystemConfigService $systemConfigService,
         private readonly EntityRepository $templateRepository,
+        private readonly \League\Flysystem\FilesystemOperator $publicFilesystem,
     ) {
     }
 
@@ -389,25 +390,18 @@ HTML;
         return $this->addInlineMediaDataPart($data, $media);
     }
 
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
     private function addInlineMediaDataPart(array $data, \Shopware\Core\Content\Media\MediaEntity $media): array
     {
         $relativePath = $media->getPath();
-        $projectDir = dirname(__DIR__, 6);
-        $publicDir = \rtrim($projectDir, '/') . '/public/';
-        $localPath = $publicDir . $relativePath;
 
-        if (\file_exists($localPath)) {
+        if ($this->publicFilesystem->has($relativePath)) {
             $mimeType = $media->getMimeType();
             if ($mimeType === null || $mimeType === '') {
                 $mimeType = 'image/png';
             }
-            $fileHandle = fopen($localPath, 'r');
-            if ($fileHandle !== false) {
-                $part = new \Symfony\Component\Mime\Part\DataPart($fileHandle, 'giftcard_image', $mimeType);
+            $fileContent = $this->publicFilesystem->read($relativePath);
+            if ($fileContent !== '') {
+                $part = new \Symfony\Component\Mime\Part\DataPart($fileContent, 'giftcard_image', $mimeType);
                 $part->asInline();
                 $part->setContentId('giftcard_image@plugin');
                 $data['attachments'] = [$part];
@@ -534,7 +528,7 @@ HTML;
 
     private function buildCardImageHtml(GiftCardVoucherEntity $voucher, ?string $salesChannelId, string $mode, ?Context $context = null): string
     {
-        $media = $this->getTemplateMedia($voucher);
+        $media = $this->getTemplateMedia($voucher, $context);
         if ($media === null) {
             return '';
         }
@@ -554,7 +548,7 @@ HTML;
         return '<img src="' . \htmlspecialchars($imgUrl, \ENT_QUOTES) . '" width="' . $dimensions['width'] . '" height="' . $dimensions['height'] . '" alt="Gift Card" style="display:block;margin:0 auto;max-width:100%;height:auto;">';
     }
 
-    private function getTemplateMedia(GiftCardVoucherEntity $voucher): ?\Shopware\Core\Content\Media\MediaEntity
+    private function getTemplateMedia(GiftCardVoucherEntity $voucher, ?Context $context = null): ?\Shopware\Core\Content\Media\MediaEntity
     {
         $rawTemplateId = $this->getVoucherTemplateId($voucher);
         if ($rawTemplateId === null) {
@@ -563,7 +557,7 @@ HTML;
 
         $criteria = new Criteria([$rawTemplateId]);
         $criteria->addAssociation('media');
-        $template = $this->templateRepository->search($criteria, Context::createDefaultContext())->first();
+        $template = $this->templateRepository->search($criteria, $context ?? Context::createDefaultContext())->first();
         if ($template === null) {
             return null;
         }
@@ -596,12 +590,14 @@ HTML;
     private function getCardImageUrl(\Shopware\Core\Content\Media\MediaEntity $media, string $url, string $mode): string
     {
         $relativePath = $media->getPath();
-        $projectDir = dirname(__DIR__, 6);
-        $publicDir = \rtrim($projectDir, '/') . '/public/';
-        $localPath = $publicDir . $relativePath;
 
-        if (\file_exists($localPath)) {
-            return $mode === 'pdf' ? $localPath : 'cid:giftcard_image@plugin';
+        if ($this->publicFilesystem->has($relativePath)) {
+            if ($mode === 'pdf') {
+                $mimeType = $media->getMimeType() ?: 'image/png';
+                $content = $this->publicFilesystem->read($relativePath);
+                return 'data:' . $mimeType . ';base64,' . base64_encode($content);
+            }
+            return 'cid:giftcard_image@plugin';
         }
 
         return $url;

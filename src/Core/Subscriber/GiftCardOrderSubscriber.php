@@ -33,6 +33,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         private readonly EntityRepository $voucherRepository,
         private readonly GiftCardCartProcessor $cartProcessor,
         private readonly GiftCardEmailService $emailService,
+        private readonly EntityRepository $giftCardRepository,
     ) {
     }
 
@@ -213,7 +214,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $giftCard = $this->findGiftCardByProductId($productId);
+        $giftCard = $this->findGiftCardByProductId($productId, $context);
         if ($giftCard === null) {
             return;
         }
@@ -575,16 +576,24 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
     /**
      * @return array<string, mixed>|null
      */
-    private function findGiftCardByProductId(string $productId): ?array
+    private function findGiftCardByProductId(string $productId, Context $context): ?array
     {
-        $row = $this->connection->fetchAssociative(
-            'SELECT LOWER(HEX(id)) AS id, amount, validity_days, code_prefix
-             FROM ictech_gift_card
-             WHERE product_id = UNHEX(:productId)
-             LIMIT 1',
-            ['productId' => $productId]
-        );
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId', \strtolower($productId)));
+        $criteria->setLimit(1);
 
-        return $row !== false ? $row : null;
+        /** @var \ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity|null $giftCard */
+        $giftCard = $this->giftCardRepository->search($criteria, $context)->first();
+
+        if ($giftCard === null) {
+            return null;
+        }
+
+        return [
+            'id' => $giftCard->getId(),
+            'amount' => $giftCard->getAmount(),
+            'validity_days' => $giftCard->getValidityDays(),
+            'code_prefix' => $giftCard->getCodePrefix(),
+        ];
     }
 }

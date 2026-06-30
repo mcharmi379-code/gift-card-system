@@ -22,6 +22,7 @@
             <argument type="service" id="sales_channel.repository" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
             <argument type="service" id="ictech_gift_card_template.repository" />
+            <argument type="service" id="shopware.filesystem.public" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" public="false">
@@ -35,6 +36,7 @@
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" />
             <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
+            <argument type="service" id="ictech_gift_card.repository" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardProductSyncSubscriber" public="false">
