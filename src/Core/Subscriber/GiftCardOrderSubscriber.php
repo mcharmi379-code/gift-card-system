@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Core\Subscriber;
 
-use Doctrine\DBAL\Connection;
 use ICTECHGiftCard\Core\Cart\GiftCardCartProcessor;
 use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection;
 use ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherEntity;
@@ -25,18 +24,14 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 final class GiftCardOrderSubscriber implements EventSubscriberInterface
 {
     /**
-     * @param EntityRepository<GiftCardVoucherCollection> $voucherRepository
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection> $voucherRepository
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCard\GiftCardCollection> $giftCardRepository
      */
     public function __construct(
-        private readonly Connection $connection,
         private readonly EntityRepository $voucherRepository,
         private readonly GiftCardCartProcessor $cartProcessor,
-<<<<<<< HEAD
-        private readonly GiftCardEmailService $emailService,
-        private readonly EntityRepository $giftCardRepository,
-=======
         private readonly \Symfony\Component\Messenger\MessageBusInterface $messageBus,
->>>>>>> 3a3d49b39548f8ee4288cf63f36fa4676fe419e1
+        private readonly EntityRepository $giftCardRepository,
     ) {
     }
 
@@ -47,7 +42,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
     {
         return [
             CheckoutOrderPlacedEvent::class => 'onOrderPlaced',
-            MailBeforeValidateEvent::class  => 'onMailBeforeValidate',
+            MailBeforeValidateEvent::class => 'onMailBeforeValidate',
         ];
     }
 
@@ -57,21 +52,21 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
 
     public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
     {
-        $order      = $event->getOrder();
-        $context    = $event->getContext();
-        $lineItems  = $order->getLineItems();
+        $order = $event->getOrder();
+        $context = $event->getContext();
+        $lineItems = $order->getLineItems();
 
         if ($lineItems === null) {
             return;
         }
 
-        $customerId  = \strtolower($order->getOrderCustomer()?->getCustomerId() ?? '');
+        $customerId = \strtolower($order->getOrderCustomer()?->getCustomerId() ?? '');
         $orderNumber = $order->getOrderNumber() ?? '';
-        $orderId     = \strtolower($order->getId());
+        $orderId = \strtolower($order->getId());
 
         // Gather purchaser info for confirmation emails
         $purchaserEmail = $order->getOrderCustomer()?->getEmail() ?? '';
-        $purchaserName  = \trim(
+        $purchaserName = \trim(
             ($order->getOrderCustomer()?->getFirstName() ?? '') . ' ' .
             ($order->getOrderCustomer()?->getLastName() ?? '')
         );
@@ -142,10 +137,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         $event->addTemplateData('giftCardCodes', \implode(', ', $mailBlocks['codes']));
     }
 
-    /**
-     * @param mixed $order
-     */
-    private function getOrderId($order): ?string
+    private function getOrderId(mixed $order): ?string
     {
         if (\is_object($order) && \method_exists($order, 'getId')) {
             return $order->getId();
@@ -153,10 +145,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         return $this->getOrderIdFromArray($order);
     }
 
-    /**
-     * @param mixed $order
-     */
-    private function getOrderIdFromArray($order): ?string
+    private function getOrderIdFromArray(mixed $order): ?string
     {
         if (\is_array($order) && isset($order['id']) && \is_string($order['id'])) {
             return $order['id'];
@@ -169,7 +158,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
      *
      * @return array{html: string, plain: string, codes: list<string>}
      */
-    private function buildMailBlocks($vouchers): array
+    private function buildMailBlocks(\Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult $vouchers): array
     {
         $htmlBlock = '<div style="margin-top:20px;padding:16px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;">';
         $htmlBlock .= '<h3 style="margin:0 0 12px;font-size:16px;color:#333;">🎁 Gift Card Code(s)</h3>';
@@ -267,7 +256,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
 
         if ($deliveryMethod === 'print') {
             $recipientEmail = $purchaserEmail;
-            $recipientName  = $recipientName !== '' ? $recipientName : $purchaserName;
+            $recipientName = $recipientName !== '' ? $recipientName : $purchaserName;
         }
 
         $quantity = $lineItem->getQuantity();
@@ -385,17 +374,17 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         Context $context,
     ): void {
         $updateData = [
-            'id'                => $voucher->getId(),
-            'orderId'           => $orderId,
-            'orderVersionId'    => Defaults::LIVE_VERSION,
-            'orderLineItemId'   => $lineItemId,
-            'customerId'        => $this->getNullableString($customerId),
-            'status'            => VoucherStatus::Unused->value,
-            'expiresAt'         => $expiresAt,
-            'recipientName'     => $this->getNullableString($recipientName),
-            'recipientEmail'    => $this->getNullableString($recipientEmail),
-            'senderName'        => $this->getNullableString($senderName),
-            'personalMessage'   => $this->getNullableString($personalMessage),
+            'id' => $voucher->getId(),
+            'orderId' => $orderId,
+            'orderVersionId' => Defaults::LIVE_VERSION,
+            'orderLineItemId' => $lineItemId,
+            'customerId' => $this->getNullableString($customerId),
+            'status' => VoucherStatus::Unused->value,
+            'expiresAt' => $expiresAt,
+            'recipientName' => $this->getNullableString($recipientName),
+            'recipientEmail' => $this->getNullableString($recipientEmail),
+            'senderName' => $this->getNullableString($senderName),
+            'personalMessage' => $this->getNullableString($personalMessage),
             'scheduledSendDate' => $scheduledSendDate,
         ];
 
@@ -427,7 +416,6 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         return $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
     }
 
-
     // -------------------------------------------------------------------------
     // Pick an existing pool voucher or generate one on-the-fly
     // -------------------------------------------------------------------------
@@ -454,8 +442,8 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         }
 
         // Pool exhausted → generate a new voucher on-the-fly
-        $prefix   = \strtoupper(\trim(\is_string($giftCard['code_prefix']) ? $giftCard['code_prefix'] : ''));
-        $amount   = \is_numeric($giftCard['amount']) ? (float) $giftCard['amount'] : 0.0;
+        $prefix = \strtoupper(\trim(\is_string($giftCard['code_prefix']) ? $giftCard['code_prefix'] : ''));
+        $amount = \is_numeric($giftCard['amount']) ? (float) $giftCard['amount'] : 0.0;
         $validity = \is_numeric($giftCard['validity_days']) ? (int) $giftCard['validity_days'] : 365;
 
         $code = $this->generateUniqueCode($prefix, $giftCardId, $context);
@@ -464,15 +452,16 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         $expiresAt = (new \DateTimeImmutable())->modify("+{$validity} days")->format('Y-m-d');
 
         $this->voucherRepository->create([[
-            'id'               => $voucherId,
-            'giftCardId'       => $giftCardId,
-            'code'             => $code,
-            'originalAmount'   => $amount,
+            'id' => $voucherId,
+            'giftCardId' => $giftCardId,
+            'code' => $code,
+            'originalAmount' => $amount,
             'remainingBalance' => $amount,
-            'currencyId'       => $context->getCurrencyId(),
-            'status'           => VoucherStatus::WaitingValidOrder->value,
-            'expiresAt'        => $expiresAt,
-        ]], $context);
+            'currencyId' => $context->getCurrencyId(),
+            'status' => VoucherStatus::WaitingValidOrder->value,
+            'expiresAt' => $expiresAt,
+        ],
+        ], $context);
 
         return $this->voucherRepository->search(new Criteria([$voucherId]), $context)->first();
     }
@@ -485,7 +474,7 @@ final class GiftCardOrderSubscriber implements EventSubscriberInterface
         $maxAttempts = 50;
         for ($i = 0; $i < $maxAttempts; $i++) {
             $suffix = \strtoupper(\bin2hex(\random_bytes(4)));
-            $code   = $prefix !== '' ? $prefix . '-' . $suffix : $suffix;
+            $code = $prefix !== '' ? $prefix . '-' . $suffix : $suffix;
 
             // Check for collision
             $criteria = new Criteria();

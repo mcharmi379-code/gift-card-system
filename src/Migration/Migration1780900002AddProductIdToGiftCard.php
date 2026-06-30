@@ -27,7 +27,7 @@ final class Migration1780900002AddProductIdToGiftCard extends MigrationStep
             return;
         }
 
-        $connection->executeStatement("
+        $connection->executeStatement('
             ALTER TABLE `ictech_gift_card`
                 ADD COLUMN `product_id` BINARY(16) NULL DEFAULT NULL AFTER `active`,
                 ADD CONSTRAINT `fk.ictech_gift_card.product_id`
@@ -35,7 +35,7 @@ final class Migration1780900002AddProductIdToGiftCard extends MigrationStep
                     REFERENCES `product` (`id`)
                     ON DELETE SET NULL
                     ON UPDATE CASCADE
-        ");
+        ');
     }
 
     public function updateDestructive(Connection $connection): void

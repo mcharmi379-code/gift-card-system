@@ -6,6 +6,7 @@ namespace ICTECHGiftCard\Core\Subscriber;
 
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardDefinition;
 use ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity;
+use Psr\Log\LoggerInterface;
 use Shopware\Core\Content\Product\Aggregate\ProductVisibility\ProductVisibilityDefinition;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
@@ -27,13 +28,15 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
      * @param EntityRepository<\Shopware\Core\Content\Product\ProductCollection> $productRepository
      * @param EntityRepository<\Shopware\Core\System\Tax\TaxCollection> $taxRepository
      * @param EntityRepository<\Shopware\Core\System\SalesChannel\SalesChannelCollection> $salesChannelRepository
+     * @param EntityRepository<\Shopware\Core\Content\Product\Aggregate\ProductMedia\ProductMediaCollection> $productMediaRepository
      */
     public function __construct(
         private readonly EntityRepository $giftCardRepository,
         private readonly EntityRepository $productRepository,
         private readonly EntityRepository $taxRepository,
         private readonly EntityRepository $salesChannelRepository,
-        private readonly \Doctrine\DBAL\Connection $connection,
+        private readonly EntityRepository $productMediaRepository,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -164,12 +167,13 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         // This creates a separate write transaction, bypassing the conflict.
         try {
             $this->giftCardRepository->update([[
-                'id'               => $giftCard->getId(),
-                'productId'        => $productId,
+                'id' => $giftCard->getId(),
+                'productId' => $productId,
                 'productVersionId' => Defaults::LIVE_VERSION,
-            ]], $context);
+            ],
+            ], $context);
         } catch (\Exception $e) {
-            error_log($e->getMessage());
+            $this->logger->error('Failed to update gift card product reference: ' . $e->getMessage(), ['exception' => $e]);
         }
 
         return $productId;
@@ -202,21 +206,15 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     private function executeMediaSync(string $productId, string $mediaId, Context $context): void
     {
         try {
-            $productIdBin = \hex2bin($productId);
-            $mediaIdBin = \hex2bin($mediaId);
-            if (! \is_string($productIdBin) || ! \is_string($mediaIdBin)) {
-                return;
-            }
-
-            $productMediaId = $this->upsertProductMediaRelation($productIdBin, $mediaIdBin);
+            $productMediaId = $this->upsertProductMediaRelation($productId, $mediaId, $context);
             $this->productRepository->update([
                 [
                     'id' => $productId,
                     'coverId' => $productMediaId,
-                ]
+                ],
             ], $context);
         } catch (\Throwable $e) {
-            error_log('Failed to sync product media and cover: ' . $e->getMessage());
+            $this->logger->error('Failed to sync product media and cover: ' . $e->getMessage(), ['exception' => $e]);
         }
     }
 
@@ -235,48 +233,32 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         return null;
     }
 
-    private function upsertProductMediaRelation(string $productIdBin, string $mediaIdBin): string
+    private function upsertProductMediaRelation(string $productId, string $mediaId, Context $context): string
     {
-        $liveVersionIdBin = \hex2bin(Defaults::LIVE_VERSION);
-        if (! \is_string($liveVersionIdBin)) {
-            return '';
+        // 1. Delete all existing product media for the product
+        $deleteCriteria = new Criteria();
+        $deleteCriteria->addFilter(new EqualsFilter('productId', $productId));
+        $existingIds = $this->productMediaRepository->searchIds($deleteCriteria, $context)->getIds();
+        if (\count($existingIds) > 0) {
+            $deletePayload = [];
+            foreach ($existingIds as $id) {
+                $deletePayload[] = ['id' => $id];
+            }
+            $this->productMediaRepository->delete($deletePayload, $context);
         }
 
-        $existingProductMediaId = $this->connection->fetchOne(
-            'SELECT id FROM product_media WHERE product_id = :productId AND media_id = :mediaId AND product_version_id = :productVersionId LIMIT 1',
+        // 2. Create the new product media relation
+        $productMediaId = Uuid::randomHex();
+        $this->productMediaRepository->create([
             [
-                'productId' => $productIdBin,
-                'mediaId' => $mediaIdBin,
-                'productVersionId' => $liveVersionIdBin,
-            ]
-        );
+                'id' => $productMediaId,
+                'productId' => $productId,
+                'mediaId' => $mediaId,
+                'position' => 1,
+            ],
+        ], $context);
 
-        if (\is_string($existingProductMediaId)) {
-            return Uuid::fromBytesToHex($existingProductMediaId);
-        }
-
-        $this->connection->executeStatement(
-            'DELETE FROM product_media WHERE product_id = :productId AND product_version_id = :productVersionId',
-            [
-                'productId' => $productIdBin,
-                'productVersionId' => $liveVersionIdBin,
-            ]
-        );
-
-        $productMediaIdBin = Uuid::randomBytes();
-        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
-
-        $this->connection->insert('product_media', [
-            'id' => $productMediaIdBin,
-            'version_id' => $liveVersionIdBin,
-            'product_id' => $productIdBin,
-            'product_version_id' => $liveVersionIdBin,
-            'media_id' => $mediaIdBin,
-            'position' => 1,
-            'created_at' => $now,
-        ]);
-
-        return Uuid::fromBytesToHex($productMediaIdBin);
+        return $productMediaId;
     }
 
     /**
@@ -290,24 +272,25 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         bool $isCreate,
     ): array {
         $payload = [
-            'id'             => $productId,
-            'productNumber'  => 'GIFTCARD-' . \strtoupper(\substr($giftCard->getId(), -8)),
-            'name'           => $giftCard->getName(),
-            'stock'          => 999999,
-            'price'          => [[
+            'id' => $productId,
+            'productNumber' => 'GIFTCARD-' . \strtoupper(\substr($giftCard->getId(), -8)),
+            'name' => $giftCard->getName(),
+            'stock' => 999999,
+            'price' => [[
                 'currencyId' => Defaults::CURRENCY,
-                'gross'      => $giftCard->getAmount(),
-                'net'        => $giftCard->getAmount(),
-                'linked'     => true,
-            ]],
-            'shippingFree'   => true,
+                'gross' => $giftCard->getAmount(),
+                'net' => $giftCard->getAmount(),
+                'linked' => true,
+            ],
+            ],
+            'shippingFree' => true,
             'deliveryTimeId' => null,
-            'active'         => $giftCard->isActive(),
-            'taxId'          => $taxId,
-            'customFields'   => [
-                'ictech_gift_card_id'            => $giftCard->getId(),
-                'ictech_gift_card_validity_days'  => $giftCard->getValidityDays(),
-                'ictech_gift_card_code_prefix'    => $giftCard->getCodePrefix(),
+            'active' => $giftCard->isActive(),
+            'taxId' => $taxId,
+            'customFields' => [
+                'ictech_gift_card_id' => $giftCard->getId(),
+                'ictech_gift_card_validity_days' => $giftCard->getValidityDays(),
+                'ictech_gift_card_code_prefix' => $giftCard->getCodePrefix(),
             ],
             'translations' => [
                 Defaults::LANGUAGE_SYSTEM => ['name' => $giftCard->getName()],
@@ -328,10 +311,11 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
     {
         if ($giftCard->getSalesChannelId() !== null) {
             return [[
-                'id'             => Uuid::randomHex(),
+                'id' => Uuid::randomHex(),
                 'salesChannelId' => $giftCard->getSalesChannelId(),
-                'visibility'     => ProductVisibilityDefinition::VISIBILITY_ALL,
-            ]];
+                'visibility' => ProductVisibilityDefinition::VISIBILITY_ALL,
+            ],
+            ];
         }
 
         $criteria = new Criteria();
@@ -341,9 +325,9 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         $visibilities = [];
         foreach ($salesChannelIds as $id) {
             $visibilities[] = [
-                'id'             => Uuid::randomHex(),
+                'id' => Uuid::randomHex(),
                 'salesChannelId' => $id,
-                'visibility'     => ProductVisibilityDefinition::VISIBILITY_ALL,
+                'visibility' => ProductVisibilityDefinition::VISIBILITY_ALL,
             ];
         }
 
@@ -370,7 +354,7 @@ final class GiftCardProductSyncSubscriber implements EventSubscriberInterface
         $templateIds = [];
         foreach ($writeResults as $writeResult) {
             $primaryKey = $writeResult->getPrimaryKey();
-            $templateId = \is_array($primaryKey) ? ($primaryKey['id'] ?? '') : $primaryKey;
+            $templateId = $primaryKey;
             if ($templateId !== '') {
                 $templateIds[] = $templateId;
             }

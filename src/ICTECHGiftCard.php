@@ -69,10 +69,10 @@ final class ICTECHGiftCard extends Plugin
         $this->createMailTemplateTypes();
         $categoryRepository = $this->container?->get('category.repository');
         $salesChannelRepository = $this->container?->get('sales_channel.repository');
-        $connection = $this->container?->get(Connection::class);
+        $languageRepository = $this->container?->get('language.repository');
 
-        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository && $connection instanceof Connection) {
-            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository, $connection);
+        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository && $languageRepository instanceof EntityRepository) {
+            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository, $languageRepository);
             $installer->install($installContext->getContext());
         }
     }
@@ -90,10 +90,10 @@ final class ICTECHGiftCard extends Plugin
 
         $categoryRepository = $this->container?->get('category.repository');
         $salesChannelRepository = $this->container?->get('sales_channel.repository');
-        $connection = $this->container?->get(Connection::class);
+        $languageRepository = $this->container?->get('language.repository');
 
-        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository && $connection instanceof Connection) {
-            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository, $connection);
+        if ($categoryRepository instanceof EntityRepository && $salesChannelRepository instanceof EntityRepository && $languageRepository instanceof EntityRepository) {
+            $installer = new GiftCardNavigationInstaller($categoryRepository, $salesChannelRepository, $languageRepository);
             $installer->install($activateContext->getContext());
         }
     }
@@ -112,13 +112,12 @@ final class ICTECHGiftCard extends Plugin
             return;
         }
 
-        $this->uninstallCategories($container, $connection, $uninstallContext->getContext());
-        $this->removeMailTemplateTypes($connection);
-
         if ($uninstallContext->keepUserData()) {
             return;
         }
 
+        $this->uninstallCategories($container, $connection, $uninstallContext->getContext());
+        $this->removeMailTemplateTypes($connection);
         $this->uninstallProducts($container, $connection, $uninstallContext->getContext());
         $this->dropTables($connection);
     }
@@ -126,6 +125,14 @@ final class ICTECHGiftCard extends Plugin
     private function uninstallCategories(
         \Symfony\Component\DependencyInjection\ContainerInterface $container,
         Connection $connection,
+        \Shopware\Core\Framework\Context $context,
+    ): void {
+        $this->deleteNavigationCategories($container, $context);
+        $this->deleteCategoriesByCustomFields($connection);
+    }
+
+    private function deleteNavigationCategories(
+        \Symfony\Component\DependencyInjection\ContainerInterface $container,
         \Shopware\Core\Framework\Context $context,
     ): void {
         try {
@@ -154,7 +161,10 @@ final class ICTECHGiftCard extends Plugin
         } catch (\Throwable) {
             // Fallback
         }
+    }
 
+    private function deleteCategoriesByCustomFields(Connection $connection): void
+    {
         try {
             $connection->executeStatement(
                 'DELETE FROM category WHERE id IN (SELECT DISTINCT category_id FROM category_translation WHERE custom_fields LIKE :search)',
@@ -248,7 +258,7 @@ final class ICTECHGiftCard extends Plugin
     private function upsertMailTemplateType(Connection $connection, string $technicalName, array $config): void
     {
         $exists = $connection->fetchOne(
-            "SELECT id FROM mail_template_type WHERE technical_name = :name",
+            'SELECT id FROM mail_template_type WHERE technical_name = :name',
             ['name' => $technicalName]
         );
 
@@ -257,13 +267,13 @@ final class ICTECHGiftCard extends Plugin
         }
 
         $typeId = Uuid::randomBytes();
-        $now    = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
+        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
 
         $connection->insert('mail_template_type', [
-            'id'                 => $typeId,
-            'technical_name'     => $technicalName,
+            'id' => $typeId,
+            'technical_name' => $technicalName,
             'available_entities' => json_encode(['voucher' => 'ictech_gift_card_voucher'], \JSON_THROW_ON_ERROR),
-            'created_at'         => $now,
+            'created_at' => $now,
         ]);
 
         $enLangId = $this->getLanguageId($connection, 'en-GB')
@@ -272,30 +282,30 @@ final class ICTECHGiftCard extends Plugin
         if ($enLangId !== null) {
             $connection->insert('mail_template_type_translation', [
                 'mail_template_type_id' => $typeId,
-                'language_id'           => $enLangId,
-                'name'                  => $config['name'],
-                'created_at'            => $now,
+                'language_id' => $enLangId,
+                'name' => $config['name'],
+                'created_at' => $now,
             ]);
         }
 
         $templateId = Uuid::randomBytes();
         $connection->insert('mail_template', [
-            'id'                    => $templateId,
+            'id' => $templateId,
             'mail_template_type_id' => $typeId,
-            'system_default'        => 1,
-            'created_at'            => $now,
+            'system_default' => 1,
+            'created_at' => $now,
         ]);
 
         if ($enLangId !== null) {
             $connection->insert('mail_template_translation', [
                 'mail_template_id' => $templateId,
-                'language_id'      => $enLangId,
-                'sender_name'      => '{{ shopName }}',
-                'subject'          => $config['subject'],
-                'description'      => $config['description'],
-                'content_html'     => $config['content_html'],
-                'content_plain'    => $config['content_plain'],
-                'created_at'       => $now,
+                'language_id' => $enLangId,
+                'sender_name' => '{{ shopName }}',
+                'subject' => $config['subject'],
+                'description' => $config['description'],
+                'content_html' => $config['content_html'],
+                'content_plain' => $config['content_plain'],
+                'created_at' => $now,
             ]);
         }
     }
@@ -306,7 +316,7 @@ final class ICTECHGiftCard extends Plugin
 
         foreach ($technicalNames as $technicalName) {
             $typeId = $connection->fetchOne(
-                "SELECT id FROM mail_template_type WHERE technical_name = :name",
+                'SELECT id FROM mail_template_type WHERE technical_name = :name',
                 ['name' => $technicalName]
             );
 
@@ -315,12 +325,12 @@ final class ICTECHGiftCard extends Plugin
             }
 
             $connection->executeStatement(
-                "DELETE FROM mail_template WHERE mail_template_type_id = :id",
+                'DELETE FROM mail_template WHERE mail_template_type_id = :id',
                 ['id' => $typeId]
             );
 
             $connection->executeStatement(
-                "DELETE FROM mail_template_type WHERE id = :id",
+                'DELETE FROM mail_template_type WHERE id = :id',
                 ['id' => $typeId]
             );
         }
@@ -329,9 +339,9 @@ final class ICTECHGiftCard extends Plugin
     private function getLanguageId(Connection $connection, string $locale): ?string
     {
         $result = $connection->fetchOne(
-            "SELECT l.id FROM language l
+            'SELECT l.id FROM language l
              INNER JOIN locale lo ON lo.id = l.locale_id
-             WHERE lo.code = :code LIMIT 1",
+             WHERE lo.code = :code LIMIT 1',
             ['code' => $locale]
         );
 
@@ -341,7 +351,7 @@ final class ICTECHGiftCard extends Plugin
     private function getDefaultLanguageId(Connection $connection): ?string
     {
         $result = $connection->fetchOne(
-            "SELECT id FROM language WHERE id = UNHEX(:id)",
+            'SELECT id FROM language WHERE id = UNHEX(:id)',
             ['id' => Defaults::LANGUAGE_SYSTEM]
         );
 

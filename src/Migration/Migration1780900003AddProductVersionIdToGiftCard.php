@@ -27,11 +27,11 @@ final class Migration1780900003AddProductVersionIdToGiftCard extends MigrationSt
             return;
         }
 
-        $connection->executeStatement("
+        $connection->executeStatement('
             ALTER TABLE `ictech_gift_card`
                 ADD COLUMN `product_version_id` BINARY(16) NULL DEFAULT NULL
                 AFTER `product_id`
-        ");
+        ');
     }
 
     public function updateDestructive(Connection $connection): void

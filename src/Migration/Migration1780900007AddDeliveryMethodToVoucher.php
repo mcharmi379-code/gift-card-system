@@ -32,10 +32,10 @@ final class Migration1780900007AddDeliveryMethodToVoucher extends MigrationStep
         );
 
         if ($templateColumns === []) {
-            $connection->executeStatement("
+            $connection->executeStatement('
                 ALTER TABLE `ictech_gift_card_voucher`
                     ADD COLUMN `template_id` BINARY(16) NULL DEFAULT NULL
-            ");
+            ');
         }
     }
 

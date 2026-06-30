@@ -4,9 +4,20 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Administration\Controller;
 
-use Doctrine\DBAL\Connection;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Aggregation\Bucket\TermsAggregation;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Aggregation\Metric\SumAggregation;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\AggregationResult\Bucket\TermsResult;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\AggregationResult\Metric\SumResult;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsAnyFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\NotFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,8 +28,13 @@ use Twig\Environment;
 #[Route(defaults: ['_routeScope' => ['api']])]
 final class DashboardController
 {
+    /**
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherCollection> $voucherRepository
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCardTransaction\GiftCardTransactionCollection> $transactionRepository
+     */
     public function __construct(
-        private readonly Connection $connection,
+        private readonly EntityRepository $voucherRepository,
+        private readonly EntityRepository $transactionRepository,
         private readonly Environment $twig,
     ) {
     }
@@ -30,25 +46,60 @@ final class DashboardController
     )]
     public function stats(): JsonResponse
     {
-        /** @var array<string, string|int> $rows */
-        $rows = $this->connection->fetchAllKeyValue(
-            "SELECT status, COUNT(*) FROM ictech_gift_card_voucher GROUP BY status"
-        );
+        $context = Context::createDefaultContext();
+
+        // 1. Group by status
+        $criteriaStatus = new Criteria();
+        $criteriaStatus->addAggregation(new TermsAggregation('statuses', 'status'));
+        $resultStatus = $this->voucherRepository->aggregate($criteriaStatus, $context);
+        $statusesAgg = $resultStatus->get('statuses');
+        $byStatus = [];
+        if ($statusesAgg instanceof TermsResult) {
+            foreach ($statusesAgg->getBuckets() as $bucket) {
+                $byStatus[$bucket->getKey()] = $bucket->getCount();
+            }
+        }
+
+        // 2. Total count
+        $criteriaTotal = new Criteria();
+        $total = $this->voucherRepository->search($criteriaTotal, $context)->getTotal();
+
+        // 3. Total sold
+        $criteriaSold = new Criteria();
+        $criteriaSold->addFilter(new NotFilter(NotFilter::CONNECTION_AND, [
+            new EqualsFilter('status', 'waiting_valid_order'),
+        ]));
+        $criteriaSold->addAggregation(new SumAggregation('sumOriginalAmount', 'originalAmount'));
+        $resultSold = $this->voucherRepository->aggregate($criteriaSold, $context);
+        $sumSoldAgg = $resultSold->get('sumOriginalAmount');
+        $totalSold = $sumSoldAgg instanceof SumResult ? (float) $sumSoldAgg->getSum() : 0.0;
+
+        // 4. Total redeemed
+        $criteriaRedeemed = new Criteria();
+        $criteriaRedeemed->addAggregation(new SumAggregation('sumAmountUsed', 'amountUsed'));
+        $resultRedeemed = $this->transactionRepository->aggregate($criteriaRedeemed, $context);
+        $sumRedeemedAgg = $resultRedeemed->get('sumAmountUsed');
+        $totalRedeemed = $sumRedeemedAgg instanceof SumResult ? (float) $sumRedeemedAgg->getSum() : 0.0;
+
+        // 5. Expired count
+        $now = (new \DateTimeImmutable())->format('Y-m-d');
+        $criteriaExpired = new Criteria();
+        $criteriaExpired->addFilter(new RangeFilter('expiresAt', [RangeFilter::LT => $now]));
+        $criteriaExpired->addFilter(new NotFilter(NotFilter::CONNECTION_AND, [
+            new EqualsAnyFilter('status', ['used', 'canceled']),
+        ]));
+        $expired = $this->voucherRepository->search($criteriaExpired, $context)->getTotal();
+
+        // 6. Pending
+        $pending = $byStatus['waiting_valid_order'] ?? 0;
 
         return new JsonResponse([
-            'total' => $this->getStatsCount(
-                "SELECT COUNT(*) FROM ictech_gift_card_voucher"
-            ),
-            'totalSold' => $this->getStatsSum(
-                "SELECT COALESCE(SUM(original_amount), 0) " .
-                "FROM ictech_gift_card_voucher WHERE status != 'waiting_valid_order'"
-            ),
-            'totalRedeemed' => $this->getStatsSum(
-                "SELECT COALESCE(SUM(amount_used), 0) FROM ictech_gift_card_transaction"
-            ),
-            'byStatus' => $rows,
-            'expired' => $this->getExpiredCount(),
-            'pending' => $this->parsePending($rows),
+            'total' => $total,
+            'totalSold' => $totalSold,
+            'totalRedeemed' => $totalRedeemed,
+            'byStatus' => $byStatus,
+            'expired' => $expired,
+            'pending' => $pending,
         ]);
     }
 
@@ -59,8 +110,32 @@ final class DashboardController
     )]
     public function purchasedExport(Request $request): StreamedResponse
     {
-        [$sql, $params] = $this->buildPurchasedExportQuery($request);
-        $rows = $this->connection->fetchAllAssociative($sql, $params);
+        $context = Context::createDefaultContext();
+        $criteria = new Criteria();
+        $criteria->addAssociation('order');
+        $criteria->addSorting(new FieldSorting('createdAt', FieldSorting::DESCENDING));
+
+        $statusStr = $this->getQueryString($request, 'status');
+        $dateFromStr = $this->getQueryString($request, 'dateFrom');
+        $dateToStr = $this->getQueryString($request, 'dateTo');
+
+        if ($statusStr !== '') {
+            $criteria->addFilter(new EqualsFilter('status', $statusStr));
+        }
+        if ($dateFromStr !== '') {
+            $criteria->addFilter(new RangeFilter('createdAt', [RangeFilter::GTE => $dateFromStr]));
+        }
+        if ($dateToStr !== '') {
+            $criteria->addFilter(new RangeFilter('createdAt', [RangeFilter::LTE => $dateToStr . ' 23:59:59']));
+        }
+
+        $vouchers = $this->voucherRepository->search($criteria, $context)->getEntities();
+
+        $rows = [];
+        foreach ($vouchers as $voucher) {
+            /** @var \ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherEntity $voucher */
+            $rows[] = $this->formatVoucherRow($voucher);
+        }
 
         return $this->streamCsv(
             'gift-cards-purchased.csv',
@@ -99,8 +174,30 @@ final class DashboardController
     )]
     public function usedExport(Request $request): StreamedResponse
     {
-        [$sql, $params] = $this->buildUsedExportQuery($request);
-        $rows = $this->connection->fetchAllAssociative($sql, $params);
+        $context = Context::createDefaultContext();
+        $criteria = new Criteria();
+        $criteria->addAssociation('voucher');
+        $criteria->addAssociation('order');
+        $criteria->addAssociation('customer');
+        $criteria->addSorting(new FieldSorting('createdAt', FieldSorting::DESCENDING));
+
+        $dateFromStr = $this->getQueryString($request, 'dateFrom');
+        $dateToStr = $this->getQueryString($request, 'dateTo');
+
+        if ($dateFromStr !== '') {
+            $criteria->addFilter(new RangeFilter('createdAt', [RangeFilter::GTE => $dateFromStr]));
+        }
+        if ($dateToStr !== '') {
+            $criteria->addFilter(new RangeFilter('createdAt', [RangeFilter::LTE => $dateToStr . ' 23:59:59']));
+        }
+
+        $transactions = $this->transactionRepository->search($criteria, $context)->getEntities();
+
+        $rows = [];
+        foreach ($transactions as $transaction) {
+            /** @var \ICTECHGiftCard\Core\Content\GiftCardTransaction\GiftCardTransactionEntity $transaction */
+            $rows[] = $this->formatTransactionRow($transaction);
+        }
 
         return $this->streamCsv(
             'gift-cards-used.csv',
@@ -147,12 +244,12 @@ final class DashboardController
         try {
             $html = $this->twig->render('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
                 'card_lastname' => 'Doe',
-                'card_price'    => '50.00 €',
-                'card_from'     => 'Jane Doe',
-                'card_code'     => 'PREVIEW-1234-5678',
-                'card_message'  => 'Happy Birthday! Enjoy your gift.',
-                'card_image'    => $sampleImageHtml,
-                'shop_name'     => 'My Shop',
+                'card_price' => '50.00 €',
+                'card_from' => 'Jane Doe',
+                'card_code' => 'PREVIEW-1234-5678',
+                'card_message' => 'Happy Birthday! Enjoy your gift.',
+                'card_image' => $sampleImageHtml,
+                'shop_name' => 'My Shop',
                 'validity_date' => (new \DateTimeImmutable('+1 year'))->format('d.m.Y'),
             ]);
         } catch (\Throwable $e) {
@@ -174,38 +271,6 @@ final class DashboardController
         ]);
     }
 
-    private function getStatsCount(string $sql): int
-    {
-        $raw = $this->connection->fetchOne($sql);
-        return is_numeric($raw) ? (int) $raw : 0;
-    }
-
-    private function getStatsSum(string $sql): float
-    {
-        $raw = $this->connection->fetchOne($sql);
-        return is_numeric($raw) ? (float) $raw : 0.0;
-    }
-
-    private function getExpiredCount(): int
-    {
-        $now = (new \DateTimeImmutable())->format('Y-m-d');
-        $raw = $this->connection->fetchOne(
-            "SELECT COUNT(*) FROM ictech_gift_card_voucher " .
-            "WHERE expires_at < :now AND status NOT IN ('used','canceled')",
-            ['now' => $now]
-        );
-        return is_numeric($raw) ? (int) $raw : 0;
-    }
-
-    /**
-     * @param array<string, string|int> $rows
-     */
-    private function parsePending(array $rows): int
-    {
-        $raw = $rows['waiting_valid_order'] ?? 0;
-        return is_numeric($raw) ? (int) $raw : 0;
-    }
-
     private function getQueryString(Request $request, string $key): string
     {
         $val = $request->query->get($key);
@@ -214,134 +279,66 @@ final class DashboardController
     }
 
     /**
-     * @return array{0: array<int, string>, 1: array<string, string>}
+     * @return array<string, mixed>
      */
-    private function getPurchasedFilters(Request $request): array
+    private function formatVoucherRow(\ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherEntity $voucher): array
     {
-        $statusStr = $this->getQueryString($request, 'status');
-        $dateFromStr = $this->getQueryString($request, 'dateFrom');
-        $dateToStr = $this->getQueryString($request, 'dateTo');
-
-        $where = [];
-        $params = [];
-
-        if ($statusStr !== '') {
-            $where[] = 'v.status = :status';
-            $params['status'] = $statusStr;
-        }
-        if ($dateFromStr !== '') {
-            $where[] = 'v.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFromStr;
-        }
-        if ($dateToStr !== '') {
-            $where[] = 'v.created_at <= :dateTo';
-            $params['dateTo'] = $dateToStr . ' 23:59:59';
-        }
-
-        return [$where, $params];
-    }
-
-    /**
-     * @return array{0: string, 1: array<string, string>}
-     */
-    private function buildPurchasedExportQuery(Request $request): array
-    {
-        [$where, $params] = $this->getPurchasedFilters($request);
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $sql = "SELECT v.code, v.original_amount, v.remaining_balance,
-            v.status, v.recipient_name, v.recipient_email, v.sender_name,
-            v.expires_at, v.created_at, o.order_number
-            FROM ictech_gift_card_voucher v
-            LEFT JOIN `order` o ON o.id = v.order_id
-            AND o.version_id = v.order_version_id
-            {$whereClause}
-            ORDER BY v.created_at DESC";
-
-        return [$sql, $params];
-    }
-
-    /**
-     * @return array{0: array<int, string>, 1: array<string, string>}
-     */
-    private function getUsedFilters(Request $request): array
-    {
-        $dateFromStr = $this->getQueryString($request, 'dateFrom');
-        $dateToStr = $this->getQueryString($request, 'dateTo');
-
-        $where = [];
-        $params = [];
-
-        if ($dateFromStr !== '') {
-            $where[] = 't.created_at >= :dateFrom';
-            $params['dateFrom'] = $dateFromStr;
-        }
-        if ($dateToStr !== '') {
-            $where[] = 't.created_at <= :dateTo';
-            $params['dateTo'] = $dateToStr . ' 23:59:59';
-        }
-
-        return [$where, $params];
-    }
-
-    /**
-     * @return array{0: string, 1: array<string, string>}
-     */
-    private function buildUsedExportQuery(Request $request): array
-    {
-        [$where, $params] = $this->getUsedFilters($request);
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-        $sql = "SELECT v.code, t.amount_used, t.balance_before,
-            t.balance_after, t.created_at, o.order_number,
-            CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-            c.email AS customer_email
-            FROM ictech_gift_card_transaction t
-            INNER JOIN ictech_gift_card_voucher v ON v.id = t.voucher_id
-            LEFT JOIN `order` o ON o.id = t.order_id
-            AND o.version_id = t.order_version_id
-            LEFT JOIN customer c ON c.id = t.customer_id
-            {$whereClause}
-            ORDER BY t.created_at DESC";
-
-        return [$sql, $params];
-    }
-
-<<<<<<< HEAD
-    private function generatePreviewPdfOutput(string $html): string
-    {
-        $sampleImageHtml = '<img src="' .
-            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQoAAADBCAYAAADN98fWAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gYREg4Zg2W8vAAAADtJREFUeN7t1AEBAAAAwiD7p7bGDlgYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJgbN2kAAWFAmboAAAAASUVORK5CYII=' .
-            '" style="max-width:300px;height:auto;" />';
-        $replacements = [
-            '{{card_lastname}}' => 'Doe',
-            '{{card_firstname}}' => 'John',
-            '{{card_price}}' => '50.00 €',
-            '{{card_from}}' => 'Jane Doe',
-            '{{card_code}}' => 'PREVIEW-1234-5678',
-            '{{card_message}}' => 'Happy Birthday! Enjoy your gift.',
-            '{{card_image}}' => $sampleImageHtml,
-            '{{shop_name}}' => 'My Shop',
-            '{{validity_date}}' => (new \DateTimeImmutable('+1 year'))->format('d.m.Y'),
+        $expiresAt = $voucher->getExpiresAt();
+        $createdAt = $voucher->getCreatedAt();
+        return [
+            'code' => $voucher->getCode(),
+            'original_amount' => $voucher->getOriginalAmount(),
+            'remaining_balance' => $voucher->getRemainingBalance(),
+            'status' => $voucher->getStatus(),
+            'recipient_name' => $voucher->getRecipientName(),
+            'recipient_email' => $voucher->getRecipientEmail(),
+            'sender_name' => $voucher->getSenderName(),
+            'expires_at' => $expiresAt ? $expiresAt->format('Y-m-d H:i:s') : '',
+            'created_at' => $createdAt ? $createdAt->format('Y-m-d H:i:s') : '',
+            'order_number' => $this->getOrderNumber($voucher->getOrder()),
         ];
-
-        $html = \str_replace(
-            \array_keys($replacements),
-            \array_values($replacements),
-            $html
-        );
-
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml('<html><body>' . $html . '</body></html>');
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        return (string) $dompdf->output();
     }
-=======
 
->>>>>>> 3a3d49b39548f8ee4288cf63f36fa4676fe419e1
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatTransactionRow(\ICTECHGiftCard\Core\Content\GiftCardTransaction\GiftCardTransactionEntity $transaction): array
+    {
+        $createdAt = $transaction->getCreatedAt();
+        [$customerName, $customerEmail] = $this->getCustomerDetails($transaction->getCustomer());
+
+        return [
+            'code' => $this->getVoucherCode($transaction->getVoucher()),
+            'amount_used' => $transaction->getAmountUsed(),
+            'balance_before' => $transaction->getBalanceBefore(),
+            'balance_after' => $transaction->getBalanceAfter(),
+            'created_at' => $createdAt ? $createdAt->format('Y-m-d H:i:s') : '',
+            'order_number' => $this->getOrderNumber($transaction->getOrder()),
+            'customer_name' => $customerName,
+            'customer_email' => $customerEmail,
+        ];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function getCustomerDetails(?\Shopware\Core\Checkout\Customer\CustomerEntity $customer): array
+    {
+        if ($customer === null) {
+            return ['', ''];
+        }
+        return [$customer->getFirstName() . ' ' . $customer->getLastName(), $customer->getEmail()];
+    }
+
+    private function getVoucherCode(?\ICTECHGiftCard\Core\Content\GiftCardVoucher\GiftCardVoucherEntity $voucher): string
+    {
+        return $voucher ? $voucher->getCode() : '';
+    }
+
+    private function getOrderNumber(?\Shopware\Core\Checkout\Order\OrderEntity $order): string
+    {
+        return $order ? (string) $order->getOrderNumber() : '';
+    }
 
     /**
      * @param list<string> $headers

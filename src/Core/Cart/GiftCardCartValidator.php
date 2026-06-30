@@ -4,19 +4,25 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Core\Cart;
 
-use Doctrine\DBAL\Connection;
 use ICTECHGiftCard\Core\Cart\Error\GiftCardTemplateRequiredError;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartValidatorInterface;
 use Shopware\Core\Checkout\Cart\Error\ErrorCollection;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
 final class GiftCardCartValidator implements CartValidatorInterface
 {
+    /**
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCard\GiftCardCollection> $giftCardRepository
+     */
     public function __construct(
-        private readonly Connection $connection,
+        private readonly EntityRepository $giftCardRepository,
         private readonly SystemConfigService $systemConfigService,
     ) {
     }
@@ -29,7 +35,7 @@ final class GiftCardCartValidator implements CartValidatorInterface
         $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
 
         foreach ($cart->getLineItems() as $lineItem) {
-            $this->validateLineItem($lineItem, $cart, $errors, $active);
+            $this->validateLineItem($lineItem, $cart, $errors, $active, $context->getContext());
         }
     }
 
@@ -38,6 +44,7 @@ final class GiftCardCartValidator implements CartValidatorInterface
         Cart $cart,
         ErrorCollection $errors,
         bool $active,
+        Context $context,
     ): void {
         if ($lineItem->getType() !== LineItem::PRODUCT_LINE_ITEM_TYPE) {
             return;
@@ -48,7 +55,7 @@ final class GiftCardCartValidator implements CartValidatorInterface
             return;
         }
 
-        $this->checkGiftCardLineItem($lineItem, $productId, $cart, $errors, $active);
+        $this->checkGiftCardLineItem($lineItem, $productId, $cart, $errors, $active, $context);
     }
 
     private function checkGiftCardLineItem(
@@ -57,8 +64,9 @@ final class GiftCardCartValidator implements CartValidatorInterface
         Cart $cart,
         ErrorCollection $errors,
         bool $active,
+        Context $context,
     ): void {
-        $giftCard = $this->findGiftCardByProductId($productId);
+        $giftCard = $this->findGiftCardByProductId($productId, $context);
         if ($giftCard === null) {
             return;
         }
@@ -79,18 +87,20 @@ final class GiftCardCartValidator implements CartValidatorInterface
     /**
      * @return array{id: string}|null
      */
-    private function findGiftCardByProductId(string $productId): ?array
+    private function findGiftCardByProductId(string $productId, Context $context): ?array
     {
-        $row = $this->connection->fetchAssociative(
-            'SELECT LOWER(HEX(id)) AS id FROM ictech_gift_card WHERE product_id = UNHEX(:productId) LIMIT 1',
-            ['productId' => $productId]
-        );
-        if ($row === false) {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId', $productId));
+        $criteria->setLimit(1);
+
+        /** @var \ICTECHGiftCard\Core\Content\GiftCard\GiftCardEntity|null $giftCard */
+        $giftCard = $this->giftCardRepository->search($criteria, $context)->first();
+        if ($giftCard === null) {
             return null;
         }
-        $id = $row['id'] ?? '';
+
         return [
-            'id' => \is_scalar($id) ? (string) $id : '',
+            'id' => $giftCard->getId(),
         ];
     }
 }

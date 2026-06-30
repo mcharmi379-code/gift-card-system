@@ -141,10 +141,7 @@ final class ModerationController
         return $this->validateAdjustBalanceValue($newBalanceVal);
     }
 
-    /**
-     * @param mixed $newBalanceVal
-     */
-    private function validateAdjustBalanceValue($newBalanceVal): ?JsonResponse
+    private function validateAdjustBalanceValue(mixed $newBalanceVal): ?JsonResponse
     {
         if (\is_string($newBalanceVal) || \is_numeric($newBalanceVal)) {
             if ((float) $newBalanceVal < 0.0) {
@@ -177,7 +174,8 @@ final class ModerationController
             $this->voucherRepository->update([[
                 'id' => $voucher->getId(),
                 'recipientEmail' => $cleanedEmail,
-            ]], $context);
+            ],
+            ], $context);
             $voucher->setRecipientEmail($cleanedEmail);
         }
     }
@@ -192,7 +190,8 @@ final class ModerationController
             'oldValue' => null,
             'newValue' => null,
             'reason' => 'Manually resent to ' . $recipientEmail,
-        ]], $context);
+        ],
+        ], $context);
     }
 
     private function updateVoucherStatus(string $voucherId, string $status, Context $context): void
@@ -200,7 +199,8 @@ final class ModerationController
         $this->voucherRepository->update([[
             'id' => $voucherId,
             'status' => $status,
-        ]], $context);
+        ],
+        ], $context);
     }
 
     private function logRevocation(string $voucherId, string $oldStatus, string $reason, Context $context): void
@@ -213,7 +213,8 @@ final class ModerationController
             'oldValue' => $oldStatus,
             'newValue' => VoucherStatus::Canceled->value,
             'reason' => $reason,
-        ]], $context);
+        ],
+        ], $context);
     }
 
     private function performBalanceAdjustment(
@@ -267,7 +268,8 @@ final class ModerationController
             'oldValue' => (string) $oldBalance,
             'newValue' => (string) $newBalance,
             'reason' => \is_string($reason) ? $reason : 'Balance adjusted manually',
-        ]], $context);
+        ],
+        ], $context);
     }
 
     private function getAdminUserId(Context $context): ?string

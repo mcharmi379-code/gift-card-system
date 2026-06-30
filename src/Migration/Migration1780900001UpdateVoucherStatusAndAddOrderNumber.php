@@ -32,11 +32,11 @@ final class Migration1780900001UpdateVoucherStatusAndAddOrderNumber extends Migr
         );
 
         if ($columns === []) {
-            $connection->executeStatement("
+            $connection->executeStatement('
                 ALTER TABLE `ictech_gift_card_voucher`
                     ADD COLUMN `used_in_order_number` VARCHAR(64) NULL DEFAULT NULL
                     AFTER `status`
-            ");
+            ');
         }
     }
 

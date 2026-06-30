@@ -31,13 +31,13 @@ final class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
         }
 
         $typeId = Uuid::randomBytes();
-        $now    = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
+        $now = (new \DateTimeImmutable())->format('Y-m-d H:i:s.000');
 
         $connection->insert('mail_template_type', [
-            'id'                 => $typeId,
-            'technical_name'     => self::TECHNICAL_NAME,
+            'id' => $typeId,
+            'technical_name' => self::TECHNICAL_NAME,
             'available_entities' => json_encode(['voucher' => 'ictech_gift_card_voucher'], \JSON_THROW_ON_ERROR),
-            'created_at'         => $now,
+            'created_at' => $now,
         ]);
 
         $langId = $this->getEnglishLanguageId($connection);
@@ -45,30 +45,30 @@ final class Migration1780900006SeedGiftCardMailTemplate extends MigrationStep
         if ($langId !== null) {
             $connection->insert('mail_template_type_translation', [
                 'mail_template_type_id' => $typeId,
-                'language_id'           => $langId,
-                'name'                  => 'Gift Card',
-                'created_at'            => $now,
+                'language_id' => $langId,
+                'name' => 'Gift Card',
+                'created_at' => $now,
             ]);
         }
 
         $templateId = Uuid::randomBytes();
         $connection->insert('mail_template', [
-            'id'                    => $templateId,
+            'id' => $templateId,
             'mail_template_type_id' => $typeId,
-            'system_default'        => 1,
-            'created_at'            => $now,
+            'system_default' => 1,
+            'created_at' => $now,
         ]);
 
         if ($langId !== null) {
             $connection->insert('mail_template_translation', [
                 'mail_template_id' => $templateId,
-                'language_id'      => $langId,
-                'sender_name'      => '{{ shopName }}',
-                'subject'          => 'Your Gift Card Code: {{ voucher_code }}',
-                'description'      => 'Gift card email sent to recipient with voucher code',
-                'content_html'     => $this->getHtmlTemplate(),
-                'content_plain'    => $this->getPlainTemplate(),
-                'created_at'       => $now,
+                'language_id' => $langId,
+                'sender_name' => '{{ shopName }}',
+                'subject' => 'Your Gift Card Code: {{ voucher_code }}',
+                'description' => 'Gift card email sent to recipient with voucher code',
+                'content_html' => $this->getHtmlTemplate(),
+                'content_plain' => $this->getPlainTemplate(),
+                'created_at' => $now,
             ]);
         }
     }

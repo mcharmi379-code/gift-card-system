@@ -12,8 +12,10 @@ use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsAnyFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\MultiFilter;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\NotFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskCollection;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskHandler;
@@ -36,7 +38,6 @@ final class ICTECHGiftCardEmailTaskHandler extends ScheduledTaskHandler
         LoggerInterface $logger,
         EntityRepository $voucherRepository,
         private readonly GiftCardEmailService $emailService,
-        private readonly \Doctrine\DBAL\Connection $connection,
     ) {
         $this->logger = $logger;
         $this->voucherRepository = $voucherRepository;
@@ -46,36 +47,55 @@ final class ICTECHGiftCardEmailTaskHandler extends ScheduledTaskHandler
     public function run(): void
     {
         $context = Context::createCLIContext();
-        $today   = (new \DateTimeImmutable())->format('Y-m-d');
+        $today = new \DateTimeImmutable();
 
-        // 1. Mark expired vouchers as 'expired'
+        $this->markExpiredVouchers($today, $context);
+        $this->processScheduledEmails($today, $context);
+    }
+
+    private function markExpiredVouchers(\DateTimeImmutable $today, Context $context): void
+    {
+        $todayStr = $today->format('Y-m-d');
         try {
-            $this->connection->executeStatement(
-                "UPDATE `ictech_gift_card_voucher`
-                 SET `status` = :expiredStatus, `updated_at` = :now
-                 WHERE `expires_at` < :today
-                   AND `status` NOT IN (:usedStatus, :canceledStatus, :expiredStatus, :waitingValidOrderStatus)",
-                [
-                    'expiredStatus' => VoucherStatus::Expired->value,
-                    'now' => (new \DateTimeImmutable())->format('Y-m-d H:i:s.000'),
-                    'today' => $today,
-                    'usedStatus' => VoucherStatus::Used->value,
-                    'canceledStatus' => VoucherStatus::Canceled->value,
-                    'waitingValidOrderStatus' => VoucherStatus::WaitingValidOrder->value,
-                ]
-            );
+            $criteria = new Criteria();
+            $criteria->addFilter(new MultiFilter(MultiFilter::CONNECTION_AND, [
+                new RangeFilter('expiresAt', [RangeFilter::LT => $todayStr]),
+                new NotFilter(NotFilter::CONNECTION_AND, [
+                    new EqualsAnyFilter('status', [
+                        VoucherStatus::Used->value,
+                        VoucherStatus::Canceled->value,
+                        VoucherStatus::Expired->value,
+                        VoucherStatus::WaitingValidOrder->value,
+                    ]),
+                ]),
+            ]));
+
+            $voucherIds = $this->voucherRepository->searchIds($criteria, $context)->getIds();
+            if (\count($voucherIds) > 0) {
+                $updatePayload = [];
+                foreach ($voucherIds as $id) {
+                    $updatePayload[] = [
+                        'id' => $id,
+                        'status' => VoucherStatus::Expired->value,
+                    ];
+                }
+                $this->voucherRepository->update($updatePayload, $context);
+            }
         } catch (\Throwable $e) {
             $this->logger->error(
                 sprintf('Failed to update expired gift card vouchers: %s', $e->getMessage()),
                 ['exception' => $e]
             );
         }
+    }
 
-        // 2. Process pending scheduled emails
+    private function processScheduledEmails(\DateTimeImmutable $today, Context $context): void
+    {
+        $todayStr = $today->format('Y-m-d');
         $criteria = new Criteria();
         $criteria->addFilter(new MultiFilter(MultiFilter::CONNECTION_AND, [
             new EqualsFilter('status', VoucherStatus::Unused->value),
-            new RangeFilter('scheduledSendDate', [RangeFilter::LTE => $today]),
+            new RangeFilter('scheduledSendDate', [RangeFilter::LTE => $todayStr]),
             new EqualsFilter('sentAt', null),
         ]));
         $criteria->setLimit(100);

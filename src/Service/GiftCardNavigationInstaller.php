@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Service;
 
-use Doctrine\DBAL\Connection;
 use Shopware\Core\Content\Category\CategoryDefinition;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Context;
@@ -24,11 +23,12 @@ final class GiftCardNavigationInstaller
     /**
      * @param EntityRepository<\Shopware\Core\Content\Category\CategoryCollection> $categoryRepository
      * @param EntityRepository<\Shopware\Core\System\SalesChannel\SalesChannelCollection> $salesChannelRepository
+     * @param EntityRepository<\Shopware\Core\System\Language\LanguageCollection> $languageRepository
      */
     public function __construct(
         private readonly EntityRepository $categoryRepository,
         private readonly EntityRepository $salesChannelRepository,
-        private readonly Connection $connection,
+        private readonly EntityRepository $languageRepository,
     ) {
     }
 
@@ -108,7 +108,7 @@ final class GiftCardNavigationInstaller
         $salesChannelWithDomains = $this->getSalesChannelWithDomains($salesChannel->getId(), $context);
 
         // Query all languages and their locale codes to support German translation
-        $languages = $this->getLanguageLocaleMapping();
+        $languages = $this->getLanguageLocaleMapping($context);
 
         $defaultUrl = $this->getSalesChannelBaseUrl($salesChannel, $context);
         $translations = [];
@@ -147,16 +147,18 @@ final class GiftCardNavigationInstaller
     /**
      * @return array<string, string>
      */
-    private function getLanguageLocaleMapping(): array
+    private function getLanguageLocaleMapping(Context $context): array
     {
         try {
-            $result = $this->connection->fetchAllKeyValue(
-                'SELECT LOWER(HEX(l.id)) as id, lo.code FROM language l INNER JOIN locale lo ON l.locale_id = lo.id'
-            );
+            $criteria = new Criteria();
+            $criteria->addAssociation('locale');
+
+            $languages = $this->languageRepository->search($criteria, $context)->getEntities();
             $mapped = [];
-            foreach ($result as $k => $v) {
-                if (\is_scalar($v)) {
-                    $mapped[(string) $k] = (string) $v;
+            foreach ($languages as $language) {
+                $locale = $language->getLocale();
+                if ($locale !== null) {
+                    $mapped[$language->getId()] = $locale->getCode();
                 }
             }
             return $mapped;

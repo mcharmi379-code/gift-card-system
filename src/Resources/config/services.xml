@@ -13,7 +13,7 @@
         <service id="ICTECHGiftCard\Service\GiftCardNavigationInstaller" public="false">
             <argument type="service" id="category.repository" />
             <argument type="service" id="sales_channel.repository" />
-            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="language.repository" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Service\GiftCardEmailService" public="true">
@@ -23,11 +23,8 @@
             <argument type="service" id="sales_channel.repository" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
             <argument type="service" id="ictech_gift_card_template.repository" />
-<<<<<<< HEAD
             <argument type="service" id="shopware.filesystem.public" />
-=======
             <argument type="service" id="twig" />
->>>>>>> 3a3d49b39548f8ee4288cf63f36fa4676fe419e1
         </service>
 
         <service id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" public="false">
@@ -38,7 +35,7 @@
         </service>
 
         <service id="ICTECHGiftCard\Core\Cart\GiftCardCartValidator">
-            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="ictech_gift_card.repository" />
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
             <tag name="shopware.cart.validator" />
         </service>
@@ -52,15 +49,10 @@
         </service>
 
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardOrderSubscriber" public="false">
-            <argument type="service" id="Doctrine\DBAL\Connection" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Cart\GiftCardCartProcessor" />
-<<<<<<< HEAD
-            <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
-            <argument type="service" id="ictech_gift_card.repository" />
-=======
             <argument type="service" id="Symfony\Component\Messenger\MessageBusInterface" />
->>>>>>> 3a3d49b39548f8ee4288cf63f36fa4676fe419e1
+            <argument type="service" id="ictech_gift_card.repository" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Subscriber\GiftCardProductSyncSubscriber" public="false">
@@ -68,11 +60,12 @@
             <argument type="service" id="product.repository" />
             <argument type="service" id="tax.repository" />
             <argument type="service" id="sales_channel.repository" />
-            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="product_media.repository" />
+            <argument type="service" id="logger" />
         </service>
 
         <service id="ICTECHGiftCard\Core\Subscriber\ProductDetailRedirectSubscriber" public="true">
-            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="ictech_gift_card.repository" />
             <argument type="service" id="Symfony\Component\Routing\RouterInterface" />
             <tag name="kernel.event_subscriber" />
         </service>
@@ -86,7 +79,6 @@
             <argument type="service" id="logger" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
             <argument type="service" id="ICTECHGiftCard\Core\Service\GiftCardEmailService" />
-            <argument type="service" id="Doctrine\DBAL\Connection" />
             <tag name="messenger.message_handler" />
         </service>
 
@@ -116,11 +108,13 @@
             <tag name="controller.service_arguments" />
             <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader" />
             <argument type="service" id="ictech_gift_card_voucher.repository" />
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
         </service>
 
         <service id="ICTECHGiftCard\Administration\Controller\DashboardController" public="true">
             <tag name="controller.service_arguments" />
-            <argument type="service" id="Doctrine\DBAL\Connection" />
+            <argument type="service" id="ictech_gift_card_voucher.repository" />
+            <argument type="service" id="ictech_gift_card_transaction.repository" />
             <argument type="service" id="twig" />
         </service>
 

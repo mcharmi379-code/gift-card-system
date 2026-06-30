@@ -57,8 +57,8 @@ final class GiftCardCartProcessor implements CartProcessorInterface
 
         $state = [
             'hasRestricted' => false,
-            'appliedCount'  => 0,
-            'runningTotal'  => $runningTotal,
+            'appliedCount' => 0,
+            'runningTotal' => $runningTotal,
         ];
 
         foreach ($original->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
@@ -70,24 +70,6 @@ final class GiftCardCartProcessor implements CartProcessorInterface
                 $state
             );
         }
-    }
-
-    private function removeGiftCardLineItems(Cart $cart): void
-    {
-        foreach ($cart->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
-            $cart->getLineItems()->remove($lineItem->getId());
-        }
-    }
-
-    private function calculateRunningTotal(Cart $cart): float
-    {
-        $runningTotal = 0.0;
-        foreach ($cart->getLineItems() as $item) {
-            if ($item->getType() !== self::LINE_ITEM_TYPE && $item->getPrice() !== null) {
-                $runningTotal += $item->getPrice()->getTotalPrice();
-            }
-        }
-        return \max(0.0, $runningTotal);
     }
 
     /**
@@ -127,8 +109,27 @@ final class GiftCardCartProcessor implements CartProcessorInterface
         $this->updateVoucherBalance($voucher, $balanceAfter, $orderNumber, $context);
     }
 
+    private function removeGiftCardLineItems(Cart $cart): void
+    {
+        foreach ($cart->getLineItems()->filterType(self::LINE_ITEM_TYPE) as $lineItem) {
+            $cart->getLineItems()->remove($lineItem->getId());
+        }
+    }
+
+    private function calculateRunningTotal(Cart $cart): float
+    {
+        $runningTotal = 0.0;
+        foreach ($cart->getLineItems() as $item) {
+            if ($item->getType() !== self::LINE_ITEM_TYPE && $item->getPrice() !== null) {
+                $runningTotal += $item->getPrice()->getTotalPrice();
+            }
+        }
+        return \max(0.0, $runningTotal);
+    }
+
     /**
      * @param array{hasRestricted: bool, appliedCount: int, runningTotal: float} $state
+     *
      * @return array{hasRestricted: bool, appliedCount: int, runningTotal: float}
      */
     private function processVoucherLineItem(
@@ -162,6 +163,7 @@ final class GiftCardCartProcessor implements CartProcessorInterface
 
     /**
      * @param array{hasRestricted: bool, appliedCount: int, runningTotal: float} $state
+     *
      * @return array{hasRestricted: bool, appliedCount: int, runningTotal: float}
      */
     private function evaluateAndApplyVoucher(
@@ -190,8 +192,8 @@ final class GiftCardCartProcessor implements CartProcessorInterface
 
         return [
             'hasRestricted' => $state['hasRestricted'] || $isRestricted,
-            'appliedCount'  => $state['appliedCount'] + 1,
-            'runningTotal'  => \max(0.0, $state['runningTotal'] - $deductAmount),
+            'appliedCount' => $state['appliedCount'] + 1,
+            'runningTotal' => \max(0.0, $state['runningTotal'] - $deductAmount),
         ];
     }
 
@@ -257,7 +259,8 @@ final class GiftCardCartProcessor implements CartProcessorInterface
             'amountUsed' => $amountUsed,
             'balanceBefore' => $balanceBefore,
             'balanceAfter' => \max(0.0, $balanceAfter),
-        ]], $context);
+        ],
+        ], $context);
     }
 
     private function updateVoucherBalance(
@@ -278,7 +281,8 @@ final class GiftCardCartProcessor implements CartProcessorInterface
             'remainingBalance' => \max(0.0, $balanceAfter),
             'status' => $newStatus->value,
             'usedInOrderNumber' => $orderNumber,
-        ]], $context);
+        ],
+        ], $context);
     }
 
     private function findValidVoucher(string $code, Context $context): ?GiftCardVoucherEntity

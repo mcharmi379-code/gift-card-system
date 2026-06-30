@@ -12,6 +12,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\MultiFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Controller\StorefrontController;
 use Shopware\Storefront\Page\GenericPageLoader;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ final class GiftCardAccountController extends StorefrontController
     public function __construct(
         private readonly GenericPageLoader $genericPageLoader,
         private readonly EntityRepository $giftCardVoucherRepository,
+        private readonly SystemConfigService $systemConfigService,
     ) {
     }
 
@@ -38,6 +40,11 @@ final class GiftCardAccountController extends StorefrontController
     )]
     public function index(Request $request, SalesChannelContext $context, CustomerEntity $customer): Response
     {
+        $active = $this->systemConfigService->getBool('ICTECHGiftCard.config.active', $context->getSalesChannelId());
+        if (!$active) {
+            throw $this->createNotFoundException();
+        }
+
         $page = $this->genericPageLoader->load($request, $context);
         $vouchers = $this->getVouchersForCustomer($request, $customer, $context);
 

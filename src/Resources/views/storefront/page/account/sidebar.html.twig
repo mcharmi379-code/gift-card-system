@@ -3,7 +3,7 @@
 {% block page_account_sidebar_link_orders %}
     {{ parent() }}
 
-    {% if not context.customer.guest %}
+    {% if not context.customer.guest and config('ICTECHGiftCard.config.active') %}
         <a href="{{ path('frontend.ictech.gift_card.account.page') }}"
            title="{{ 'ictech-gift-card.account.menuLabel'|trans|striptags }}"
            class="list-group-item list-group-item-action account-aside-item{% if activeRoute is same as('frontend.ictech.gift_card.account.page') %} is-active{% endif %}"

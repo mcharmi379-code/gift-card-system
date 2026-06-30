@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace ICTECHGiftCard\Core\Subscriber;
 
-use Doctrine\DBAL\Connection;
+use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -13,8 +16,11 @@ use Symfony\Component\Routing\RouterInterface;
 
 final class ProductDetailRedirectSubscriber implements EventSubscriberInterface
 {
+    /**
+     * @param EntityRepository<\ICTECHGiftCard\Core\Content\GiftCard\GiftCardCollection> $giftCardRepository
+     */
     public function __construct(
-        private readonly Connection $connection,
+        private readonly EntityRepository $giftCardRepository,
         private readonly RouterInterface $router,
     ) {
     }
@@ -61,15 +67,14 @@ final class ProductDetailRedirectSubscriber implements EventSubscriberInterface
 
     private function isGiftCardProduct(string $productIdHex): bool
     {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId', $productIdHex));
+        $criteria->setLimit(1);
+
         try {
-            $productIdBin = \hex2bin($productIdHex);
+            return $this->giftCardRepository->searchIds($criteria, Context::createDefaultContext())->getTotal() > 0;
         } catch (\Throwable) {
             return false;
         }
-
-        return (bool) $this->connection->fetchOne(
-            'SELECT 1 FROM `ictech_gift_card` WHERE `product_id` = :productId LIMIT 1',
-            ['productId' => $productIdBin]
-        );
     }
 }

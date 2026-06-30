@@ -93,8 +93,6 @@ final class GiftCardPageController extends StorefrontController
         return $this->generatePreviewPdf($params, $context);
     }
 
-
-
     /**
      * @return array{templateId: string, senderName: string, recipientName: string, message: string, amount: string, sendDate: string}
      */
@@ -148,12 +146,12 @@ final class GiftCardPageController extends StorefrontController
         try {
             $html = $this->twig->render('@ICTECHGiftCard/documents/gift_card_pdf.html.twig', [
                 'card_lastname' => $params['recipientName'],
-                'card_price'    => $priceStr,
-                'card_from'     => $params['senderName'],
-                'card_code'     => 'PREVIEW-1234-5678',
-                'card_message'  => $params['message'],
-                'card_image'    => $cardImage,
-                'shop_name'     => $shopName,
+                'card_price' => $priceStr,
+                'card_from' => $params['senderName'],
+                'card_code' => 'PREVIEW-1234-5678',
+                'card_message' => $params['message'],
+                'card_image' => $cardImage,
+                'shop_name' => $shopName,
                 'validity_date' => $formattedSendDate,
             ]);
         } catch (\Throwable $e) {
